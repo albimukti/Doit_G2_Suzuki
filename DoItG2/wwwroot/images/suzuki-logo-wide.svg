@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="800" height="240">
+  <defs>
+    <style>
+      .st-red { fill: #E60012; }
+      .st-blue { fill: #004098; font-family: 'Montserrat', 'Arial Black', Impact, sans-serif; font-weight: 900; }
+    </style>
+  </defs>
+  <!-- Red Suzuki S Emblem on Left -->
+  <g transform="translate(10, 10) scale(0.38)">
+    <path class="st-red" d="M 250 20 C 345 20 450 90 450 170 C 450 210 420 240 370 260 L 230 310 C 180 328 150 350 150 385 C 150 430 200 460 260 460 C 325 460 390 430 425 385 L 470 425 C 420 480 340 510 260 510 C 155 510 80 445 80 370 C 80 315 120 275 180 255 L 320 205 C 365 190 385 170 385 145 C 385 105 330 75 250 75 C 180 75 110 110 70 160 L 25 120 C 75 55 160 20 250 20 Z" />
+  </g>
+  <!-- SUZUKI Wordmark on Right -->
+  <text x="240" y="150" font-size="115" class="st-blue" letter-spacing="12">SUZUKI</text>
+</svg>

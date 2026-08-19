@@ -1,0 +1,61 @@
+@{
+    Layout = "_Layout";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Upload Data SILO — Impor (PIB)</h2>
+            <div class="card-subtitle">Ambil draf PIB dari database internal Suzuki SILO untuk di-proses ke sistem DO-IT G2</div>
+        </div>
+    </div>
+
+    <form method="post" action="/Silo/SyncPib" style="margin-top: 20px;" onsubmit="showLoading()">
+        <div class="form-group">
+            <label class="form-label">Nomor Invoice / Delivery Note<span class="required">*</span></label>
+            <div class="input-group">
+                <input type="text" name="searchInvoice" class="form-control" placeholder="Contoh: IV-2026-0727-A..." required />
+                <button type="submit" class="btn btn-primary">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    Tarik Data SILO
+                </button>
+            </div>
+            <span class="form-text">Masukkan nomor invoice komersial yang terdaftar di sistem ERP SILO.</span>
+        </div>
+    </form>
+
+    <!-- Loading simulator -->
+    <div id="loadingSilo" style="display: none; text-align: center; padding: 40px 0;">
+        <div style="width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+        <p style="font-weight: 600; color: var(--text-primary);">Menghubungkan ke Database Oracle SILO...</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Membaca data manifest kontainer dan pemetaan part master Suzuki...</p>
+    </div>
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+    function showLoading() {
+        document.getElementById('loadingSilo').style.display = 'block';
+    }
+</script>

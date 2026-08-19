@@ -1,0 +1,52 @@
+@model List<DoItG2.Models.PEB.PebResponModel>
+@{
+    Layout = "_Layout";
+}
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Respons Bea Cukai (PEB)</h2>
+            <div class="card-subtitle">Riwayat Nota Pelayanan Ekspor (NPE) dan respon ekspor dari portal CEISA 4.0</div>
+        </div>
+    </div>
+
+    <div class="table-wrapper" style="margin-top: 16px;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nomor CAR (AJU)</th>
+                    <th>Kode Respon</th>
+                    <th>Nomor NPE</th>
+                    <th>Tanggal Terbit NPE</th>
+                    <th>Deskripsi Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            Tidak ada dokumen respon Bea Cukai untuk ekspor ditemukan.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td style="font-weight:600; font-family: monospace;">@item.Car</td>
+                            <td>
+                                <span class="badge badge-approved">@item.ResKd</span>
+                            </td>
+                            <td style="font-weight:500;">@item.NoPen</td>
+                            <td>@(item.TgPen?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
+                            <td>@item.Deskripsi</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

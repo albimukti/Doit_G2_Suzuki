@@ -1,0 +1,1196 @@
+@model DoItG2.Models.PIB.PibHeaderModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Buat PIB (BC 2.0) Baru — CEISA 4.0";
+}
+
+<div class="card" style="max-width: 1150px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" style="width: 100%; height: 100%; object-fit: contain;" asp-append-version="true" />
+            </div>
+            <div>
+                <h2 class="card-title" style="margin: 0; font-size: 18px;">PEMBERITAHUAN IMPOR BARANG (BC 2.0)</h2>
+                <div class="card-subtitle">Formulir 9 Tab Identik Portal CEISA 4.0 Bea Cukai</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-warning" onclick="DoIt.fillPibSampleData()" style="font-weight: 700; font-size: 12px;">
+                ⚡ Isi Sample Data CEISA 4.0 (BC 2.0)
+            </button>
+            <a class="btn btn-secondary" href="/Pib">Kembali</a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+    {
+        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan.";
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            @errMsg
+        </div>
+    }
+
+    <!-- Status Indicator Legend -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 24px 10px; font-size: 12px;">
+        <span style="display: flex; align-items: center; gap: 6px; color: #16a34a; font-weight: 600;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #16a34a;"></span> Tab Lengkap (Hijau)
+        </span>
+        <span style="display: flex; align-items: center; gap: 6px; color: #dc2626; font-weight: 600;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #dc2626;"></span> Belum Lengkap (Merah)
+        </span>
+    </div>
+
+    <!-- Tab Navigation CEISA 4.0 (9 Tab) -->
+    <div class="pib-tabs" id="pibTabs">
+        <button type="button" class="pib-tab active" data-tab="1" onclick="DoIt.switchPibTab(1)">
+            <span class="tab-num">1</span> <span class="tab-label">Header</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="2" onclick="DoIt.switchPibTab(2)">
+            <span class="tab-num">2</span> <span class="tab-label">Entitas</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="3" onclick="DoIt.switchPibTab(3)">
+            <span class="tab-num">3</span> <span class="tab-label">Dokumen</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="4" onclick="DoIt.switchPibTab(4)">
+            <span class="tab-num">4</span> <span class="tab-label">Pengangkut</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="5" onclick="DoIt.switchPibTab(5)">
+            <span class="tab-num">5</span> <span class="tab-label">Kemasan &amp; Peti</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="6" onclick="DoIt.switchPibTab(6)">
+            <span class="tab-num">6</span> <span class="tab-label">Transaksi</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="7" onclick="DoIt.switchPibTab(7)">
+            <span class="tab-num">7</span> <span class="tab-label">Barang</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="8" onclick="DoIt.switchPibTab(8)">
+            <span class="tab-num">8</span> <span class="tab-label">Pungutan</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="pib-tab" data-tab="9" onclick="DoIt.switchPibTab(9)">
+            <span class="tab-num">9</span> <span class="tab-label">Pernyataan</span> <span class="tab-icon"></span>
+        </button>
+    </div>
+
+    <form method="post" id="pibForm">
+
+        <!-- TAB 1: Header Dokumen -->
+        <div class="pib-panel active" id="pibPanel1">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Header Dokumen (Pengajuan &amp; Kantor Pabean)
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nomor Aju (CAR)<span class="required">*</span></label>
+                    <input type="text" name="Car" id="pib_Car" class="form-control req-field" placeholder="000020-000000-20251123-000005" required maxlength="30" />
+                    <span class="form-text">26 digit nomor pengajuan CEISA.</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pelabuhan Tujuan<span class="required">*</span></label>
+                    <input type="text" name="PelTujuan" id="pib_PelTujuan" class="form-control req-field" value="IDCGK - CENGKARENG / SOEKARNO HATTA (U)" placeholder="Kode pelabuhan tujuan" required />
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Kantor Pabean Impor<span class="required">*</span></label>
+                    <input type="text" name="KdKantor" id="pib_KdKantor" class="form-control req-field" value="050100 - KPU BEA DAN CUKAI TIPE C SOEKARNO-HATTA" maxlength="60" required />
+                    <span class="form-text">Kode KPPBC (6 digit).</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Jenis PIB<span class="required">*</span></label>
+                    <select name="JnsPib" id="pib_JnsPib" class="form-control req-field" required>
+                        <option value="1">1 - BIASA</option>
+                        <option value="2">2 - BERKALA</option>
+                        <option value="3">3 - PENYELESAIAN</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Jenis Impor<span class="required">*</span></label>
+                    <select name="JnsImp" id="pib_JnsImp" class="form-control req-field" required>
+                        <option value="1">1 - UNTUK DIPAKAI</option>
+                        <option value="2">2 - SEMENTARA</option>
+                        <option value="3">3 - DITIMBUN</option>
+                        <option value="4">4 - RE-IMPOR</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cara Pembayaran<span class="required">*</span></label>
+                    <select name="JnsBayar" id="pib_JnsBayar" class="form-control req-field" required>
+                        <option value="1">1 - BIASA / TUNAI</option>
+                        <option value="2">2 - BERKALA</option>
+                        <option value="3">3 - JAMINAN</option>
+                        <option value="4">4 - FASILITAS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Asal Data</label>
+                    <select name="AsalData" id="pib_AsalData" class="form-control">
+                        <option value="M">Manual (CEISA Web)</option>
+                        <option value="S">SILO Suzuki</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Entitas -->
+        <div class="pib-panel" id="pibPanel2">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Entitas Kepabeanan Impor
+            </h3>
+            
+            <!-- Importir -->
+            <div class="entity-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 class="section-subtitle" style="margin:0">Importir</h4>
+                </div>
+                <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Identitas</label>
+                        <select name="KdIdImp" id="pib_KdIdImp" class="form-control">
+                            <option value="6">6 - NPWP 16 DIGIT</option>
+                            <option value="5">5 - NPWP 15 DIGIT</option>
+                            <option value="0">0 - PASPOR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NPWP Importir<span class="required">*</span></label>
+                        <input type="text" name="IdImp" id="pib_IdImp" class="form-control req-field" value="00174392740460000" maxlength="16" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NITKU (22 Digit)</label>
+                        <input type="text" name="NitkuImp" id="pib_NitkuImp" class="form-control" value="0017439274046000000000" maxlength="22" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Importir<span class="required">*</span></label>
+                        <input type="text" name="NmImo" id="pib_NmImo" class="form-control req-field" value="NNKGO INDONESIA" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Importir<span class="required">*</span></label>
+                        <input type="text" name="AlImp" id="pib_AlImp" class="form-control req-field" value="DAAN MOGOT" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pemilik Barang -->
+            <div class="entity-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 class="section-subtitle" style="margin:0">Pemilik Barang</h4>
+                    <button type="button" class="btn btn-sm btn-info" onclick="DoIt.copyPibImportir('pemilik')">
+                        📋 Salin Importir
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Identitas</label>
+                        <select name="KdIdPemilik" id="pib_KdIdPemilik" class="form-control">
+                            <option value="6">6 - NPWP 16 DIGIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NPWP Pemilik</label>
+                        <input type="text" name="IdPemilik" id="pib_IdPemilik" class="form-control" value="00174392740460000" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NITKU Pemilik</label>
+                        <input type="text" name="NitkuPemilik" id="pib_NitkuPemilik" class="form-control" value="0017439274046000000000" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Pemilik</label>
+                        <input type="text" name="NmPemilik" id="pib_NmPemilik" class="form-control" value="NNKGO INDONESIA" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Pemilik</label>
+                        <input type="text" name="AlPemilik" id="pib_AlPemilik" class="form-control" value="DAAN MOGOT" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- NPWP Pemusatan -->
+            <div class="entity-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 class="section-subtitle" style="margin:0">NPWP Pemusatan</h4>
+                    <button type="button" class="btn btn-sm btn-info" onclick="DoIt.copyPibImportir('pemusatan')">
+                        📋 Salin Importir
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Identitas</label>
+                        <select name="KdIdPemusatan" id="pib_KdIdPemusatan" class="form-control">
+                            <option value="6">6 - NPWP 16 DIGIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NPWP Pemusatan</label>
+                        <input type="text" name="IdPemusatan" id="pib_IdPemusatan" class="form-control" value="00174392740460000" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NITKU Pemusatan</label>
+                        <input type="text" name="NitkuPemusatan" id="pib_NitkuPemusatan" class="form-control" value="0017439274046000000000" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Pemusatan</label>
+                        <input type="text" name="NmPemusatan" id="pib_NmPemusatan" class="form-control" value="NNKGO INDONESIA" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Pemusatan</label>
+                        <input type="text" name="AlPemusatan" id="pib_AlPemusatan" class="form-control" value="DAAN MOGOT" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Penjual & Pengirim -->
+            <div class="entity-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 class="section-subtitle" style="margin:0">Penjual &amp; Pengirim Luar Negeri</h4>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="DoIt.copyPibPengirim()">
+                        📋 Salin data pengirim
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Penjual<span class="required">*</span></label>
+                        <input type="text" name="NmPenjual" id="pib_NmPenjual" class="form-control req-field" value="NESTLE (THAI) LTD" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Pengirim<span class="required">*</span></label>
+                        <input type="text" name="NmPemasok" id="pib_NmPemasok" class="form-control req-field" value="NESTLE (THAI) LTD" required />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Alamat Penjual</label>
+                        <textarea name="AlPenjual" id="pib_AlPenjual" class="form-control" rows="2">999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Pengirim</label>
+                        <textarea name="AlPemasok" id="pib_AlPemasok" class="form-control" rows="2">999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK</textarea>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Negara Penjual</label>
+                        <input type="text" name="NegPenjual" id="pib_NegPenjual" class="form-control" value="TH - THAILAND" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Negara Pengirim</label>
+                        <input type="text" name="NegPemasok" id="pib_NegPemasok" class="form-control" value="TH - THAILAND" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- API / NIB -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">API / NIB</h4>
+                <div style="display: grid; grid-template-columns: 160px 1fr 180px 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Jenis API</label>
+                        <select name="KdApi" id="pib_KdApi" class="form-control">
+                            <option value="U">API U</option>
+                            <option value="P">API P</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor API / NIB</label>
+                        <input type="text" name="NoApi" id="pib_NoApi" class="form-control" value="2325256234234" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <input type="text" name="StatusApi" id="pib_StatusApi" class="form-control" value="LAINNYA" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Afiliasi</label>
+                        <select name="Afiliasi" id="pib_Afiliasi" class="form-control">
+                            <option value="AFL">AFL - Affiliated Company</option>
+                            <option value="NON">NON - Non-Affiliated</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Dokumen Lampiran -->
+        <div class="pib-panel" id="pibPanel3">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Dokumen Lampiran CEISA 4.0
+            </h3>
+            <p class="form-text" style="margin-bottom:16px;">Dokumen pelengkap Pabean Impor: Invoice (380), Airway Bill / BL (740), Form D / Certificate of Origin (861), dll.</p>
+
+            <div id="docRows">
+                <div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 1fr 140px 120px 40px; gap:10px; align-items:end; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Seri</label>
+                        <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Jenis Dokumen</label>
+                        <select name="DocKd[]" class="form-control">
+                            <option value="380">380 - INVOICE</option>
+                            <option value="740">740 - AWB</option>
+                            <option value="861">861 - ELECTRONIC CERTIFICATE OF ORIGIN (FORM D)</option>
+                            <option value="000">000 - LAINNYA</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Nomor Dokumen<span class="required">*</span></label>
+                        <input type="text" name="DocNo[]" class="form-control req-field" value="4002310125" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Tanggal</label>
+                        <input type="text" name="DocTg[]" class="form-control" value="04-11-2025" placeholder="DD-MM-YYYY" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Fasilitas</label>
+                        <input type="text" name="DocFas[]" class="form-control" value="00 - ATGA" />
+                    </div>
+                    <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" style="margin-top:8px" onclick="DoIt.addDocRow()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Dokumen
+            </button>
+        </div>
+
+        <!-- TAB 4: Pengangkut -->
+        <div class="pib-panel" id="pibPanel4">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                Pengangkut &amp; Pelabuhan Tempat Penimbunan
+            </h3>
+            
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                <button type="button" class="btn btn-sm btn-info" onclick="DoIt.toast('Integrasi BL/AWB terverifikasi aktif!', 'success')">
+                    Verifikasi Berdasarkan data BL/AWB
+                </button>
+            </div>
+
+            <!-- BC 1.1 -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">BC 1.1 (Kedatangan Sarana Angkut)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Tutup PU</label>
+                        <input type="text" name="NoBc11" id="pib_NoBc11" class="form-control" value="BC11" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal BC 1.1</label>
+                        <input type="text" name="TglBc11" id="pib_TglBc11" class="form-control" value="11-11-2025" placeholder="DD-MM-YYYY" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor Pos</label>
+                        <input type="text" name="NoPosBc11" id="pib_NoPosBc11" class="form-control" value="07" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subpos</label>
+                        <input type="text" name="NoSubPos" id="pib_NoSubPos" class="form-control" value="00" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sarana Angkut -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Cara &amp; Sarana Pengangkutan</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Cara Pengangkutan<span class="required">*</span></label>
+                        <select name="CaraAngkut" id="pib_CaraAngkut" class="form-control req-field" required>
+                            <option value="4">4 - UDARA</option>
+                            <option value="1">1 - LAUT</option>
+                            <option value="2">2 - KERETA API</option>
+                            <option value="3">3 - DARAT</option>
+                            <option value="5">5 - POS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Sarana Angkut<span class="required">*</span></label>
+                        <input type="text" name="NmAngkut" id="pib_NmAngkut" class="form-control req-field" value="SUMATRA" required />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">No Voy/Flight/Lainnya</label>
+                        <input type="text" name="NoVoyFlight" id="pib_NoVoyFlight" class="form-control" value="2003" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bendera</label>
+                        <input type="text" name="BenderaVoy" id="pib_BenderaVoy" class="form-control" value="SG - SINGAPORE" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Perkiraan Tanggal Tiba<span class="required">*</span></label>
+                        <input type="text" name="TglTiba" id="pib_TglTiba" class="form-control req-field" value="11-11-2025" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pelabuhan & Tempat Penimbunan -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Pelabuhan &amp; Tempat Penimbunan</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Muat<span class="required">*</span></label>
+                        <input type="text" name="PelMuat" id="pib_PelMuat" class="form-control req-field" value="THBKK - LAEM CHABANG" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Transit</label>
+                        <input type="text" name="PelTransit" id="pib_PelTransit" class="form-control" placeholder="Pelabuhan transit (opsional)" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Tujuan<span class="required">*</span></label>
+                        <input type="text" name="PelBongkar" id="pib_PelBongkar" class="form-control req-field" value="IDCGK - CENGKARENG" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tempat Penimbunan (TPS)</label>
+                        <input type="text" name="Gudang" id="pib_Gudang" class="form-control" value="AF03 - ANGKASA PURA KARGO" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Kemasan & Peti Kemas -->
+        <div class="pib-panel" id="pibPanel5">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                Kemasan &amp; Peti Kemas (Containers)
+            </h3>
+
+            <!-- Kemasan -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Kemasan</h4>
+                <div id="kemasanRows">
+                    <div class="doc-row" style="display:grid; grid-template-columns: 60px 100px 180px 1fr 40px; gap:12px; align-items:end; margin-bottom:12px;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Seri</label>
+                            <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Jumlah<span class="required">*</span></label>
+                            <input type="number" name="KmsJml[]" class="form-control req-field" value="4543" min="1" required />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Jenis<span class="required">*</span></label>
+                            <select name="KmsJns[]" class="form-control req-field" required>
+                                <option value="CT">CT - Carton</option>
+                                <option value="PK">PK - Package</option>
+                                <option value="PX">PX - Pallet</option>
+                                <option value="CS">CS - Case</option>
+                                <option value="DR">DR - Drum</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Merk Kemasan</label>
+                            <input type="text" name="KmsMerk[]" class="form-control" value="SESUAI IS" />
+                        </div>
+                        <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" style="margin-top:4px" onclick="DoIt.addKemasanRow()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Tambah Kemasan
+                </button>
+            </div>
+
+            <!-- Peti Kemas -->
+            <div class="entity-section" style="margin-top:24px">
+                <h4 class="section-subtitle">Peti Kemas (Container)</h4>
+                <div id="containerRows">
+                    <div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 120px 140px 1fr 40px; gap:12px; align-items:end; margin-bottom:12px;">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Seri</label>
+                            <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Nomor Container</label>
+                            <input type="text" name="ContNo[]" class="form-control" value="DNLU5203872" maxlength="17" />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Ukuran</label>
+                            <select name="ContUkr[]" class="form-control">
+                                <option value="20">20 FEET</option>
+                                <option value="40">40 FEET</option>
+                                <option value="45">45 FEET</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Jenis Muatan</label>
+                            <select name="ContMuat[]" class="form-control">
+                                <option value="L">F - LCL / FCL</option>
+                                <option value="F">FCL</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Tipe</label>
+                            <input type="text" name="ContTipe[]" class="form-control" value="General / Dry Cargo" />
+                        </div>
+                        <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" style="margin-top:4px" onclick="DoIt.addContainerRow()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Tambah Container
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 6: Transaksi -->
+        <div class="pib-panel" id="pibPanel6">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Informasi Nilai Transaksi &amp; Biaya Pabean
+            </h3>
+
+            <!-- Harga & Valuta -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Harga &amp; Valuta</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Jenis Valuta<span class="required">*</span></label>
+                        <select name="KdVal" id="pib_KdVal" class="form-control req-field" required>
+                            <option value="JPY">JPY - YEN</option>
+                            <option value="USD">USD - US DOLLAR</option>
+                            <option value="EUR">EUR - EURO</option>
+                            <option value="SGD">SGD - SINGAPORE DOLLAR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NDPBM (Kurs Pajak)<span class="required">*</span></label>
+                        <input type="text" name="Ndpbm" id="pib_Ndpbm" class="form-control req-field" value="107.027" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jenis Transaksi</label>
+                        <input type="text" name="JnsTransaksi" id="pib_JnsTransaksi" class="form-control" value="KMB - PEMBAYARAN KEMUDIAN" />
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Harga Barang (FOB)<span class="required">*</span></label>
+                        <input type="text" name="Fob" id="pib_Fob" class="form-control req-field" value="27,100.00" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nilai Pabean Valuta Asing</label>
+                        <input type="text" name="NilaiPabeanValas" id="pib_NilaiPabeanValas" class="form-control" value="24,209.01" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nilai Pabean dalam Rupiah (Rp)<span class="required">*</span></label>
+                        <input type="text" name="Cif" id="pib_Cif" class="form-control req-field" value="2,720,853.24" required style="font-weight:700; color:var(--primary);" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biaya Lainnya -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Biaya Lainnya (Freight, Asuransi &amp; VD)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Freight</label>
+                        <input type="text" name="Freight" id="pib_Freight" class="form-control" value="485.00" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asuransi</label>
+                        <input type="text" name="Asuransi" id="pib_Asuransi" class="form-control" value="DALAM NEGERI 100.0000" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Voluntary Declaration</label>
+                        <input type="text" name="VoluntaryDeclaration" id="pib_VoluntaryDeclaration" class="form-control" value="1270.56" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Biaya Penambah/Pengurang</label>
+                        <input type="text" class="form-control" value="0.00" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Berat -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Berat Barang</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Berat Kotor (KGM)<span class="required">*</span></label>
+                        <input type="text" name="Bruto" id="pib_Bruto" class="form-control req-field" value="0.20177400" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Berat Bersih (KGM)<span class="required">*</span></label>
+                        <input type="text" name="Netto" id="pib_Netto" class="form-control req-field" value="0.20177000" required />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: Barang -->
+        <div class="pib-panel" id="pibPanel7">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Detail Barang Impor (Sub-Header HS Code)
+            </h3>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px;">
+                <button type="button" class="btn btn-sm btn-info" onclick="DoIt.toast('Pungutan dominansi telah dikalkulasi!', 'info')">
+                    Dominasi Pungutan
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="DoIt.toast('Kuota Fasilitas Lartas/KITE dipotong', 'success')">
+                    Potong Kuota
+                </button>
+            </div>
+
+            <div id="barangRows">
+                <div class="doc-row" style="display:grid; grid-template-columns: 50px 130px 1fr 100px 110px 110px 40px; gap:8px; align-items:end; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Seri</label>
+                        <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Pos Tarif (HS)<span class="required">*</span></label>
+                        <input type="text" name="BrgHs[]" class="form-control req-field" value="23099020" maxlength="10" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Uraian Jenis Barang<span class="required">*</span></label>
+                        <input type="text" name="BrgDesc[]" class="form-control req-field" value="FELIX ADT SALMON IN JELLY(6x12)50G TBR" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Nilai Barang</label>
+                        <input type="text" name="BrgVal[]" class="form-control" value="8,382.00" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Jumlah Satuan<span class="required">*</span></label>
+                        <input type="text" name="BrgQty[]" class="form-control req-field" value="3,570" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Jenis Satuan</label>
+                        <input type="text" name="BrgSat[]" class="form-control" value="KGM - Kilogram" />
+                    </div>
+                    <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" style="margin-top:4px" onclick="DoIt.addBarangRow()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Barang
+            </button>
+        </div>
+
+        <!-- TAB 8: Pungutan -->
+        <div class="pib-panel" id="pibPanel8">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Perhitungan & Pembayaran Pungutan Impor CEISA 4.0
+            </h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Bank Devisa / Persepsi<span class="required">*</span></label>
+                    <select name="KodeBank" id="pib_KodeBank" class="form-control req-field" required>
+                        <option value="008">008 - BANK MANDIRI</option>
+                        <option value="014">014 - BANK CENTRAL ASIA (BCA)</option>
+                        <option value="009">009 - BANK NEGARA INDONESIA (BNI)</option>
+                        <option value="002">002 - BANK RAKYAT INDONESIA (BRI)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nomor NTPN / Kode Billing<span class="required">*</span></label>
+                    <input type="text" name="NoNtpn" id="pib_NoNtpn" class="form-control req-field" value="2608191100018899" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status Billing / Pembayaran<span class="required">*</span></label>
+                    <select name="StatusBayar" id="pib_StatusBayar" class="form-control req-field" required>
+                        <option value="LUNAS">LUNAS - Sudah Dilunasi</option>
+                        <option value="DIBEBASKAN">DIBEBASKAN (Fasilitas KITE/TPB)</option>
+                        <option value="DTP">DITANGGUNG PEMERINTAH (DTP)</option>
+                        <option value="DITUNDA">DITUNDA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-weight:700; font-size:14px; color:var(--text-primary);">Rincian Pungutan Pajak Impor & Bea Cukai</div>
+                <button type="button" class="btn btn-sm btn-info" onclick="DoIt.recalcPibPungutan();DoIt.toast('Pungutan berhasil dihitung ulang!', 'success')">
+                    🔄 Hitung Ulang Pungutan
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Bea Masuk (BM) Rp<span class="required">*</span></label>
+                    <input type="number" name="NilaiBm" id="pib_NilaiBm" class="form-control req-field" value="15000000" oninput="DoIt.recalcPibPungutan();DoIt.validateAllPibTabs()" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PPN Impor (11%) Rp<span class="required">*</span></label>
+                    <input type="number" name="NilaiPpn" id="pib_NilaiPpn" class="form-control req-field" value="33000000" oninput="DoIt.recalcPibPungutan();DoIt.validateAllPibTabs()" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PPh Pasal 22 (2.5%) Rp<span class="required">*</span></label>
+                    <input type="number" name="NilaiPph" id="pib_NilaiPph" class="form-control req-field" value="7500000" oninput="DoIt.recalcPibPungutan();DoIt.validateAllPibTabs()" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PNBP Bea Cukai Rp<span class="required">*</span></label>
+                    <input type="number" name="NilaiPnbp" id="pib_NilaiPnbp" class="form-control req-field" value="100000" oninput="DoIt.recalcPibPungutan();DoIt.validateAllPibTabs()" required />
+                </div>
+            </div>
+
+            <div class="form-group" style="background:var(--bg-secondary); padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+                <label class="form-label" style="font-weight:700; font-size:13px;">TOTAL PUNGUTAN IMPOR DIBAYAR (RP)</label>
+                <input type="text" id="pib_TotalPungutanDisplay" class="form-control" value="Rp 55,600,000.00" readonly style="font-weight:800; font-size:18px; font-family:'JetBrains Mono',monospace; color:var(--primary); background:transparent; border:none;" />
+            </div>
+        </div>
+
+        <!-- TAB 9: Pernyataan -->
+        <div class="pib-panel" id="pibPanel9">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Pernyataan Keabsahan Dokumen Impor
+            </h3>
+            
+            <div style="background:var(--bg-secondary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:13px; color:var(--text-secondary);">
+                Dengan ini saya menyatakan bertanggung jawab atas kebenaran hal-hal yang diberitahukan dalam dokumen ini dan keabsahan dokumen pelengkap pabean yang menjadi dasar pembuatan dokumen ini.
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Tempat Dokumen Dibuat<span class="required">*</span></label>
+                    <input type="text" name="TempatPernyataan" id="pib_TempatPernyataan" class="form-control req-field" value="JAKARTA" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tanggal Pernyataan<span class="required">*</span></label>
+                    <input type="text" name="TglPernyataan" id="pib_TglPernyataan" class="form-control req-field" value="24-11-2025" required />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nama Penanggung Jawab<span class="required">*</span></label>
+                    <input type="text" name="NamaPernyataan" id="pib_NamaPernyataan" class="form-control req-field" value="ABD" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Jabatan<span class="required">*</span></label>
+                    <input type="text" name="JabatanPernyataan" id="pib_JabatanPernyataan" class="form-control req-field" value="MANAGER" required />
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation & Submit -->
+        <div class="pib-nav" style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="btn btn-secondary" id="prevTabBtn" onclick="DoIt.prevPibTab()" style="display:none">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Sebelumnya
+            </button>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:12px">
+                <a href="/Pib" class="btn btn-secondary">Batal</a>
+                <button type="button" class="btn btn-primary" id="nextTabBtn" onclick="DoIt.nextPibTab()">
+                    Selanjutnya
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitPibBtn" style="display:none">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Simpan Dokumen PIB
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+<style>
+    .pib-tabs {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding: 0 24px;
+        margin: 0 -24px 24px;
+        border-bottom: 2px solid var(--border-color);
+        scrollbar-width: thin;
+    }
+    .pib-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border: none;
+        background: none;
+        color: var(--text-secondary);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s ease;
+        margin-bottom: -2px;
+        border-radius: 6px 6px 0 0;
+    }
+    .pib-tab:hover {
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+    }
+    .pib-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+
+    /* Tab Success (Lengkap - Hijau) */
+    .pib-tab.tab-success {
+        color: #15803d !important;
+        border-bottom-color: #16a34a !important;
+        background: rgba(22, 163, 74, 0.1) !important;
+    }
+    .pib-tab.tab-success .tab-num {
+        background: #16a34a !important;
+        color: #ffffff !important;
+    }
+    .pib-tab.tab-success .tab-icon::after {
+        content: ' ✓';
+        font-weight: 900;
+        color: #16a34a;
+    }
+
+    /* Tab Danger (Belum Lengkap / Kosong - Merah) */
+    .pib-tab.tab-danger {
+        color: #dc2626 !important;
+        border-bottom-color: #dc2626 !important;
+        background: rgba(220, 38, 38, 0.1) !important;
+    }
+    .pib-tab.tab-danger .tab-num {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+    }
+    .pib-tab.tab-danger .tab-icon::after {
+        content: ' ✕';
+        font-weight: 900;
+        color: #dc2626;
+    }
+
+    .tab-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+    .pib-tab.active .tab-num {
+        background: var(--primary);
+        color: white;
+    }
+    .pib-panel {
+        display: none;
+        padding: 0 24px 8px;
+        animation: fadeInPanel 0.3s ease;
+    }
+    .pib-panel.active {
+        display: block;
+    }
+    @@keyframes fadeInPanel {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .panel-icon {
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+    .entity-section {
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+    .section-subtitle {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 12px;
+    }
+    .doc-row {
+        padding: 8px 0;
+    }
+
+    /* Input Field Real-time Status Colors */
+    .form-control.field-valid {
+        border-color: #16a34a !important;
+        background-color: rgba(22, 163, 74, 0.03) !important;
+    }
+    .form-control.field-invalid {
+        border-color: #dc2626 !important;
+        background-color: rgba(220, 38, 38, 0.04) !important;
+    }
+</style>
+}
+
+@section Scripts {
+<script>
+(function() {
+    var currentTab = 1;
+    var totalTabs = 9;
+
+    window.DoIt = window.DoIt || {};
+
+    DoIt.switchPibTab = function(n) {
+        currentTab = n;
+        document.querySelectorAll('.pib-tab').forEach(function(t) {
+            t.classList.toggle('active', parseInt(t.dataset.tab) === n);
+        });
+        document.querySelectorAll('.pib-panel').forEach(function(p) {
+            p.classList.toggle('active', p.id === 'pibPanel' + n);
+        });
+        document.getElementById('prevTabBtn').style.display = n > 1 ? '' : 'none';
+        document.getElementById('nextTabBtn').style.display = n < totalTabs ? '' : 'none';
+        document.getElementById('submitPibBtn').style.display = n === totalTabs ? '' : 'none';
+
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.nextPibTab = function() {
+        if (currentTab < totalTabs) {
+            DoIt.switchPibTab(currentTab + 1);
+        }
+    };
+
+    DoIt.prevPibTab = function() {
+        if (currentTab > 1) DoIt.switchPibTab(currentTab - 1);
+    };
+
+    // Dynamic Tab & Field Validation System (Green for complete, Red for empty/invalid)
+    DoIt.validateAllPibTabs = function() {
+        for (var i = 1; i <= totalTabs; i++) {
+            var panel = document.getElementById('pibPanel' + i);
+            var tabBtn = document.querySelector('.pib-tab[data-tab="' + i + '"]');
+            if (!panel || !tabBtn) continue;
+
+            var reqFields = panel.querySelectorAll('.req-field, [required]');
+            var isComplete = true;
+            var hasAttemptedInput = false;
+
+            reqFields.forEach(function(input) {
+                var val = (input.value || '').trim();
+                if (val !== '') {
+                    hasAttemptedInput = true;
+                    input.classList.add('field-valid');
+                    input.classList.remove('field-invalid');
+                } else {
+                    isComplete = false;
+                    input.classList.remove('field-valid');
+                    if (input.dataset.touched === 'true') {
+                        input.classList.add('field-invalid');
+                    }
+                }
+            });
+
+            tabBtn.classList.remove('tab-success', 'tab-danger');
+            if (isComplete && reqFields.length > 0) {
+                tabBtn.classList.add('tab-success');
+            } else if (!isComplete && (hasAttemptedInput || i === currentTab || tabBtn.dataset.touched === 'true')) {
+                tabBtn.classList.add('tab-danger');
+            }
+        }
+    };
+
+    DoIt.copyPibImportir = function(target) {
+        var id = document.getElementById('pib_IdImp').value;
+        var nitku = document.getElementById('pib_NitkuImp').value;
+        var nm = document.getElementById('pib_NmImo').value;
+        var al = document.getElementById('pib_AlImp').value;
+
+        if (target === 'pemilik') {
+            document.getElementById('pib_IdPemilik').value = id;
+            document.getElementById('pib_NitkuPemilik').value = nitku;
+            document.getElementById('pib_NmPemilik').value = nm;
+            document.getElementById('pib_AlPemilik').value = al;
+        } else if (target === 'pemusatan') {
+            document.getElementById('pib_IdPemusatan').value = id;
+            document.getElementById('pib_NitkuPemusatan').value = nitku;
+            document.getElementById('pib_NmPemusatan').value = nm;
+            document.getElementById('pib_AlPemusatan').value = al;
+        }
+        DoIt.toast('Data Importir disalin ke ' + target, 'success');
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.copyPibPengirim = function() {
+        var nm = document.getElementById('pib_NmPenjual').value;
+        var al = document.getElementById('pib_AlPenjual').value;
+        var neg = document.getElementById('pib_NegPenjual').value;
+
+        document.getElementById('pib_NmPemasok').value = nm;
+        document.getElementById('pib_AlPemasok').value = al;
+        document.getElementById('pib_NegPemasok').value = neg;
+        DoIt.toast('Data Pengirim disalin dari Penjual', 'success');
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.fillPibSampleData = function() {
+        document.getElementById('pib_Car').value = '000020-000000-20251123-000005';
+        document.getElementById('pib_PelTujuan').value = 'IDCGK - CENGKARENG / SOEKARNO HATTA (U)';
+        document.getElementById('pib_KdKantor').value = '050100 - KPU BEA DAN CUKAI TIPE C SOEKARNO-HATTA';
+        document.getElementById('pib_JnsPib').value = '1';
+        document.getElementById('pib_JnsImp').value = '1';
+        document.getElementById('pib_JnsBayar').value = '1';
+
+        document.getElementById('pib_IdImp').value = '00174392740460000';
+        document.getElementById('pib_NitkuImp').value = '0017439274046000000000';
+        document.getElementById('pib_NmImo').value = 'NNKGO INDONESIA';
+        document.getElementById('pib_AlImp').value = 'DAAN MOGOT';
+
+        DoIt.copyPibImportir('pemilik');
+        DoIt.copyPibImportir('pemusatan');
+
+        document.getElementById('pib_NmPenjual').value = 'NESTLE (THAI) LTD';
+        document.getElementById('pib_AlPenjual').value = '999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK';
+        document.getElementById('pib_NegPenjual').value = 'TH - THAILAND';
+        DoIt.copyPibPengirim();
+
+        document.getElementById('pib_NoApi').value = '2325256234234';
+        document.getElementById('pib_StatusApi').value = 'LAINNYA';
+        document.getElementById('pib_Afiliasi').value = 'AFL';
+
+        document.getElementById('pib_NmAngkut').value = 'SUMATRA';
+        document.getElementById('pib_NoVoyFlight').value = '2003';
+        document.getElementById('pib_BenderaVoy').value = 'SG - SINGAPORE';
+        document.getElementById('pib_TglTiba').value = '11-11-2025';
+        document.getElementById('pib_PelMuat').value = 'THBKK - LAEM CHABANG';
+        document.getElementById('pib_PelBongkar').value = 'IDCGK - CENGKARENG';
+        document.getElementById('pib_Gudang').value = 'AF03 - ANGKASA PURA KARGO';
+
+        document.getElementById('pib_KdVal').value = 'JPY';
+        document.getElementById('pib_Ndpbm').value = '107.027';
+        document.getElementById('pib_Fob').value = '27,100.00';
+        document.getElementById('pib_NilaiPabeanValas').value = '24,209.01';
+        document.getElementById('pib_Cif').value = '2,720,853.24';
+        document.getElementById('pib_Freight').value = '485.00';
+        document.getElementById('pib_Asuransi').value = 'DALAM NEGERI 100.0000';
+        document.getElementById('pib_VoluntaryDeclaration').value = '1270.56';
+        document.getElementById('pib_Bruto').value = '0.20177400';
+        document.getElementById('pib_Netto').value = '0.20177000';
+
+        document.getElementById('pib_KodeBank').value = '008';
+        document.getElementById('pib_NoNtpn').value = '2608191100018899';
+        document.getElementById('pib_StatusBayar').value = 'LUNAS';
+        document.getElementById('pib_NilaiBm').value = '15000000';
+        document.getElementById('pib_NilaiPpn').value = '33000000';
+        document.getElementById('pib_NilaiPph').value = '7500000';
+        document.getElementById('pib_NilaiPnbp').value = '100000';
+        DoIt.recalcPibPungutan();
+
+        document.getElementById('pib_TempatPernyataan').value = 'JAKARTA';
+        document.getElementById('pib_TglPernyataan').value = '24-11-2025';
+        document.getElementById('pib_NamaPernyataan').value = 'ABD';
+        document.getElementById('pib_JabatanPernyataan').value = 'MANAGER';
+
+        DoIt.toast('Sample data BC 2.0 berhasil diisikan seluruh tab!', 'success');
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.recalcPibPungutan = function() {
+        var bm = parseFloat(document.getElementById('pib_NilaiBm')?.value || 0);
+        var ppn = parseFloat(document.getElementById('pib_NilaiPpn')?.value || 0);
+        var pph = parseFloat(document.getElementById('pib_NilaiPph')?.value || 0);
+        var pnbp = parseFloat(document.getElementById('pib_NilaiPnbp')?.value || 0);
+        var total = bm + ppn + pph + pnbp;
+        var displayEl = document.getElementById('pib_TotalPungutanDisplay');
+        if (displayEl) {
+            displayEl.value = 'Rp ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    };
+
+    var barangCounter = 1;
+    DoIt.addBarangRow = function() {
+        barangCounter++;
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 50px 130px 1fr 100px 110px 110px 40px; gap:8px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="' + barangCounter + '" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgHs[]" class="form-control req-field" placeholder="23099020" maxlength="10" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgDesc[]" class="form-control req-field" placeholder="Uraian barang" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgVal[]" class="form-control" placeholder="0.00" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgQty[]" class="form-control req-field" placeholder="0" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgSat[]" class="form-control" placeholder="KGM - Kilogram" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPibTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('barangRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.addDocRow = function() {
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 1fr 140px 120px 40px; gap:10px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="+" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><select name="DocKd[]" class="form-control"><option value="380">380 - INVOICE</option><option value="740">740 - AWB</option><option value="861">861 - FORM D</option><option value="000">000 - LAINNYA</option></select></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="DocNo[]" class="form-control req-field" placeholder="Nomor dokumen" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="DocTg[]" class="form-control" placeholder="DD-MM-YYYY" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="DocFas[]" class="form-control" placeholder="Fasilitas" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPibTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('docRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.addKemasanRow = function() {
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 60px 100px 180px 1fr 40px; gap:12px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="+" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="number" name="KmsJml[]" class="form-control req-field" placeholder="0" min="1" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><select name="KmsJns[]" class="form-control req-field" required><option value="CT">CT - Carton</option><option value="PK">PK - Package</option><option value="PX">PX - Pallet</option></select></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="KmsMerk[]" class="form-control" placeholder="SESUAI IS" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPibTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('kemasanRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPibTabs();
+    };
+
+    DoIt.addContainerRow = function() {
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 120px 140px 1fr 40px; gap:12px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="+" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="ContNo[]" class="form-control" placeholder="DNLU5203872" maxlength="17" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><select name="ContUkr[]" class="form-control"><option value="20">20 FEET</option><option value="40">40 FEET</option></select></div>'
+            + '<div class="form-group" style="margin-bottom:0"><select name="ContMuat[]" class="form-control"><option value="L">F - LCL / FCL</option><option value="F">FCL</option></select></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="ContTipe[]" class="form-control" value="General / Dry Cargo" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPibTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('containerRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPibTabs();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('#pibForm input, #pibForm select, #pibForm textarea').forEach(function(el) {
+            el.addEventListener('input', function() {
+                el.dataset.touched = 'true';
+                var tabId = el.closest('.pib-panel')?.id?.replace('pibPanel', '');
+                if (tabId) {
+                    var btn = document.querySelector('.pib-tab[data-tab="' + tabId + '"]');
+                    if (btn) btn.dataset.touched = 'true';
+                }
+                DoIt.validateAllPibTabs();
+            });
+            el.addEventListener('change', function() {
+                el.dataset.touched = 'true';
+                DoIt.validateAllPibTabs();
+            });
+        });
+
+        DoIt.validateAllPibTabs();
+    });
+})();
+</script>
+}

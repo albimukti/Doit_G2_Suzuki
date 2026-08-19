@@ -1,0 +1,53 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Backup & Restore Database";
+}
+
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(59,130,246,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-success); border: 1px solid rgba(16,185,129,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Backup &amp; Restore Database DO_IT_G2</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Pembuatan titik pemulihan (*System Restore Point*) &amp; pembackupan arsip data transaksi SQL Server</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin: 0 auto;">
+    <!-- Card 1: Backup Database -->
+    <div class="glass-card" style="padding: 24px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16,185,129,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-success); margin-bottom: 14px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Buat Backup Database Baru</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
+            Sistem akan mengambil snapshot data transaksi PIB, PEB, KITE, IT Inventory, dan Master Part lalu menyimpannya secara aman pada Audit Log &amp; server backup.
+        </p>
+
+        <form method="post" action="/Setting/ProcessBackup">
+            <button type="submit" class="btn btn-success" style="width: 100%; height: 42px; font-weight: 700;">
+                Buat Backup Sekarang
+            </button>
+        </form>
+    </div>
+
+    <!-- Card 2: Restore Database Info -->
+    <div class="glass-card" style="padding: 24px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(59,130,246,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-primary); margin-bottom: 14px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Status Restore Point</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
+            Titik pemulihan database aktif untuk SQL Server <code>DO_IT_G2</code>. Dalam keadaan darurat, administrator dapat melakukan rollback data secara aman.
+        </p>
+
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; font-size: 12px; color: var(--text-secondary);">
+            <div>Status Sistem: <strong style="color: var(--accent-success);">Siap &amp; Stabil</strong></div>
+            <div style="margin-top: 4px; font-size: 11px; color: var(--text-muted);">Database: SQL Server 2022 (DO_IT_G2)</div>
+        </div>
+    </div>
+</div>

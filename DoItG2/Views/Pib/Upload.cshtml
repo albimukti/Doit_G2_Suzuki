@@ -1,0 +1,110 @@
+@{
+    Layout = "_Layout";
+}
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Upload Excel — Detail Barang PIB</h2>
+            <div class="card-subtitle">Import data barang dalam jumlah besar (&gt;500 item) via file Excel</div>
+        </div>
+        <a class="btn btn-secondary" href="/Pib">Kembali</a>
+    </div>
+
+    <form method="post" asp-action="UploadExcel" enctype="multipart/form-data">
+        <div class="form-group">
+            <label class="form-label">Nomor CAR (AJU) Dokumen<span class="required">*</span></label>
+            <input type="text" name="car" class="form-control" placeholder="Masukkan CAR dokumen PIB yang sudah ada" required maxlength="26" minlength="26" />
+            <span class="form-text">Dokumen PIB header harus sudah dibuat terlebih dahulu.</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">File Excel (.xlsx)<span class="required">*</span></label>
+            <div class="upload-area" id="uploadArea" style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--bg-secondary);">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48" style="color: var(--text-tertiary); margin-bottom: 12px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p style="margin:0 0 8px;font-weight:600;color:var(--text-primary)">Klik atau drag file Excel ke sini</p>
+                <p style="margin:0;font-size:13px;color:var(--text-tertiary)">Format: .xlsx — Maksimal 10 MB</p>
+                <input type="file" name="excelFile" id="excelFileInput" accept=".xlsx,.xls" required style="display:none" />
+                <div id="fileNameDisplay" style="margin-top:12px;display:none;padding:8px 16px;background:var(--bg-tertiary);border-radius:6px;color:var(--primary);font-weight:500"></div>
+            </div>
+        </div>
+
+        <div style="background:var(--bg-secondary);border-radius:8px;padding:20px;margin-top:16px;">
+            <h4 style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:12px">Format Kolom Excel</h4>
+            <div style="overflow-x:auto">
+                <table class="data-table" style="font-size:13px">
+                    <thead>
+                        <tr>
+                            <th>Kolom A</th>
+                            <th>Kolom B</th>
+                            <th>Kolom C</th>
+                            <th>Kolom D</th>
+                            <th>Kolom E</th>
+                            <th>Kolom F</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>HS Code</strong></td>
+                            <td><strong>Uraian Barang</strong></td>
+                            <td><strong>Jumlah</strong></td>
+                            <td><strong>Satuan</strong></td>
+                            <td><strong>Harga/unit</strong></td>
+                            <td><strong>Negara Asal</strong></td>
+                        </tr>
+                        <tr style="color:var(--text-secondary)">
+                            <td>87082911</td>
+                            <td>FRONT BUMPER SUZUKI</td>
+                            <td>120</td>
+                            <td>PCS</td>
+                            <td>15.50</td>
+                            <td>JP</td>
+                        </tr>
+                        <tr style="color:var(--text-secondary)">
+                            <td>87089999</td>
+                            <td>GASKET SET ENGINE</td>
+                            <td>500</td>
+                            <td>SET</td>
+                            <td>8.25</td>
+                            <td>TH</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin:12px 0 0;font-size:12px;color:var(--text-tertiary)">
+                * Baris pertama (header) akan dilewati otomatis saat proses import.
+            </p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <a href="/Pib" class="btn btn-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Upload &amp; Import
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var area = document.getElementById('uploadArea');
+    var input = document.getElementById('excelFileInput');
+    var display = document.getElementById('fileNameDisplay');
+    
+    area.addEventListener('click', function() { input.click(); });
+    area.addEventListener('dragover', function(e) { e.preventDefault(); area.style.borderColor='var(--primary)'; area.style.background='var(--bg-tertiary)'; });
+    area.addEventListener('dragleave', function() { area.style.borderColor='var(--border-color)'; area.style.background='var(--bg-secondary)'; });
+    area.addEventListener('drop', function(e) {
+        e.preventDefault();
+        area.style.borderColor='var(--border-color)'; area.style.background='var(--bg-secondary)';
+        if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; showFile(input.files[0]); }
+    });
+    input.addEventListener('change', function() { if(input.files.length) showFile(input.files[0]); });
+    function showFile(f) { display.textContent = '📄 ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)'; display.style.display='inline-block'; }
+})();
+</script>
+}

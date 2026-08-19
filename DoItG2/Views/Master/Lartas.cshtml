@@ -1,0 +1,116 @@
+@model List<DoItG2.Models.Common.MasterLartasModel>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Persetujuan Impor (PI) Lartas";
+    var currentSearch = ViewBag.Search as string ?? "";
+    int totalCount = Model.Count;
+}
+
+<!-- Hero Banner Header -->
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(245,158,11,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-danger); border: 1px solid rgba(239,68,68,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Persetujuan Impor (PI) Lartas (Kemendag)</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Monitoring kuota impor lartas (Larangan dan Pembatasan) Suzuki Indomobil</p>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="DoIt.openModal('createLartasModal')" style="height: 40px; padding: 0 16px; font-weight: 600;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Tambah Izin PI Baru
+        </button>
+    </div>
+</div>
+
+<!-- Main Table -->
+<div class="glass-card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrapper" style="border: none; border-radius: 0;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">No</th>
+                    <th style="width: 210px;">Nomor Izin PI</th>
+                    <th>Komoditas Barang</th>
+                    <th style="width: 140px; text-align: right;">Kuota Awal</th>
+                    <th style="width: 140px; text-align: right;">Terpakai</th>
+                    <th style="width: 140px; text-align: right;">Sisa Kuota</th>
+                    <th style="width: 110px; text-align: center;">Masa Berlaku</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            Belum ada data Persetujuan Impor (PI) Lartas tercatat.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int no = 1;
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td style="text-align: center; color: var(--text-muted); font-size: 12px;">@(no++)</td>
+                            <td><span class="code-badge" style="font-weight: 700;">@item.NoPi</span></td>
+                            <td style="font-weight: 600; color: var(--text-primary);">@item.Komoditas</td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">@item.KuotaAwal.ToString("N0") @item.Satuan</td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--accent-warning);">@item.KuotaTerpakai.ToString("N0") @item.Satuan</td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-success);">
+                                @item.SisaKuota.ToString("N0") @item.Satuan
+                            </td>
+                            <td style="text-align: center; font-size: 12px;">@(item.TglBerlaku.HasValue ? item.TglBerlaku.Value.ToString("dd/MM/yyyy") : "-")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Lartas Modal -->
+<div class="modal-overlay" id="createLartasModal">
+    <div class="modal-box" style="max-width: 520px;">
+        <div class="modal-header">
+            <span class="modal-title">Tambah Persetujuan Impor (PI) Lartas</span>
+            <button class="modal-close" onclick="DoIt.closeModal('createLartasModal')">&times;</button>
+        </div>
+        <form method="post" action="/Master/CreateLartas">
+            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Nomor Izin PI <span class="required">*</span></label>
+                        <input type="text" name="noPi" class="form-control" placeholder="Contoh: 04.PI-20.26.1102" required style="font-family: 'JetBrains Mono', monospace;" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Masa Berlaku</label>
+                        <input type="date" name="tglBerlaku" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Komoditas Barang Lartas <span class="required">*</span></label>
+                    <input type="text" name="komoditas" class="form-control" placeholder="Contoh: Besi atau Baja Paduan (Part Otomotif)" required />
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Kuota Awal Impor <span class="required">*</span></label>
+                        <input type="number" step="0.01" name="kuotaAwal" class="form-control" placeholder="5000000" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Satuan</label>
+                        <input type="text" name="satuan" class="form-control" value="KG" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="DoIt.closeModal('createLartasModal')">Batal</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">Simpan Izin PI</button>
+            </div>
+        </form>
+    </div>
+</div>

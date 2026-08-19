@@ -1,0 +1,162 @@
+@model DoItG2.Models.PIB.PibHeaderModel
+@{
+    Layout = "_Layout";
+}
+
+<div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- Top action bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" style="width: 100%; height: 100%; object-fit: contain;" asp-append-version="true" />
+            </div>
+            <div>
+                <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin:0;">Detail PIB (BC 2.0) — @Model.Car</h2>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Status Dokumen: <span class="badge @(Model.Status == "SPPB" ? "badge-approved" : (Model.Status == "NOPEN" ? "badge-sent" : "badge-draft"))">@Model.Status</span></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a class="btn btn-secondary" href="/Pib">Kembali ke Daftar</a>
+            @if (Model.Status == "DRAFT")
+            {
+                <form method="post" action="/Ceisa/TransmitPib" style="display:inline;">
+                    <input type="hidden" name="car" value="@Model.Car" />
+                    <button type="submit" class="btn btn-primary">Kirim ke CEISA</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- Info cards grid -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+        <!-- Left Side: Header info -->
+        <div class="card" style="display: flex; flex-direction: column; gap: 20px;">
+            <div>
+                <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--accent-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">Identitas Dokumen & Importir</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13.5px;">
+                    <div><strong>Nomor CAR:</strong> <span style="font-family: monospace;">@Model.Car</span></div>
+                    <div><strong>Importir:</strong> PT. SUZUKI INDOMOBIL MOTOR</div>
+                    <div><strong>NPWP Importir:</strong> @Model.IdImp</div>
+                    <div><strong>Asal Data:</strong> @(Model.AsalData == "S" ? "Oracle SILO (S)" : "Manual Entry (M)")</div>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--accent-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">Data Pengiriman & Pemasok</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13.5px;">
+                    <div><strong>Nama Pemasok:</strong> @Model.NmPemasok</div>
+                    <div><strong>Alamat Pemasok:</strong> @Model.AlPemasok</div>
+                    <div><strong>Perkiraan Tiba (ETA):</strong> @Model.TglTiba</div>
+                    <div><strong>Jumlah Jenis Barang:</strong> @Model.JmlBrg</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Customs status info -->
+        <div class="card">
+            <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--accent-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">Informasi Bea Cukai</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13.5px;">
+                <div>
+                    <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600;">Nomor Pendaftaran (NOPEN)</div>
+                    <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">@(string.IsNullOrEmpty(Model.PibNo) ? "Belum Terdaftar" : Model.PibNo)</div>
+                    @if (!string.IsNullOrEmpty(Model.PibTg))
+                    {
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Tanggal: @Model.PibTg</div>
+                    }
+                </div>
+                <div>
+                    <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600;">Nomor SPPB</div>
+                    <div style="font-size: 16px; font-weight: 700; color: var(--accent-success);">@(string.IsNullOrEmpty(Model.SppbNo) ? "Belum Terbit" : Model.SppbNo)</div>
+                    @if (!string.IsNullOrEmpty(Model.SppbTg))
+                    {
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Tanggal: @Model.SppbTg</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items list -->
+    <div class="card">
+        <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-primary); margin-bottom: 16px;">Detail Barang Impor</h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Seri</th>
+                        <th>Kode HS</th>
+                        <th>Uraian Barang</th>
+                        <th style="text-align: right;">Jumlah Satuan</th>
+                        <th>Kode Satuan</th>
+                        <th style="text-align: right;">FOB (USD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Details.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                Tidak ada data detail barang.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var d in Model.Details)
+                        {
+                            <tr>
+                                <td>@d.Serial</td>
+                                <td style="font-family: monospace; font-weight: 600;">@d.HsNo</td>
+                                <td>@d.GoodDesc1</td>
+                                <td style="text-align: right;">@d.Quantity.ToString("N0")</td>
+                                <td>@d.UnitType</td>
+                                <td style="text-align: right;">@d.UnitVal.ToString("N2")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Documents list -->
+    <div class="card">
+        <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-primary); margin-bottom: 16px;">Dokumen Pendukung Kepabeanan (CEISA 4.0)</h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Seri</th>
+                        <th>Kode Dokumen</th>
+                        <th>Nama Dokumen</th>
+                        <th>Nomor Dokumen</th>
+                        <th>Tanggal Dokumen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Documents.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                Tidak ada data dokumen pendukung.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var doc in Model.Documents)
+                        {
+                            <tr>
+                                <td>@doc.Serial</td>
+                                <td><span class="badge badge-peb">@doc.DokKd</span></td>
+                                <td>@doc.DokNm</td>
+                                <td style="font-weight: 500;">@doc.DokNo</td>
+                                <td>@doc.DokTg</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

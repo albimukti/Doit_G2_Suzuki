@@ -1,0 +1,37 @@
+@{
+    Layout = "_Layout";
+}
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Laporan IT Inventory Suzuki</h2>
+            <div class="card-subtitle">Laporan pertanggungjawaban posisi bahan baku, barang dalam proses, dan barang jadi (KB & TGB)</div>
+        </div>
+        <a href="/Report/ExportLapitInvExcel" class="btn btn-success" style="height: 38px; padding: 0 18px; font-weight: 700;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Export ke Excel
+        </a>
+    </div>
+
+    <!-- Inventory types grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px;">
+        <div style="border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 20px; background: rgba(59, 130, 246, 0.02);">
+            <h3 style="font-size: 13px; font-weight:600; color:var(--text-primary); margin-bottom: 8px;">Bahan Baku (Raw Material)</h3>
+            <p style="font-size: 12px; color:var(--text-muted); margin-bottom: 12px;">Monitoring mutasi bahan baku impor Suzuki dari PIB ke produksi.</p>
+            <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="alert('Membuka Laporan Bahan Baku...')">Lihat Laporan</button>
+        </div>
+
+        <div style="border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 20px; background: rgba(16, 185, 129, 0.02);">
+            <h3 style="font-size: 13px; font-weight:600; color:var(--text-primary); margin-bottom: 8px;">Barang Jadi (Finished Goods)</h3>
+            <p style="font-size: 12px; color:var(--text-muted); margin-bottom: 12px;">Posisi stok mobil CBU/CKD Suzuki yang terhubung dengan dokumen PEB.</p>
+            <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="alert('Membuka Laporan Barang Jadi...')">Lihat Laporan</button>
+        </div>
+
+        <div style="border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 20px; background: rgba(245, 158, 11, 0.02);">
+            <h3 style="font-size: 13px; font-weight:600; color:var(--text-primary); margin-bottom: 8px;">Mesin & Peralatan Kantor</h3>
+            <p style="font-size: 12px; color:var(--text-muted); margin-bottom: 12px;">Posisi aset pabrik Suzuki dengan fasilitas penangguhan bea masuk.</p>
+            <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="alert('Membuka Laporan Mesin...')">Lihat Laporan</button>
+        </div>
+    </div>
+</div>

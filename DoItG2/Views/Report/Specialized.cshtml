@@ -1,0 +1,92 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Laporan Khusus Kepabeanan (MITA, AEO, COO, Realisasi)";
+}
+
+<!-- Hero Banner Header -->
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(59,130,246,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-primary); border: 1px solid rgba(99,102,241,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Laporan Khusus &amp; Sertifikasi Kepabeanan Suzuki</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Generasi laporan kepabeanan khusus: MITA Prioritas, AEO, COO (Certificate of Origin / Form JIEPA), dan Realisasi Impor</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grid Cards Laporan -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+
+    <!-- Card 1: Laporan MITA Prioritas -->
+    <div class="glass-card" style="padding: 22px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59,130,246,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-primary);">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </div>
+            <span class="badge badge-approved">MITA Active</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Laporan MITA Kepabeanan</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+            Laporan kualifikasi Mitra Utama (MITA) Kepabeanan Suzuki untuk percepatan *customs clearance* jalur hijau.
+        </p>
+        <a href="/Report/ExportPibExcel" class="btn btn-primary" style="width: 100%; height: 38px; font-weight: 600;">
+            Download Excel MITA
+        </a>
+    </div>
+
+    <!-- Card 2: Laporan AEO -->
+    <div class="glass-card" style="padding: 22px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16,185,129,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-success);">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <span class="badge badge-approved">AEO Certified</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Laporan AEO (Authorized Operator)</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+            Laporan standar kepatuhan sertifikasi Authorized Economic Operator (AEO) Internasional.
+        </p>
+        <a href="/Report/ExportPibExcel" class="btn btn-success" style="width: 100%; height: 38px; font-weight: 600;">
+            Download Excel AEO
+        </a>
+    </div>
+
+    <!-- Card 3: Laporan COO / Form JIEPA -->
+    <div class="glass-card" style="padding: 22px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245,158,11,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-warning);">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <span class="badge badge-warning">Form JIEPA / IJEPA</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">COO (Certificate of Origin)</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+            Laporan Surat Keterangan Asal (SKA / COO) untuk skema preferensi tarif preferensial Indonesia - Japan (IJEPA).
+        </p>
+        <a href="/Report/ExportPibExcel" class="btn btn-warning" style="width: 100%; height: 38px; font-weight: 600;">
+            Download Excel COO
+        </a>
+    </div>
+
+    <!-- Card 4: Laporan Realisasi Impor -->
+    <div class="glass-card" style="padding: 22px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(99,102,241,0.12); display: flex; align-items: center; justify-content: center; color: #818cf8;">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 30a12 12 0 100-24 12 12 0 000 24z"/></svg>
+            </div>
+            <span class="badge badge-sent">Realisasi Bulanan</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Laporan Realisasi Impor</h3>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+            Laporan realisasi impor barang modal, bahan baku, dan suku cadang pabrik Suzuki Indomobil.
+        </p>
+        <a href="/Report/ExportPibExcel" class="btn btn-secondary" style="width: 100%; height: 38px; font-weight: 600;">
+            Download Excel Realisasi
+        </a>
+    </div>
+
+</div>

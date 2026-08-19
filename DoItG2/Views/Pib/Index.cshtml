@@ -1,0 +1,123 @@
+@model List<DoItG2.Models.PIB.PibHeaderModel>
+@{
+    Layout = "_Layout";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Daftar Dokumen PIB</h2>
+            <div class="card-subtitle">Pengelolaan dan monitoring Dokumen Pemberitahuan Impor Barang</div>
+        </div>
+        <a class="btn btn-primary" href="/Pib/Create">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Buat PIB Baru
+        </a>
+    </div>
+
+    <!-- Filter form -->
+    <form method="get" style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px;">
+            <input type="text" name="search" class="form-control" placeholder="Cari Nomor CAR, Nama Pemasok, atau Importir..." value="@Context.Request.Query["search"]" />
+        </div>
+        <div style="width: 180px;">
+            <select name="status" class="form-control">
+                <option value="">Semua Status</option>
+                <option value="DRAFT" selected="@(Context.Request.Query["status"] == "DRAFT")">DRAFT</option>
+                <option value="NOPEN" selected="@(Context.Request.Query["status"] == "NOPEN")">TERDAFTAR (NOPEN)</option>
+                <option value="SPPB" selected="@(Context.Request.Query["status"] == "SPPB")">SPPB</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+        @if (Context.Request.Query.Count > 0)
+        {
+            <a href="/Pib" class="btn btn-secondary">Reset</a>
+        }
+    </form>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nomor CAR (AJU)</th>
+                    <th>Asal Data</th>
+                    <th>Nama Pemasok</th>
+                    <th>Tanggal Tiba</th>
+                    <th>Jumlah Barang</th>
+                    <th>Nomor Pendaftaran</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            Tidak ada dokumen PIB ditemukan.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        var badgeClass = item.Status switch
+                        {
+                            "SPPB" => "badge-approved",
+                            "NOPEN" => "badge-sent",
+                            _ => "badge-draft"
+                        };
+                        var statusText = item.Status switch
+                        {
+                            "SPPB" => "SPPB",
+                            "NOPEN" => "TERDAFTAR",
+                            _ => "DRAFT"
+                        };
+                        <tr>
+                            <td>@item.Car</td>
+                            <td>
+                                @if (item.AsalData == "S")
+                                {
+                                    <span class="badge badge-peb" title="Di-import dari SILO">SILO</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-draft" title="Dibuat Manual">MANUAL</span>
+                                }
+                            </td>
+                            <td>@item.NmPemasok</td>
+                            <td>@(string.IsNullOrEmpty(item.TglTiba) ? "-" : item.TglTiba)</td>
+                            <td>@item.JmlBrg</td>
+                            <td>@(string.IsNullOrEmpty(item.PibNo) ? "-" : item.PibNo)</td>
+                            <td>
+                                <span class="badge @badgeClass">@statusText</span>
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: inline-flex; gap: 6px;">
+                                    <a class="btn btn-secondary btn-sm" href="/Pib/Detail/@item.Car">Detail</a>
+                                    @if (item.Status == "DRAFT")
+                                    {
+                                        <a class="btn btn-warning btn-sm" href="/Pib/Edit/@item.Car">Edit</a>
+                                        <form method="post" action="/Ceisa/TransmitPib" style="display:inline;">
+                                            <input type="hidden" name="car" value="@item.Car" />
+                                            <button type="submit" class="btn btn-primary btn-sm">Kirim CEISA</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

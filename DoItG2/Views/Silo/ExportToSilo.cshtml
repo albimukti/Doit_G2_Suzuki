@@ -1,0 +1,43 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Kirim Hasil Pabean ke Oracle SILO";
+}
+
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(59,130,246,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-warning); border: 1px solid rgba(245,158,11,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Integrasi Reverse Sync — Export Data ke Oracle SILO Suzuki</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Pengiriman nomor penetapan (Nopen, SPPB, NPE) dari CEISA kembali ke database ERP SILO</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card" style="max-width: 680px; margin: 0 auto; padding: 24px;">
+    <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Kirim Data Penetapan ke Oracle SILO</h3>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Pilih tipe dokumen dan masukkan Nomor CAR yang telah memiliki respon pabean resmi dari Bea Cukai (SPPB / NPE).</p>
+
+    <form method="post" action="/Silo/ProcessExportToSilo">
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Jenis Dokumen Kepabeanan</label>
+            <select name="docType" class="form-control" style="height: 42px;">
+                <option value="PIB">Pemberitahuan Impor Barang (PIB / SPPB)</option>
+                <option value="PEB">Pemberitahuan Ekspor Barang (PEB / NPE)</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label">Nomor CAR / AJU Dokumen <span class="required">*</span></label>
+            <input type="text" name="carNo" class="form-control" placeholder="Contoh: 00003001062620260714902144" required style="font-family: 'JetBrains Mono', monospace; height: 42px;" />
+        </div>
+
+        <button type="submit" class="btn btn-warning" style="width: 100%; height: 44px; font-size: 14px; font-weight: 700;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            Kirim Respon ke Oracle SILO
+        </button>
+    </form>
+</div>

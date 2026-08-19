@@ -1,0 +1,211 @@
+@model List<DoItG2.Models.Common.AuditLogModel>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Audit Log Aktivitas";
+    var userList = ViewBag.UserList as List<string> ?? new List<string>();
+    var currentSearch = ViewBag.Search as string ?? "";
+    var currentCategory = ViewBag.Category as string ?? "";
+    var currentModule = ViewBag.Module as string ?? "";
+    var currentUsername = ViewBag.Username as string ?? "";
+
+    int loginCount = Model.Count(m => m.Action.Contains("LOGIN", StringComparison.OrdinalIgnoreCase) || m.Module == "AUTH");
+    int docCount = Model.Count(m => m.Action.Contains("CREATE", StringComparison.OrdinalIgnoreCase) || m.Action.Contains("EDIT", StringComparison.OrdinalIgnoreCase));
+    int ceisaCount = Model.Count(m => m.Action.Contains("CEISA", StringComparison.OrdinalIgnoreCase) || m.Module == "CEISA");
+}
+
+<!-- Hero Header -->
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-secondary); border: 1px solid rgba(99,102,241,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Audit Log Aktivitas Pengguna</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Riwayat login, transaksi PIB/PEB, sinkronisasi SILO &amp; transmisi CEISA 4.0</p>
+            </div>
+        </div>
+        <a href="/Setting/AuditLog" class="btn btn-secondary btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Reset Filter
+        </a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="grid-4 mb-24">
+    <div class="stat-card glass-card card-shine anim-delay-1">
+        <div class="stat-icon-wrap blue">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">@Model.Count</div>
+            <div class="stat-label">Total Aktivitas</div>
+        </div>
+    </div>
+    <div class="stat-card glass-card card-shine green anim-delay-2">
+        <div class="stat-icon-wrap green">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">@loginCount</div>
+            <div class="stat-label">Aktivitas Login</div>
+        </div>
+    </div>
+    <div class="stat-card glass-card card-shine amber anim-delay-3">
+        <div class="stat-icon-wrap amber">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">@docCount</div>
+            <div class="stat-label">Transaksi Dokumen</div>
+        </div>
+    </div>
+    <div class="stat-card glass-card card-shine purple anim-delay-4">
+        <div class="stat-icon-wrap purple">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">@ceisaCount</div>
+            <div class="stat-label">Transmisi CEISA</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<div class="glass-card mb-24" style="padding: 18px 22px; animation-delay: 0.2s;">
+    <form method="get" action="/Setting/AuditLog" class="filter-panel-grid">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Kata Kunci (Deskripsi / CAR / User)</label>
+            <input type="text" name="search" class="form-control" value="@currentSearch" placeholder="Contoh: 00003001, admin, Excel..." />
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Kategori Aktivitas</label>
+            <select name="category" class="form-control">
+                <option value="">-- Semua --</option>
+                <option value="LOGIN" selected="@(currentCategory == "LOGIN")">🔑 Login</option>
+                <option value="DOCUMENT" selected="@(currentCategory == "DOCUMENT")">📝 Dokumen</option>
+                <option value="EXCEL" selected="@(currentCategory == "EXCEL")">📊 Upload Excel</option>
+                <option value="SILO" selected="@(currentCategory == "SILO")">🔄 Sinkron SILO</option>
+                <option value="CEISA" selected="@(currentCategory == "CEISA")">🌐 Transmisi CEISA</option>
+                <option value="USER" selected="@(currentCategory == "USER")">👤 Pengguna</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Modul</label>
+            <select name="module" class="form-control">
+                <option value="">-- Semua Modul --</option>
+                <option value="PIB" selected="@(currentModule == "PIB")">PIB</option>
+                <option value="PEB" selected="@(currentModule == "PEB")">PEB</option>
+                <option value="SILO" selected="@(currentModule == "SILO")">SILO</option>
+                <option value="CEISA" selected="@(currentModule == "CEISA")">CEISA</option>
+                <option value="AUTH" selected="@(currentModule == "AUTH")">AUTH</option>
+                <option value="USER" selected="@(currentModule == "USER")">USER</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Pengguna</label>
+            <select name="username" class="form-control">
+                <option value="">-- Semua User --</option>
+                @foreach (var u in userList)
+                {
+                    <option value="@u" selected="@(currentUsername == u)">@u</option>
+                }
+            </select>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 18px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Log Table -->
+<div class="glass-card" style="padding: 0; overflow: hidden; animation-delay: 0.25s;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">Daftar Log</div>
+        <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 3px 10px; border-radius: 20px;">@Model.Count entri</span>
+    </div>
+    <div class="table-wrapper" style="border: none; border-radius: 0;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 155px;">Waktu</th>
+                    <th style="width: 130px;">Pengguna</th>
+                    <th style="width: 160px;">Kategori / Aksi</th>
+                    <th style="width: 90px;">Modul</th>
+                    <th style="width: 180px;">Nomor Dokumen</th>
+                    <th>Deskripsi</th>
+                    <th style="width: 120px; text-align: right;">IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            <div style="font-size: 28px; margin-bottom: 8px; opacity: 0.4;">📋</div>
+                            <div style="font-size: 13px; font-weight: 500;">Tidak ada log yang sesuai dengan filter</div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var log in Model)
+                    {
+                        var actionName = log.Action;
+                        var badgeClass = "badge-draft";
+                        var icon = "ℹ️";
+
+                        if (actionName.Contains("LOGIN", StringComparison.OrdinalIgnoreCase))
+                        { badgeClass = "badge-approved"; icon = "🔑"; }
+                        else if (actionName.Contains("CREATE_PIB", StringComparison.OrdinalIgnoreCase) || actionName.Contains("CREATE_PEB", StringComparison.OrdinalIgnoreCase))
+                        { badgeClass = "badge-pib"; icon = "📝"; }
+                        else if (actionName.Contains("UPLOAD_EXCEL", StringComparison.OrdinalIgnoreCase))
+                        { badgeClass = "badge-sent"; icon = "📊"; }
+                        else if (actionName.Contains("SYNC_SILO", StringComparison.OrdinalIgnoreCase))
+                        { badgeClass = "badge-peb"; icon = "🔄"; }
+                        else if (actionName.Contains("SEND_CEISA", StringComparison.OrdinalIgnoreCase))
+                        { badgeClass = "badge-approved"; icon = "🌐"; }
+
+                        <tr>
+                            <td style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; font-family: 'JetBrains Mono', monospace;">
+                                @log.CreatedAt.ToString("dd/MM HH:mm:ss")
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: white; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; flex-shrink: 0;">
+                                        @(string.IsNullOrEmpty(log.UserName) ? "U" : log.UserName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 12.5px;">@log.UserName</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass" style="padding: 3px 8px; font-size: 10.5px;">
+                                    <span style="margin-right: 3px;">@icon</span>@log.Action
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-draft" style="font-weight: 700; font-size: 10.5px;">@log.Module</span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.DocumentId))
+                                {
+                                    <span class="code-badge">@log.DocumentId</span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--text-muted); font-size: 12px;">—</span>
+                                }
+                            </td>
+                            <td style="font-size: 12.5px; color: var(--text-primary); line-height: 1.4;">@log.Description</td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);">@log.IpAddress</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

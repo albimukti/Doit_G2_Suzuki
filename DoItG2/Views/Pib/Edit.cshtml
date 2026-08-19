@@ -1,0 +1,65 @@
+@model DoItG2.Models.PIB.PibHeaderModel
+@{
+    Layout = "_Layout";
+}
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Edit Dokumen PIB — @Model.Car</h2>
+            <div class="card-subtitle">Perubahan data Pemberitahuan Impor Barang kepabeanan (Diaudit secara otomatis)</div>
+        </div>
+        <a class="btn btn-secondary" href="/Pib">Kembali</a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+    {
+        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan.";
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            @errMsg
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="Car" value="@Model.Car" />
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Nomor CAR (AJU)</label>
+                <input type="text" class="form-control" value="@Model.Car" disabled style="font-family: monospace;" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NPWP Importir</label>
+                <input type="text" class="form-control" value="@Model.IdImp" disabled />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Nama Pemasok (Supplier)<span class="required">*</span></label>
+            <input type="text" name="NmPemasok" class="form-control" value="@Model.NmPemasok" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Alamat Pemasok<span class="required">*</span></label>
+            <textarea name="AlPemasok" class="form-control" rows="2" required>@Model.AlPemasok</textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Tanggal Perkiraan Tiba (ETA)<span class="required">*</span></label>
+                <input type="text" name="TglTiba" class="form-control" value="@Model.TglTiba" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Jumlah Jenis Barang<span class="required">*</span></label>
+                <input type="number" name="JmlBrg" class="form-control" value="@Model.JmlBrg" required min="1" />
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <a href="/Pib" class="btn btn-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,87 @@
+@model DoItG2.Models.PEB.PebHeaderModel
+@{
+    Layout = "_Layout";
+}
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Edit Dokumen PEB — @Model.Car</h2>
+            <div class="card-subtitle">Perubahan data Pemberitahuan Ekspor Barang kepabeanan (Diaudit secara otomatis)</div>
+        </div>
+        <a class="btn btn-secondary" href="/Peb">Kembali</a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+    {
+        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan.";
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            @errMsg
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="Car" value="@Model.Car" />
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Nomor CAR (AJU)</label>
+                <input type="text" class="form-control" value="@Model.Car" disabled style="font-family: monospace;" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Eksportir</label>
+                <input type="text" class="form-control" value="PT. SUZUKI INDOMOBIL MOTOR" disabled />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Nama Pembeli (Buyer)<span class="required">*</span></label>
+            <input type="text" name="NamaBeli" class="form-control" value="@Model.NamaBeli" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Alamat Pembeli<span class="required">*</span></label>
+            <textarea name="AlmtBeli" class="form-control" rows="2" required>@Model.AlmtBeli</textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Negara Pembeli (Kode)<span class="required">*</span></label>
+                <input type="text" name="NegBeli" class="form-control" value="@Model.NegBeli" required maxlength="2" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Tanggal Ekspor<span class="required">*</span></label>
+                <input type="date" name="TgEks" class="form-control" value="@(Model.TgEks?.ToString("yyyy-MM-dd"))" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Valuta Harga</label>
+                <input type="text" class="form-control" value="USD" disabled />
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Berat Bersih (Netto Kg)<span class="required">*</span></label>
+                <input type="number" step="0.01" name="Netto" class="form-control" value="@Model.Netto" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Berat Kotor (Bruto Kg)<span class="required">*</span></label>
+                <input type="number" step="0.01" name="Bruto" class="form-control" value="@Model.Bruto" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Total FOB (USD)<span class="required">*</span></label>
+                <input type="number" step="0.01" name="Fob" class="form-control" value="@Model.Fob" required />
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <a href="/Peb" class="btn btn-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+    </form>
+</div>

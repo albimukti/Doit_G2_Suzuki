@@ -1,0 +1,20 @@
+## Visual Studio & Build artifacts
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.log
+
+## IDE & Editors
+.vscode/
+.idea/
+
+## Temp & Environment
+scratch/
+.tempmediaStorage/
+appsettings.Development.json
+appsettings.Local.json

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DO-IT G2 — Document Integration Tools Generasi 2 untuk PT. Suzuki Indomobil" />
+    <title>@ViewData["Title"] — DO-IT G2</title>
+    <link rel="icon" type="image/png" href="~/images/suzuki-logo-square.png" asp-append-version="true" />
+    <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+<body>
+<!-- 3D SUZUKI LOADING SCREEN OVERLAY -->
+<div class="suzuki-loading-overlay fade-out" id="suzukiLoadingOverlay">
+    <div class="suzuki-3d-scene">
+        <div class="suzuki-3d-sphere-bg"></div>
+        <div class="suzuki-3d-ring-outer"></div>
+        <div class="suzuki-3d-ring-inner"></div>
+        <div class="suzuki-3d-emblem-box">
+            <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo 3D" class="suzuki-3d-logo-img" asp-append-version="true" />
+        </div>
+        <div class="suzuki-3d-particles">
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+        </div>
+    </div>
+    <div class="suzuki-loading-brand">
+        <div class="suzuki-loading-title">DO-IT G2</div>
+        <div class="suzuki-loading-subtitle">PT Suzuki Indomobil Motor</div>
+    </div>
+    <div class="suzuki-progress-container">
+        <div class="suzuki-progress-bar" id="suzukiProgressBar"></div>
+        <div class="suzuki-progress-glow"></div>
+    </div>
+    <div class="suzuki-loading-status" id="suzukiLoadingStatus">Inisialisasi sistem...</div>
+</div>
+
+<div class="app-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-logo" asp-controller="Dashboard" asp-action="Index">
+                <div class="logo-icon-img-container">
+                    <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" class="logo-img-square" asp-append-version="true" />
+                </div>
+                <div class="logo-text">
+                    <div class="logo-title">DO-IT G2</div>
+                    <div class="logo-subtitle">Suzuki Indomobil</div>
+                </div>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <a class="nav-link" asp-controller="Dashboard" asp-action="Index">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Impor (PIB)</div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navPib">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        PIB
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navPib">
+                        <a class="nav-link" asp-controller="Pib" asp-action="Index">Daftar PIB</a>
+                        <a class="nav-link" asp-controller="Pib" asp-action="Create">Buat PIB Baru</a>
+                        <a class="nav-link" asp-controller="Pib" asp-action="Response">Respons PIB</a>
+                        <a class="nav-link" asp-controller="Silo" asp-action="Pib">Upload dari SILO</a>
+                        <a class="nav-link" asp-controller="Pib" asp-action="Upload">Upload Excel</a>
+                        <a class="nav-link" asp-controller="Ceisa" asp-action="SendPib">Kirim ke CEISA</a>
+                        <a class="nav-link" asp-controller="Ceisa" asp-action="GetBc11">Tarik BC 1.1 CEISA</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Ekspor (PEB)</div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navPeb">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m3 0h3m0 0v3m0-3l-6 6"/></svg>
+                        PEB
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navPeb">
+                        <a class="nav-link" asp-controller="Peb" asp-action="Index">Daftar PEB</a>
+                        <a class="nav-link" asp-controller="Peb" asp-action="Create">Buat PEB Baru</a>
+                        <a class="nav-link" asp-controller="Peb" asp-action="Response">Respons PEB</a>
+                        <a class="nav-link" asp-controller="Silo" asp-action="Peb">Upload dari SILO</a>
+                        <a class="nav-link" asp-controller="Peb" asp-action="Upload">Upload Excel</a>
+                        <a class="nav-link" asp-controller="Ceisa" asp-action="SendPeb">Kirim ke CEISA</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Master Data</div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navMaster">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s-8-1.79-8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                        Master Data
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navMaster">
+                        <a class="nav-link" asp-controller="Master" asp-action="Part">Master Part Suzuki</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="DokumenPib">Dokumen Pabean</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="Lartas">PI Lartas</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="Supplier">Master Pemasok</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="Buyer">Master Pembeli</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="Fasilitas">SKEP Fasilitas</a>
+                        <a class="nav-link" asp-controller="Master" asp-action="Pkb">Master PKB</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Integrasi SILO</div>
+                <a class="nav-link" asp-controller="Silo" asp-action="Pib">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Tarik dari SILO
+                </a>
+                <a class="nav-link" asp-controller="Silo" asp-action="ExportToSilo">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    Kirim ke SILO
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Laporan</div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navReport">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Laporan
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navReport">
+                        <a class="nav-link" asp-controller="Report" asp-action="Pib">Laporan PIB</a>
+                        <a class="nav-link" asp-controller="Report" asp-action="Peb">Laporan PEB</a>
+                        <a class="nav-link" asp-controller="Report" asp-action="Kite">Laporan KITE</a>
+                        <a class="nav-link" asp-controller="Report" asp-action="LapitInv">IT Inventory</a>
+                        <a class="nav-link" asp-controller="Report" asp-action="Specialized">Laporan Khusus (MITA/AEO/COO)</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Monitoring</div>
+                <a class="nav-link" asp-controller="Setting" asp-action="AuditLog">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    Audit Log Aktivitas
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Administrasi</div>
+                <a class="nav-link" asp-controller="User" asp-action="Index">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Kelola Pengguna
+                </a>
+                <a class="nav-link" asp-controller="Account" asp-action="ChangePassword">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    Ubah Password
+                </a>
+                <a class="nav-link" asp-controller="Setting" asp-action="Backup">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    Backup Database
+                </a>
+                <a class="nav-link" asp-controller="Setting" asp-action="Index">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Pengaturan Sistem
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info" onclick="DoIt.openModal('userMenuModal')">
+                <div class="avatar-ring">
+                    <div class="user-avatar">@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value?.Substring(0,1)?.ToUpper() ?? "U")</div>
+                </div>
+                <div class="user-details">
+                    <div class="user-name">@User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value</div>
+                    <div class="user-role" style="display: flex; align-items: center; gap: 5px;">
+                        <span style="width: 6px; height: 6px; background: var(--accent-success); border-radius: 50%; display: inline-block; box-shadow: 0 0 5px var(--accent-success);"></span>
+                        @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                    </div>
+                </div>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+            </div>
+        </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- MAIN -->
+    <div class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="topbar-btn sidebar-toggle-btn" id="sidebarToggleBtn" title="Menu Sidebar">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <div>
+                    <div class="page-title">@ViewData["Title"]</div>
+                    @if (ViewData["Breadcrumb"] != null)
+                    {
+                        <div class="breadcrumb-nav">@Html.Raw(ViewData["Breadcrumb"])</div>
+                    }
+                </div>
+            </div>
+            <div class="topbar-right">
+                <!-- Notification Info Badge -->
+                <div style="display: flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.22); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent-warning); font-weight: 600;" title="Keterangan Notifikasi System">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-warning); box-shadow: 0 0 6px var(--accent-warning); display: inline-block;"></span>
+                    <span>Notifikasi belum dapat dimunculkan</span>
+                </div>
+
+                <div class="system-status-pill" title="Status Koneksi Integrasi System">
+                    <span class="status-dot active"></span>
+                    <span>Sistem Terhubung</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 4px 10px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;" id="topbarClock">--:-- WIB</div>
+                <button class="topbar-btn" id="themeToggleBtn" title="Ubah Tema">
+                    <svg id="themeIconSun" class="theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+                    </svg>
+                    <svg id="themeIconMoon" class="theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+
+                <!-- Notification Dropdown Popover Wrapper -->
+                <div style="position: relative;" id="notifWrapper">
+                    <button class="topbar-btn" id="notifBtn" title="Notifikasi System" onclick="DoIt.toggleNotifDropdown(event)">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <span class="notif-dot" style="background: var(--accent-warning);"></span>
+                    </button>
+
+                    <div id="notifPopover" style="position: absolute; right: 0; top: calc(100% + 10px); width: 310px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); padding: 16px; display: none; z-index: 1000;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--accent-warning);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                Notifikasi System
+                            </div>
+                            <span style="font-size: 10px; background: rgba(245,158,11,0.12); color: var(--accent-warning); padding: 2px 8px; border-radius: 10px; font-weight: 700; border: 1px solid rgba(245,158,11,0.2);">Informasi</span>
+                        </div>
+
+                        <div style="background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--border-radius-sm); padding: 12px; display: flex; gap: 10px; align-items: start;">
+                            <div style="width: 26px; height: 26px; border-radius: 8px; background: rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-warning); flex-shrink: 0; margin-top: 1px;">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px;">Notifikasi Belum Dapat Dimunculkan</div>
+                                <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">Fitur notifikasi real-time saat ini belum dapat dimunculkan (dalam proses pemeliharaan &amp; sinkronisasi CEISA 4.0 / SILO).</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="topbar-btn" title="Logout">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="page-body">
+            @if (TempData["Success"] != null)
+            {
+                <input type="hidden" id="tempSuccess" value="@TempData["Success"]" />
+            }
+            @if (TempData["Error"] != null)
+            {
+                <input type="hidden" id="tempError" value="@TempData["Error"]" />
+            }
+            @RenderBody()
+        </main>
+
+        <!-- APP MAIN FOOTER -->
+        <footer class="app-main-footer">
+            <div class="footer-container">
+                <div class="footer-left">
+                    <div class="footer-brand">
+                        <div class="footer-logo-box">
+                            <img src="~/images/suzuki-logo-square.png" alt="Suzuki Emblem" asp-append-version="true" />
+                        </div>
+                        <div>
+                            <div class="footer-title">PT. SUZUKI INDOMOBIL MOTOR</div>
+                            <div class="footer-sub">DO-IT G2 Enterprise • Sistem Informasi Import &amp; Ekspor (CEISA 4.0)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-center">
+                    <div class="footer-links">
+                        <a href="/">Dashboard</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/Pib">Dokumen PIB (BC 2.0)</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/Peb">Dokumen PEB (BC 3.0)</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/Report/Pib">Laporan PIB</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/Report/Peb">Laporan PEB</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/Master/Part">Master Part</a>
+                    </div>
+                </div>
+
+                <div class="footer-right">
+                    <div class="footer-status-pill">
+                        <span class="status-dot active"></span>
+                        <span>CEISA 4.0 Connected • v2.5.0</span>
+                    </div>
+                    <div class="footer-copy">&copy; @DateTime.Now.Year PT. Suzuki Indomobil Motor. All rights reserved.</div>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- User Menu Modal -->
+<div class="modal-overlay" id="userMenuModal">
+    <div class="modal-box" style="max-width:320px">
+        <div class="modal-header">
+            <span class="modal-title">Akun Saya</span>
+            <button class="modal-close" onclick="DoIt.closeModal('userMenuModal')">&times;</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;padding:16px">
+            <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-secondary" style="justify-content:flex-start">
+                Ganti Password
+            </a>
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger" style="width:100%;justify-content:flex-start">Logout</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cool System Warning Confirmation Modal -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box" style="max-width: 440px; padding: 24px; text-align: center; border: 1px solid rgba(245,158,11,0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(245,158,11,0.15); animation: fadeSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+        <div style="width: 60px; height: 60px; border-radius: 18px; background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.15)); border: 1px solid rgba(245,158,11,0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--accent-warning); box-shadow: 0 0 20px rgba(245,158,11,0.25);">
+            <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <h3 class="confirm-title" style="font-size: 17px; font-weight: 800; color: var(--text-primary); margin: 0 0 8px;">Konfirmasi Tindakan Sistem</h3>
+        <p class="confirm-message" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 16px;"></p>
+        
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 9px 12px; margin-bottom: 20px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <span>Aksi ini akan diverifikasi &amp; dicatat pada <strong>Audit Log Aktivitas</strong></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <button class="btn btn-secondary confirm-cancel" style="padding: 10px; font-weight: 600;">Batal</button>
+            <button class="btn btn-danger confirm-ok" style="padding: 10px; font-weight: 700; background: linear-gradient(135deg, var(--accent-danger), #dc2626); border: none; box-shadow: 0 4px 14px rgba(239,68,68,0.3);">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script>
+// Global topbar clock
+(function() {
+    function updateTopbarClock() {
+        var el = document.getElementById('topbarClock');
+        if (!el) return;
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2,'0');
+        var m = String(now.getMinutes()).padStart(2,'0');
+        el.textContent = h + ':' + m + ' WIB';
+    }
+    updateTopbarClock();
+    setInterval(updateTopbarClock, 30000);
+})();
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+

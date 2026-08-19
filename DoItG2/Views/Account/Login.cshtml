@@ -1,0 +1,248 @@
+@model DoItG2.Models.Auth.LoginViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Login DO-IT G2 — Document Integration Tools" />
+    <title>Login — DO-IT G2</title>
+    <link rel="icon" type="image/png" href="~/images/suzuki-logo-square.png" asp-append-version="true" />
+    <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        (function() {
+            document.documentElement.setAttribute('data-theme', 'light');
+        })();
+    </script>
+    <style>
+        .login-page {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.5)), url('/images/container-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* Center card panel */
+        .login-panel {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: var(--border-radius-lg);
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 440px;
+            padding: 40px 36px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+            transition: var(--transition);
+        }
+
+        .login-logo-container {
+            align-self: center;
+            margin-bottom: 24px;
+        }
+
+        .login-form-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+        .login-form-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; text-align: center; }
+
+        .form-control-login {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+        .form-control-login:focus {
+            border-color: var(--accent-primary);
+            background: rgba(59,130,246,0.05);
+            box-shadow: 0 0 0 3px var(--accent-primary-glow);
+        }
+        .form-control-login::placeholder { color: var(--text-muted); }
+
+        .login-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+            box-shadow: 0 4px 16px var(--accent-primary-glow);
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-primary-glow);
+        }
+        .login-btn:active { transform: translateY(0); }
+
+        .login-footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .password-field { position: relative; }
+        .password-toggle {
+            position: absolute;
+            right: 12px; top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            transition: var(--transition);
+        }
+        .password-toggle:hover { color: var(--text-secondary); }
+
+        @@media (max-width: 480px) {
+            .login-panel { padding: 32px 20px; }
+            .login-logo-container { margin-bottom: 16px; }
+            .login-form-title { font-size: 20px; }
+            .login-form-sub { margin-bottom: 24px; }
+        }
+    </style>
+</head>
+<body>
+<!-- 3D SUZUKI LOADING SCREEN OVERLAY -->
+<div class="suzuki-loading-overlay fade-out" id="suzukiLoadingOverlay">
+    <div class="suzuki-3d-scene">
+        <div class="suzuki-3d-sphere-bg"></div>
+        <div class="suzuki-3d-ring-outer"></div>
+        <div class="suzuki-3d-ring-inner"></div>
+        <div class="suzuki-3d-emblem-box">
+            <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo 3D" class="suzuki-3d-logo-img" asp-append-version="true" />
+        </div>
+        <div class="suzuki-3d-particles">
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+            <span class="suzuki-3d-particle"></span>
+        </div>
+    </div>
+    <div class="suzuki-loading-brand">
+        <div class="suzuki-loading-title">DO-IT G2</div>
+        <div class="suzuki-loading-subtitle">PT Suzuki Indomobil Motor</div>
+    </div>
+    <div class="suzuki-progress-container">
+        <div class="suzuki-progress-bar" id="suzukiProgressBar"></div>
+        <div class="suzuki-progress-glow"></div>
+    </div>
+    <div class="suzuki-loading-status" id="suzukiLoadingStatus">Autentikasi Pengguna &amp; Membuka Akses...</div>
+</div>
+
+<div class="login-page">
+    <!-- Login Form -->
+    <div class="login-panel">
+        <div class="login-logo-container">
+            <img src="~/images/suzuki-logo-wide.png" alt="Suzuki Logo" class="login-logo-img" asp-append-version="true" />
+        </div>
+
+        <h2 class="login-form-title">Selamat Datang</h2>
+        <p class="login-form-sub">Silakan masuk ke akun Anda untuk melanjutkan</p>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+        {
+            var errMsg = ViewData.ModelState[""]!.Errors.Count > 0
+                ? ViewData.ModelState[""]!.Errors[0].ErrorMessage
+                : "Username atau password salah.";
+            <div class="alert alert-danger" style="margin-bottom:20px">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>@errMsg</span>
+            </div>
+        }
+
+        <form asp-controller="Account" asp-action="Login" method="post" id="loginForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ReturnUrl" value="@Model?.ReturnUrl" />
+
+            <div class="form-group">
+                <label class="form-label" for="UserName">Username</label>
+                <input type="text" id="UserName" name="UserName" class="form-control-login"
+                       placeholder="Masukkan username..." autocomplete="username" autofocus />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="Password">Password</label>
+                <div class="password-field">
+                    <input type="password" id="Password" name="Password" class="form-control-login"
+                           placeholder="Masukkan password..." autocomplete="current-password" />
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary)">
+                    <input type="checkbox" name="RememberMe" style="accent-color:var(--accent-primary)" />
+                    Ingat saya
+                </label>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                Masuk ke Sistem
+            </button>
+        </form>
+
+        <div class="login-footer">
+            &copy; 2026 PT. Suzuki Indomobil &mdash; DO-IT G2 v2.0.0
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword() {
+    const input = document.getElementById('Password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+document.getElementById('loginForm')?.addEventListener('submit', function() {
+    const overlay = document.getElementById('suzukiLoadingOverlay');
+    const bar = document.getElementById('suzukiProgressBar');
+    const txt = document.getElementById('suzukiLoadingStatus');
+    if (overlay) {
+        overlay.classList.remove('fade-out');
+        if (bar) bar.style.width = '75%';
+        if (txt) txt.textContent = 'Autentikasi Pengguna & Membuka Akses...';
+    }
+});
+</script>
+
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('loginBtn');
+    btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0"></div> Memeriksa...';
+    btn.disabled = true;
+});
+</script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

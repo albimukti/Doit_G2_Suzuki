@@ -1,0 +1,150 @@
+@model List<DoItG2.Models.Common.MasterPkbModel>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Master PKB & Stuffing Gudang";
+    var currentSearch = ViewBag.Search as string ?? "";
+    int totalCount = Model.Count;
+}
+
+<!-- Hero Banner Header -->
+<div class="hero-banner mb-24" style="padding: 20px 24px;">
+    <div style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 13px; background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(16,185,129,0.12)); display: flex; align-items: center; justify-content: center; color: var(--accent-primary); border: 1px solid rgba(59,130,246,0.2);">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <div>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Master PKB (Permohonan Pengeluaran Barang) &amp; Gudang Stuffing</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Pengaturan lokasi gudang penimbunan, petugas penanggungjawab, dan lokasi permohonan pengeluaran kontainer</p>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.18); border-radius: var(--border-radius-sm); padding: 6px 16px; text-align: center;">
+                <div style="font-size: 17px; font-weight: 800; color: var(--accent-primary); font-family: 'JetBrains Mono', monospace;">@totalCount</div>
+                <div style="font-size: 9.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total PKB</div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="DoIt.openModal('createPkbModal')" style="height: 40px; padding: 0 16px; font-weight: 600;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Tambah PKB Baru
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<div class="glass-card mb-24" style="padding: 18px 22px;">
+    <form method="get" action="/Master/Pkb" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div style="position: relative; flex: 1; min-width: 280px;">
+            <input type="text" name="search" class="form-control" value="@currentSearch" placeholder="Cari CAR, Gudang, Fasilitas, Petugas..." style="padding-left: 36px; height: 40px;" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: 40px; padding: 0 18px;">Cari</button>
+        @if (!string.IsNullOrEmpty(currentSearch))
+        {
+            <a href="/Master/Pkb" class="btn btn-secondary" style="height: 40px; padding: 0 14px;">Reset</a>
+        }
+    </form>
+</div>
+
+<!-- Main Table -->
+<div class="glass-card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrapper" style="border: none; border-radius: 0;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">No</th>
+                    <th style="width: 100px; text-align: center;">Tipe PIB</th>
+                    <th style="width: 200px;">Nomor CAR</th>
+                    <th>Fasilitas</th>
+                    <th>Gudang Stuffing</th>
+                    <th style="width: 140px;">Petugas</th>
+                    <th style="width: 120px;">No Telepon</th>
+                    <th style="width: 90px; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            Belum ada data Master PKB tercatat.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int no = 1;
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td style="text-align: center; color: var(--text-muted); font-size: 12px;">@(no++)</td>
+                            <td style="text-align: center;"><span class="badge badge-sent">@item.PibType</span></td>
+                            <td><span class="code-badge">@item.Car</span></td>
+                            <td style="font-weight: 600; color: var(--text-primary);">@(string.IsNullOrEmpty(item.Fasilitas) ? "KITE Pembebasan" : item.Fasilitas)</td>
+                            <td style="font-size: 12.5px; color: var(--text-secondary);">@(string.IsNullOrEmpty(item.Gudang) ? "-" : item.Gudang)</td>
+                            <td style="font-size: 12.5px;">@(string.IsNullOrEmpty(item.Petugas) ? "-" : item.Petugas)</td>
+                            <td style="font-size: 12px; font-family: 'JetBrains Mono', monospace;">@(string.IsNullOrEmpty(item.NoPhone) ? "-" : item.NoPhone)</td>
+                            <td style="text-align: center;"><span class="badge badge-approved">Aktif</span></td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create PKB Modal -->
+<div class="modal-overlay" id="createPkbModal">
+    <div class="modal-box" style="max-width: 540px;">
+        <div class="modal-header">
+            <span class="modal-title">Tambah Master PKB Baru</span>
+            <button class="modal-close" onclick="DoIt.closeModal('createPkbModal')">&times;</button>
+        </div>
+        <form method="post" action="/Master/CreatePkb">
+            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Tipe PIB</label>
+                        <select name="pibType" class="form-control">
+                            <option value="81">81 - SIM</option>
+                            <option value="84">84 - SIS</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Nomor CAR <span class="required">*</span></label>
+                        <input type="text" name="car" class="form-control" placeholder="Contoh: 00003001062620260714902144" required style="font-family: 'JetBrains Mono', monospace;" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Fasilitas</label>
+                        <input type="text" name="fasilitas" class="form-control" value="KITE Pembebasan" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Gudang Stuffing</label>
+                        <input type="text" name="gudang" class="form-control" placeholder="Contoh: GUDANG PLANT CAKUNG" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Petugas Penanggungjawab</label>
+                        <input type="text" name="petugas" class="form-control" placeholder="Nama Petugas Lapangan" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">No Telepon</label>
+                        <input type="text" name="noPhone" class="form-control" placeholder="0812-xxxx-xxxx" />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Alamat Siap Pengambilan</label>
+                    <textarea name="almtSiap" class="form-control" rows="2" placeholder="Alamat gudang / depo penimbunan kontainer"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="DoIt.closeModal('createPkbModal')">Batal</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">Simpan PKB</button>
+            </div>
+        </form>
+    </div>
+</div>

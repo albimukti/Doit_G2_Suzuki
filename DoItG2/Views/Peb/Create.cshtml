@@ -1,0 +1,937 @@
+@model DoItG2.Models.PEB.PebHeaderModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Buat PEB (BC 3.0) Baru — CEISA 4.0";
+}
+
+<div class="card" style="max-width: 1150px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" style="width: 100%; height: 100%; object-fit: contain;" asp-append-version="true" />
+            </div>
+            <div>
+                <h2 class="card-title" style="margin: 0; font-size: 18px;">PEMBERITAHUAN EKSPOR BARANG (BC 3.0)</h2>
+                <div class="card-subtitle">Formulir 9 Tab Identik Portal CEISA 4.0 Bea Cukai</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-warning" onclick="DoIt.fillPebSampleData()" style="font-weight: 700; font-size: 12px;">
+                ⚡ Isi Sample Data CEISA 4.0 (BC 3.0)
+            </button>
+            <a class="btn btn-secondary" href="/Peb">Kembali</a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+    {
+        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan.";
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            @errMsg
+        </div>
+    }
+
+    <!-- Status Indicator Legend -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 24px 10px; font-size: 12px;">
+        <span style="display: flex; align-items: center; gap: 6px; color: #16a34a; font-weight: 600;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #16a34a;"></span> Tab Lengkap (Hijau)
+        </span>
+        <span style="display: flex; align-items: center; gap: 6px; color: #dc2626; font-weight: 600;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #dc2626;"></span> Belum Lengkap (Merah)
+        </span>
+    </div>
+
+    <!-- Tab Navigation CEISA 4.0 (9 Tab) -->
+    <div class="peb-tabs" id="pebTabs">
+        <button type="button" class="peb-tab active" data-tab="1" onclick="DoIt.switchPebTab(1)">
+            <span class="tab-num">1</span> <span class="tab-label">Header</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="2" onclick="DoIt.switchPebTab(2)">
+            <span class="tab-num">2</span> <span class="tab-label">Entitas</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="3" onclick="DoIt.switchPebTab(3)">
+            <span class="tab-num">3</span> <span class="tab-label">Dokumen</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="4" onclick="DoIt.switchPebTab(4)">
+            <span class="tab-num">4</span> <span class="tab-label">Pengangkut</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="5" onclick="DoIt.switchPebTab(5)">
+            <span class="tab-num">5</span> <span class="tab-label">Kemasan &amp; Peti</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="6" onclick="DoIt.switchPebTab(6)">
+            <span class="tab-num">6</span> <span class="tab-label">Transaksi</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="7" onclick="DoIt.switchPebTab(7)">
+            <span class="tab-num">7</span> <span class="tab-label">Detail Barang</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="8" onclick="DoIt.switchPebTab(8)">
+            <span class="tab-num">8</span> <span class="tab-label">Pungutan</span> <span class="tab-icon"></span>
+        </button>
+        <button type="button" class="peb-tab" data-tab="9" onclick="DoIt.switchPebTab(9)">
+            <span class="tab-num">9</span> <span class="tab-label">Pernyataan</span> <span class="tab-icon"></span>
+        </button>
+    </div>
+
+    <form method="post" id="pebForm">
+
+        <!-- TAB 1: Header Dokumen Ekspor -->
+        <div class="peb-panel active" id="pebPanel1">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Header Dokumen PEB (Pengajuan Ekspor)
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nomor Aju (CAR)<span class="required">*</span></label>
+                    <input type="text" name="Car" id="peb_Car" class="form-control req-field" placeholder="000030LA7820202511220000337" required maxlength="30" />
+                    <span class="form-text">26 digit nomor pengajuan PEB CEISA.</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kantor Pabean Pemuatan<span class="required">*</span></label>
+                    <input type="text" name="KdKtrPemuatan" id="peb_KdKtrPemuatan" class="form-control req-field" value="010300 - CUKAI DUMAI, SUMATERA UTARA" required />
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Pelabuhan Muat Ekspor<span class="required">*</span></label>
+                    <input type="text" name="PelMuat" id="peb_PelMuat" class="form-control req-field" value="IDDUM - DUMAI" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kantor Pabean Ekspor<span class="required">*</span></label>
+                    <input type="text" name="KdKtr" id="peb_KdKtr" class="form-control req-field" value="010300 - CUKAI DUMAI" required />
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Jenis Ekspor<span class="required">*</span></label>
+                    <select name="JnEks" id="peb_JnEks" class="form-control req-field" required>
+                        <option value="1">1 - EKSPOR BIASA</option>
+                        <option value="2">2 - EKSPOR KEMBALI</option>
+                        <option value="3">3 - EKSPOR RE-EKSPOR</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kategori Ekspor<span class="required">*</span></label>
+                    <select name="KatEks" id="peb_KatEks" class="form-control req-field" required>
+                        <option value="25">25 - KITE PEMBEBASAN</option>
+                        <option value="1">1 - UMUM / BIASA</option>
+                        <option value="10">10 - FASILITAS KITE STAMP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cara Pembayaran<span class="required">*</span></label>
+                    <select name="CaraBayar" id="peb_CaraBayar" class="form-control req-field" required>
+                        <option value="1">1 - BIASA / TUNAI</option>
+                        <option value="2">2 - L/C (LETTER OF CREDIT)</option>
+                        <option value="3">3 - KONSINYASI</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Komoditi</label>
+                    <select name="Komoditi" id="peb_Komoditi" class="form-control">
+                        <option value="2">2 - NON MIGAS</option>
+                        <option value="1">1 - MIGAS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barang Kiriman</label>
+                    <select name="BarangKiriman" id="peb_BarangKiriman" class="form-control">
+                        <option value="9">9 - EKSPOR BARANG KIRIMAN</option>
+                        <option value="0">0 - BUKAN BARANG KIRIMAN</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Entitas Ekspor -->
+        <div class="peb-panel" id="pebPanel2">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Entitas Kepabeanan Ekspor
+            </h3>
+
+            <!-- Eksportir -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Eksportir</h4>
+                <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Jenis Identitas</label>
+                        <select name="KdIdEks" id="peb_KdIdEks" class="form-control">
+                            <option value="6">6 - NPWP 16 DIGIT</option>
+                            <option value="5">5 - NPWP 15 DIGIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NPWP Eksportir<span class="required">*</span></label>
+                        <input type="text" name="NpwpEks" id="peb_NpwpEks" class="form-control req-field" value="00174392740460000" maxlength="16" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NITKU Eksportir</label>
+                        <input type="text" name="NitkuEks" id="peb_NitkuEks" class="form-control" value="0017439274046000000000" maxlength="22" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Eksportir<span class="required">*</span></label>
+                        <input type="text" name="NamaEks" id="peb_NamaEks" class="form-control req-field" value="ELECTRONIC DATA INTERCHANGE INDONESIA" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status Eksportir</label>
+                        <input type="text" name="StatusEks" id="peb_StatusEks" class="form-control" value="BUMN" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Alamat Eksportir<span class="required">*</span></label>
+                    <textarea name="AlmtEks" id="peb_AlmtEks" class="form-control req-field" rows="2" required>WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89 009/011</textarea>
+                </div>
+            </div>
+
+            <!-- Penerima & Pembeli -->
+            <div class="entity-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 class="section-subtitle" style="margin:0">Penerima &amp; Pembeli Luar Negeri</h4>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="DoIt.copyPebPenerima()">
+                        📋 Salin data penerima
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Penerima<span class="required">*</span></label>
+                        <input type="text" name="NamaPenerima" id="peb_NamaPenerima" class="form-control req-field" value="ARUBI" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Pembeli<span class="required">*</span></label>
+                        <input type="text" name="NamaBeli" id="peb_NamaBeli" class="form-control req-field" value="ARUBI" required />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Alamat Penerima</label>
+                        <textarea name="AlmtPenerima" id="peb_AlmtPenerima" class="form-control" rows="2">KP PRAPATAN RTS/RW02 CIBADAK TANAH SAREAL KOTA BOGOR</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Pembeli</label>
+                        <textarea name="AlmtBeli" id="peb_AlmtBeli" class="form-control" rows="2">KP PRAPATAN RTS/RW02 CIBADAK TANAH SAREAL KOTA BOGOR</textarea>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Negara Penerima</label>
+                        <input type="text" name="NegPenerima" id="peb_NegPenerima" class="form-control" value="ID - INDONESIA" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Negara Pembeli</label>
+                        <input type="text" name="NegBeli" id="peb_NegBeli" class="form-control" value="ID - INDONESIA" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Konsolidator -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Konsolidator</h4>
+                <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Kategori Entitas</label>
+                        <input type="text" name="KatKonsolidasi" id="peb_KatKonsolidasi" class="form-control" value="KONSOLIDATOR" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NPWP Konsolidator</label>
+                        <input type="text" name="NpwpKonsolidasi" id="peb_NpwpKonsolidasi" class="form-control" value="4422354243424334" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Konsolidator</label>
+                        <input type="text" name="NamaKonsolidasi" id="peb_NamaKonsolidasi" class="form-control" value="ARUBI" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Alamat Konsolidator</label>
+                    <input type="text" name="AlmtKonsolidasi" id="peb_AlmtKonsolidasi" class="form-control" value="JAKARTA TIMUR" />
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Dokumen Lampiran -->
+        <div class="peb-panel" id="pebPanel3">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Dokumen Pelengkap Ekspor
+            </h3>
+
+            <div style="background:var(--bg-secondary); padding:14px; border-radius:8px; margin-bottom:16px; font-size:12.5px; border-left:4px solid var(--accent-warning);">
+                ⚠️ <strong>Ketentuan Wajib CEISA 4.0 Ekspor:</strong> Dokumen <strong>Invoice (380)</strong> dan <strong>Packing List (217)</strong> wajib diisikan sebelum submit.
+            </div>
+
+            <div id="pebDocRows">
+                <div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 1fr 140px 40px; gap:10px; align-items:end; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Seri</label>
+                        <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Jenis Dokumen</label>
+                        <select name="DocKd[]" class="form-control">
+                            <option value="380">380 - INVOICE</option>
+                            <option value="217">217 - PACKING LIST</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Nomor Dokumen<span class="required">*</span></label>
+                        <input type="text" name="DocNo[]" class="form-control req-field" value="EXP-INV-20251122" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Tanggal</label>
+                        <input type="text" name="DocTg[]" class="form-control" value="22-11-2025" placeholder="DD-MM-YYYY" />
+                    </div>
+                    <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" style="margin-top:8px" onclick="DoIt.addPebDocRow()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Dokumen Ekspor
+            </button>
+        </div>
+
+        <!-- TAB 4: Pengangkut -->
+        <div class="peb-panel" id="pebPanel4">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                Pengangkutan Ekspor &amp; Pelabuhan
+            </h3>
+
+            <div class="entity-section">
+                <h4 class="section-subtitle">Tempat Penimbunan &amp; Periksa</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">TPS Pemuatan<span class="required">*</span></label>
+                        <input type="text" name="Tps" id="peb_Tps" class="form-control req-field" value="IDDUM - PELABUHAN DUMAI" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lokasi Periksa</label>
+                        <input type="text" name="LokasiPeriksa" id="peb_LokasiPeriksa" class="form-control" value="GUDANG EKSPORTIR" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Periksa</label>
+                        <input type="text" name="TglPeriksa" id="peb_TglPeriksa" class="form-control" value="22-11-2025" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="entity-section">
+                <h4 class="section-subtitle">Pelabuhan Pengangkutan</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Muat Asal<span class="required">*</span></label>
+                        <input type="text" name="PelMuatAsal" id="peb_PelMuatAsal" class="form-control req-field" value="IDDUM - DUMAI" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Muat Ekspor<span class="required">*</span></label>
+                        <input type="text" name="PelMuatEkspor" id="peb_PelMuatEkspor" class="form-control req-field" value="IDDUM - DUMAI" required />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Pelabuhan Tujuan Ekspor<span class="required">*</span></label>
+                        <input type="text" name="PelBongkar" id="peb_PelBongkar" class="form-control req-field" value="SGSIN - SINGAPORE" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sarana Angkut / Carrier</label>
+                        <input type="text" name="Carrier" id="peb_Carrier" class="form-control" value="MV OCEAN FREIGHT" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Kemasan & Peti Kemas -->
+        <div class="peb-panel" id="pebPanel5">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                Kemasan &amp; Peti Kemas Ekspor
+            </h3>
+
+            <div class="entity-section">
+                <h4 class="section-subtitle">Kemasan Ekspor</h4>
+                <div style="display:grid; grid-template-columns: 80px 140px 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Jumlah<span class="required">*</span></label>
+                        <input type="number" name="KmsJml" class="form-control req-field" value="10" min="1" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jenis<span class="required">*</span></label>
+                        <select name="KmsJns" class="form-control req-field" required>
+                            <option value="PX">PX - PALLET</option>
+                            <option value="CT">CT - CARTON</option>
+                            <option value="CS">CS - CASE</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Merk Kemasan</label>
+                        <input type="text" name="KmsMerk" class="form-control" value="SUZUKI EXPORT BOX" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: Transaksi -->
+        <div class="peb-panel" id="pebPanel6">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Nilai Transaksi Ekspor &amp; Bank Devisa
+            </h3>
+
+            <div class="entity-section">
+                <h4 class="section-subtitle">Nilai Ekspor</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Valuta<span class="required">*</span></label>
+                        <select name="KdVal" id="peb_KdVal" class="form-control req-field" required>
+                            <option value="USD">USD - US DOLLAR</option>
+                            <option value="JPY">JPY - YEN</option>
+                            <option value="EUR">EUR - EURO</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NDPBM (Kurs Pajak)<span class="required">*</span></label>
+                        <input type="text" name="Ndpbm" id="peb_Ndpbm" class="form-control req-field" value="17,527.0000" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cara Penyerahan (Incoterms)</label>
+                        <select name="CaraPenyerahan" id="peb_CaraPenyerahan" class="form-control">
+                            <option value="EXW">EXW - EX WORKS</option>
+                            <option value="FOB">FOB - FREE ON BOARD</option>
+                            <option value="CIF">CIF - COST INSURANCE FREIGHT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Nilai FOB<span class="required">*</span></label>
+                        <input type="text" name="Fob" id="peb_Fob" class="form-control req-field" value="0.0000" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Freight</label>
+                        <input type="text" name="Freight" id="peb_Freight" class="form-control" value="100.00" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asuransi</label>
+                        <input type="text" name="Asuransi" id="peb_Asuransi" class="form-control" value="DALAM NEGERI 100.0000" />
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Berat Kotor (Bruto KGM)<span class="required">*</span></label>
+                        <input type="text" name="Bruto" id="peb_Bruto" class="form-control req-field" value="100.0000" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Berat Bersih (Netto KGM)<span class="required">*</span></label>
+                        <input type="text" name="Netto" id="peb_Netto" class="form-control req-field" value="0.00" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Devisa -->
+            <div class="entity-section">
+                <h4 class="section-subtitle">Bank Devisa Hasil Ekspor (DHE)</h4>
+                <div style="display: grid; grid-template-columns: 140px 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Kode Bank</label>
+                        <input type="text" name="KdBank" class="form-control" value="008" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Bank Devisa</label>
+                        <input type="text" name="NamaBank" class="form-control" value="PT BANK MANDIRI (PERSERO) TBK" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: Detail Barang -->
+        <div class="peb-panel" id="pebPanel7">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 022 2h2a2 2 0 022-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Detail Barang Ekspor (HS Code &amp; FOB)
+            </h3>
+
+            <div id="pebBarangRows">
+                <div class="doc-row" style="display:grid; grid-template-columns: 50px 130px 1fr 110px 110px 110px 40px; gap:8px; align-items:end; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Seri</label>
+                        <input type="text" value="1" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Pos Tarif (HS)<span class="required">*</span></label>
+                        <input type="text" name="BrgHs[]" class="form-control req-field" value="87032110" maxlength="10" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Uraian Barang Ekspor<span class="required">*</span></label>
+                        <input type="text" name="BrgDesc[]" class="form-control req-field" value="SUZUKI AUTOMOBILE PASSENGER CAR" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">FOB Detil</label>
+                        <input type="text" name="BrgFob[]" class="form-control" value="0.00" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Jumlah<span class="required">*</span></label>
+                        <input type="text" name="BrgQty[]" class="form-control req-field" value="1" required />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Satuan</label>
+                        <input type="text" name="BrgSat[]" class="form-control" value="UNT - Unit" />
+                    </div>
+                    <button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" style="margin-top:4px" onclick="DoIt.addPebBarangRow()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Barang Ekspor
+            </button>
+        </div>
+
+        <!-- TAB 8: Pungutan -->
+        <div class="peb-panel" id="pebPanel8">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Perhitungan Pungutan Ekspor &amp; Bea Keluar CEISA 4.0
+            </h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Bank Devisa Hasil Ekspor (DHE)<span class="required">*</span></label>
+                    <select name="KodeBankEks" id="peb_KodeBank" class="form-control req-field" required>
+                        <option value="008">008 - BANK MANDIRI</option>
+                        <option value="014">014 - BANK CENTRAL ASIA (BCA)</option>
+                        <option value="009">009 - BANK NEGARA INDONESIA (BNI)</option>
+                        <option value="002">002 - BANK RAKYAT INDONESIA (BRI)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nomor Billing / NTPN Ekspor<span class="required">*</span></label>
+                    <input type="text" name="NoNtpnEks" id="peb_NoNtpn" class="form-control req-field" value="0820263009918273" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status Pembayaran Bea Keluar<span class="required">*</span></label>
+                    <select name="StatusBayarEks" id="peb_StatusBayar" class="form-control req-field" required>
+                        <option value="LUNAS">LUNAS - Sudah Dilunasi</option>
+                        <option value="DIBEBASKAN">DIBEBASKAN (Fasilitas Ekspor)</option>
+                        <option value="TIDAK_DIPUNGUT">TIDAK DIPUNGUT</option>
+                        <option value="DITUNDA">DITUNDA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-weight:700; font-size:14px; color:var(--text-primary);">Rincian Nilai Pungutan Bea Keluar & PNBP</div>
+                <button type="button" class="btn btn-sm btn-info" onclick="DoIt.recalcPebPungutan();DoIt.toast('Pungutan ekspor berhasil dihitung ulang!', 'success')">
+                    🔄 Hitung Ulang Pungutan
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Bea Keluar / Export Duty (Rp)<span class="required">*</span></label>
+                    <input type="number" name="NilaiBeaKeluar" id="peb_NilaiBeaKeluar" class="form-control req-field" value="2500000" oninput="DoIt.recalcPebPungutan();DoIt.validateAllPebTabs()" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PNBP Ekspor Rp<span class="required">*</span></label>
+                    <input type="number" name="NilaiPnbpEks" id="peb_NilaiPnbpEks" class="form-control req-field" value="50000" oninput="DoIt.recalcPebPungutan();DoIt.validateAllPebTabs()" required />
+                </div>
+            </div>
+
+            <div class="form-group" style="background:var(--bg-secondary); padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+                <label class="form-label" style="font-weight:700; font-size:13px;">TOTAL PUNGUTAN EKSPOR DIBAYAR (RP)</label>
+                <input type="text" id="peb_TotalPungutanDisplay" class="form-control" value="Rp 2,550,000.00" readonly style="font-weight:800; font-size:18px; font-family:'JetBrains Mono',monospace; color:var(--primary); background:transparent; border:none;" />
+            </div>
+        </div>
+
+        <!-- TAB 9: Pernyataan -->
+        <div class="peb-panel" id="pebPanel9">
+            <h3 class="panel-title">
+                <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Pernyataan Eksportir CEISA 4.0
+            </h3>
+
+            <div style="background:var(--bg-secondary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:13px; color:var(--text-secondary);">
+                Dengan ini saya menyatakan bertanggung jawab atas kebenaran data ekspor yang diberitahukan dalam Pemberitahuan Ekspor Barang (BC 3.0) ini.
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Tempat Pernyataan<span class="required">*</span></label>
+                    <input type="text" name="TempatPernyataan" id="peb_TempatPernyataan" class="form-control req-field" value="DUMAI" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tanggal Pernyataan<span class="required">*</span></label>
+                    <input type="text" name="TglPernyataan" id="peb_TglPernyataan" class="form-control req-field" value="22-11-2025" required />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nama Penanggung Jawab<span class="required">*</span></label>
+                    <input type="text" name="NamaPernyataan" id="peb_NamaPernyataan" class="form-control req-field" value="SUZUKI EXPORT LOGISTICS" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Jabatan<span class="required">*</span></label>
+                    <input type="text" name="JabatanPernyataan" id="peb_JabatanPernyataan" class="form-control req-field" value="HEAD OF EXPORT" required />
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation & Submit -->
+        <div class="peb-nav" style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <button type="button" class="btn btn-secondary" id="prevPebTabBtn" onclick="DoIt.prevPebTab()" style="display:none">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Sebelumnya
+            </button>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:12px">
+                <a href="/Peb" class="btn btn-secondary">Batal</a>
+                <button type="button" class="btn btn-primary" id="nextPebTabBtn" onclick="DoIt.nextPebTab()">
+                    Selanjutnya
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitPebBtn" style="display:none">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Simpan Dokumen PEB
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+<style>
+    .peb-tabs {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding: 0 24px;
+        margin: 0 -24px 24px;
+        border-bottom: 2px solid var(--border-color);
+        scrollbar-width: thin;
+    }
+    .peb-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border: none;
+        background: none;
+        color: var(--text-secondary);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s ease;
+        margin-bottom: -2px;
+        border-radius: 6px 6px 0 0;
+    }
+    .peb-tab:hover {
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+    }
+    .peb-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+
+    /* Tab Success (Lengkap - Hijau) */
+    .peb-tab.tab-success {
+        color: #15803d !important;
+        border-bottom-color: #16a34a !important;
+        background: rgba(22, 163, 74, 0.1) !important;
+    }
+    .peb-tab.tab-success .tab-num {
+        background: #16a34a !important;
+        color: #ffffff !important;
+    }
+    .peb-tab.tab-success .tab-icon::after {
+        content: ' ✓';
+        font-weight: 900;
+        color: #16a34a;
+    }
+
+    /* Tab Danger (Belum Lengkap / Kosong - Merah) */
+    .peb-tab.tab-danger {
+        color: #dc2626 !important;
+        border-bottom-color: #dc2626 !important;
+        background: rgba(220, 38, 38, 0.1) !important;
+    }
+    .peb-tab.tab-danger .tab-num {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+    }
+    .peb-tab.tab-danger .tab-icon::after {
+        content: ' ✕';
+        font-weight: 900;
+        color: #dc2626;
+    }
+
+    .tab-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+    .peb-tab.active .tab-num {
+        background: var(--primary);
+        color: white;
+    }
+    .peb-panel {
+        display: none;
+        padding: 0 24px 8px;
+        animation: fadeInPanel 0.3s ease;
+    }
+    .peb-panel.active {
+        display: block;
+    }
+    @@keyframes fadeInPanel {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .panel-icon {
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+    .entity-section {
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+    .section-subtitle {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 12px;
+    }
+    .doc-row {
+        padding: 8px 0;
+    }
+
+    /* Input Field Real-time Status Colors */
+    .form-control.field-valid {
+        border-color: #16a34a !important;
+        background-color: rgba(22, 163, 74, 0.03) !important;
+    }
+    .form-control.field-invalid {
+        border-color: #dc2626 !important;
+        background-color: rgba(220, 38, 38, 0.04) !important;
+    }
+</style>
+}
+
+@section Scripts {
+<script>
+(function() {
+    var currentTab = 1;
+    var totalTabs = 9;
+
+    window.DoIt = window.DoIt || {};
+
+    DoIt.switchPebTab = function(n) {
+        currentTab = n;
+        document.querySelectorAll('.peb-tab').forEach(function(t) {
+            t.classList.toggle('active', parseInt(t.dataset.tab) === n);
+        });
+        document.querySelectorAll('.peb-panel').forEach(function(p) {
+            p.classList.toggle('active', p.id === 'pebPanel' + n);
+        });
+        document.getElementById('prevPebTabBtn').style.display = n > 1 ? '' : 'none';
+        document.getElementById('nextPebTabBtn').style.display = n < totalTabs ? '' : 'none';
+        document.getElementById('submitPebBtn').style.display = n === totalTabs ? '' : 'none';
+
+        DoIt.validateAllPebTabs();
+    };
+
+    DoIt.nextPebTab = function() {
+        if (currentTab < totalTabs) {
+            DoIt.switchPebTab(currentTab + 1);
+        }
+    };
+
+    DoIt.prevPebTab = function() {
+        if (currentTab > 1) DoIt.switchPebTab(currentTab - 1);
+    };
+
+    // Dynamic Tab & Field Validation System for PEB (Green for complete, Red for empty/invalid)
+    DoIt.validateAllPebTabs = function() {
+        for (var i = 1; i <= totalTabs; i++) {
+            var panel = document.getElementById('pebPanel' + i);
+            var tabBtn = document.querySelector('.peb-tab[data-tab="' + i + '"]');
+            if (!panel || !tabBtn) continue;
+
+            var reqFields = panel.querySelectorAll('.req-field, [required]');
+            var isComplete = true;
+            var hasAttemptedInput = false;
+
+            reqFields.forEach(function(input) {
+                var val = (input.value || '').trim();
+                if (val !== '') {
+                    hasAttemptedInput = true;
+                    input.classList.add('field-valid');
+                    input.classList.remove('field-invalid');
+                } else {
+                    isComplete = false;
+                    input.classList.remove('field-valid');
+                    if (input.dataset.touched === 'true') {
+                        input.classList.add('field-invalid');
+                    }
+                }
+            });
+
+            tabBtn.classList.remove('tab-success', 'tab-danger');
+            if (isComplete && reqFields.length > 0) {
+                tabBtn.classList.add('tab-success');
+            } else if (!isComplete && (hasAttemptedInput || i === currentTab || tabBtn.dataset.touched === 'true')) {
+                tabBtn.classList.add('tab-danger');
+            }
+        }
+    };
+
+    DoIt.copyPebPenerima = function() {
+        var nm = document.getElementById('peb_NamaPenerima').value;
+        var al = document.getElementById('peb_AlmtPenerima').value;
+        var neg = document.getElementById('peb_NegPenerima').value;
+
+        document.getElementById('peb_NamaBeli').value = nm;
+        document.getElementById('peb_AlmtBeli').value = al;
+        document.getElementById('peb_NegBeli').value = neg;
+        DoIt.toast('Data Pembeli disalin dari Penerima', 'success');
+        DoIt.validateAllPebTabs();
+    };
+
+    DoIt.fillPebSampleData = function() {
+        document.getElementById('peb_Car').value = '000030LA7820202511220000337';
+        document.getElementById('peb_KdKtrPemuatan').value = '010300 - CUKAI DUMAI, SUMATERA UTARA';
+        document.getElementById('peb_PelMuat').value = 'IDDUM - DUMAI';
+        document.getElementById('peb_KdKtr').value = '010300 - CUKAI DUMAI';
+        document.getElementById('peb_JnEks').value = '1';
+        document.getElementById('peb_KatEks').value = '25';
+        document.getElementById('peb_CaraBayar').value = '1';
+        document.getElementById('peb_Komoditi').value = '2';
+        document.getElementById('peb_BarangKiriman').value = '9';
+
+        document.getElementById('peb_NpwpEks').value = '00174392740460000';
+        document.getElementById('peb_NitkuEks').value = '0017439274046000000000';
+        document.getElementById('peb_NamaEks').value = 'ELECTRONIC DATA INTERCHANGE INDONESIA';
+        document.getElementById('peb_AlmtEks').value = 'WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89 009/011';
+        document.getElementById('peb_StatusEks').value = 'BUMN';
+
+        document.getElementById('peb_NamaPenerima').value = 'ARUBI';
+        document.getElementById('peb_NegPenerima').value = 'ID - INDONESIA';
+        document.getElementById('peb_AlmtPenerima').value = 'KP PRAPATAN RTS/RW02 CIBADAK TANAH SAREAL KOTA BOGOR';
+
+        DoIt.copyPebPenerima();
+
+        document.getElementById('peb_KatKonsolidasi').value = 'KONSOLIDATOR';
+        document.getElementById('peb_NpwpKonsolidasi').value = '4422354243424334';
+        document.getElementById('peb_NamaKonsolidasi').value = 'ARUBI';
+        document.getElementById('peb_AlmtKonsolidasi').value = 'JAKARTA TIMUR';
+
+        document.getElementById('peb_KdVal').value = 'USD';
+        document.getElementById('peb_Ndpbm').value = '17,527.0000';
+        document.getElementById('peb_CaraPenyerahan').value = 'EXW';
+        document.getElementById('peb_Fob').value = '0.0000';
+        document.getElementById('peb_Freight').value = '100.00';
+        document.getElementById('peb_Asuransi').value = 'DALAM NEGERI 100.0000';
+        document.getElementById('peb_Bruto').value = '100.0000';
+        document.getElementById('peb_Netto').value = '0.00';
+
+        document.getElementById('peb_KodeBank').value = '008';
+        document.getElementById('peb_NoNtpn').value = '0820263009918273';
+        document.getElementById('peb_StatusBayar').value = 'LUNAS';
+        document.getElementById('peb_NilaiBeaKeluar').value = '2500000';
+        document.getElementById('peb_NilaiPnbpEks').value = '50000';
+        DoIt.recalcPebPungutan();
+
+        document.getElementById('peb_TempatPernyataan').value = 'DUMAI';
+        document.getElementById('peb_TglPernyataan').value = '22-11-2025';
+        document.getElementById('peb_NamaPernyataan').value = 'SUZUKI EXPORT LOGISTICS';
+        document.getElementById('peb_JabatanPernyataan').value = 'HEAD OF EXPORT';
+
+        DoIt.toast('Sample data BC 3.0 PEB berhasil diisikan seluruh tab!', 'success');
+        DoIt.validateAllPebTabs();
+    };
+
+    DoIt.recalcPebPungutan = function() {
+        var bk = parseFloat(document.getElementById('peb_NilaiBeaKeluar')?.value || 0);
+        var pnbp = parseFloat(document.getElementById('peb_NilaiPnbpEks')?.value || 0);
+        var total = bk + pnbp;
+        var displayEl = document.getElementById('peb_TotalPungutanDisplay');
+        if (displayEl) {
+            displayEl.value = 'Rp ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    };
+
+    DoIt.addPebDocRow = function() {
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 60px 180px 1fr 140px 40px; gap:10px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="+" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><select name="DocKd[]" class="form-control"><option value="380">380 - INVOICE</option><option value="217">217 - PACKING LIST</option></select></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="DocNo[]" class="form-control req-field" placeholder="Nomor dokumen" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="DocTg[]" class="form-control" placeholder="DD-MM-YYYY" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPebTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('pebDocRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPebTabs();
+    };
+
+    DoIt.addPebBarangRow = function() {
+        var html = '<div class="doc-row" style="display:grid; grid-template-columns: 50px 130px 1fr 110px 110px 110px 40px; gap:8px; align-items:end; margin-bottom:12px;">'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" value="+" class="form-control" readonly style="text-align:center;background:var(--bg-secondary)" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgHs[]" class="form-control req-field" placeholder="87032110" maxlength="10" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgDesc[]" class="form-control req-field" placeholder="Uraian barang ekspor" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgFob[]" class="form-control" placeholder="0.00" /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgQty[]" class="form-control req-field" placeholder="0" required /></div>'
+            + '<div class="form-group" style="margin-bottom:0"><input type="text" name="BrgSat[]" class="form-control" placeholder="UNT - Unit" /></div>'
+            + '<button type="button" class="btn btn-secondary" style="padding:6px;height:36px" onclick="this.parentElement.remove();DoIt.validateAllPebTabs()">&times;</button>'
+            + '</div>';
+        document.getElementById('pebBarangRows').insertAdjacentHTML('beforeend', html);
+        DoIt.validateAllPebTabs();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('#pebForm input, #pebForm select, #pebForm textarea').forEach(function(el) {
+            el.addEventListener('input', function() {
+                el.dataset.touched = 'true';
+                var tabId = el.closest('.peb-panel')?.id?.replace('pebPanel', '');
+                if (tabId) {
+                    var btn = document.querySelector('.peb-tab[data-tab="' + tabId + '"]');
+                    if (btn) btn.dataset.touched = 'true';
+                }
+                DoIt.validateAllPebTabs();
+            });
+            el.addEventListener('change', function() {
+                el.dataset.touched = 'true';
+                DoIt.validateAllPebTabs();
+            });
+        });
+
+        DoIt.validateAllPebTabs();
+    });
+})();
+</script>
+}

@@ -1,0 +1,155 @@
+@model DoItG2.Models.PEB.PebHeaderModel
+@{
+    Layout = "_Layout";
+}
+
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <div class="card-header">
+        <div style="display:flex;align-items:center;gap:14px">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" style="width: 100%; height: 100%; object-fit: contain;" asp-append-version="true" />
+            </div>
+            <div>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <h2 class="card-title" style="margin:0">PEB (BC 3.0) — @Model.Car</h2>
+                    @if (Model.Status == "APPROVED")
+                    {
+                        <span class="badge badge-approved">NPE TERBIT</span>
+                    }
+                    else if (Model.Status == "SENT")
+                    {
+                        <span class="badge badge-sent">TERKIRIM CEISA</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-draft">DRAFT</span>
+                    }
+                </div>
+                <div class="card-subtitle">Pemberitahuan Ekspor Barang (BC 3.0) — CEISA 4.0</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <a class="btn btn-secondary" href="/Peb">Kembali</a>
+            <a class="btn btn-primary" href="/Peb/Edit/@Model.Car">Edit PEB</a>
+        </div>
+    </div>
+
+    <!-- Header Summary Grid -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:16px; margin-bottom:24px; background:var(--bg-secondary); padding:20px; border-radius:10px;">
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Nomor AJU (CAR)</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary)">@Model.Car</div>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Eksportir</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary)">PT. SUZUKI INDOMOBIL MOTOR</div>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Pembeli / Consignee</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary)">@Model.NamaBeli (@Model.NegBeli)</div>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Tanggal Ekspor (ETD)</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary)">@(Model.TgEks?.ToString("dd MMM yyyy") ?? "-")</div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-bottom:24px; background:var(--bg-secondary); padding:20px; border-radius:10px;">
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Total FOB Ekspor</div>
+            <div style="font-weight:700;font-size:18px;color:var(--primary)">USD @Model.Fob.ToString("N2")</div>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Berat Bersih (Netto)</div>
+            <div style="font-weight:600;font-size:16px;color:var(--text-primary)">@Model.Netto.ToString("N2") Kg</div>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--text-tertiary)">Berat Kotor (Bruto)</div>
+            <div style="font-weight:600;font-size:16px;color:var(--text-primary)">@Model.Bruto.ToString("N2") Kg</div>
+        </div>
+    </div>
+
+    <!-- Barang Ekspor Table -->
+    <div style="margin-bottom:24px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" style="color:var(--primary)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Detail Barang Ekspor (@Model.Details.Count Item)
+        </h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px">Seri</th>
+                        <th>HS Code</th>
+                        <th>Uraian Barang Ekspor</th>
+                        <th style="text-align:right">Jumlah</th>
+                        <th>Satuan</th>
+                        <th style="text-align:right">FOB (USD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Details.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align:center;color:var(--text-tertiary)">Belum ada data barang ekspor.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Details)
+                        {
+                            <tr>
+                                <td>@item.Seri</td>
+                                <td><code>@item.HsNo</code></td>
+                                <td>@item.UrBrg</td>
+                                <td style="text-align:right">@item.JmlSat.ToString("N0")</td>
+                                <td>@item.KdSat</td>
+                                <td style="text-align:right">USD @item.FobDet.ToString("N2")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Responses Section -->
+    <div>
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18" style="color:var(--primary)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Riwayat Respons CEISA 4.0
+        </h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Kode Respons</th>
+                        <th>Tanggal</th>
+                        <th>Nomor NPE</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Responses.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="4" style="text-align:center;color:var(--text-tertiary)">Belum ada respons dari CEISA 4.0.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var res in Model.Responses)
+                        {
+                            <tr>
+                                <td><span class="badge badge-approved">@res.ResKd</span></td>
+                                <td>@(res.ResTg?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
+                                <td><code>@res.NoPen</code></td>
+                                <td>@res.Deskripsi</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
