@@ -634,41 +634,68 @@ select.form-control option { background: var(--bg-card); }
 
 /* --- Mobile / Phones (max-width: 768px) --- */
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); width: 280px; z-index: 999; }
+    body { font-size: 12px; }
+    .sidebar { transform: translateX(-100%); width: 260px; z-index: 999; }
     .sidebar.open { transform: translateX(0); }
     .main-content { margin-left: 0; width: 100%; }
-    .topbar { padding: 0 14px; height: 58px; gap: 8px; }
-    .page-body { padding: 14px 12px; }
+    .topbar { padding: 0 12px; height: 50px; gap: 8px; }
+    .page-body { padding: 10px 8px; }
 
+    /* Compact Typography on Mobile */
+    h1, .hero-banner h1 { font-size: 16px !important; }
+    h2, .card-title { font-size: 14px !important; }
+    h3, .panel-title { font-size: 13px !important; }
+    .card-subtitle, .form-text, .text-muted { font-size: 10.5px !important; }
+    .stat-value { font-size: 18px !important; }
+    .stat-label { font-size: 10px !important; }
+    .page-title { font-size: 13px; font-weight: 700; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Compact Cards & Paddings */
+    .glass-card, .card { padding: 12px 10px !important; border-radius: 10px !important; margin-bottom: 12px !important; }
+    .hero-banner { padding: 14px 14px !important; border-radius: 10px !important; }
+    .stat-card, .stat-card-elevated { padding: 10px 12px !important; border-radius: 8px !important; }
+
+    /* Compact Logo Emblem */
+    div[style*="width: 52px; height: 52px"],
+    div[style*="width:52px;height:52px"] {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 8px !important;
+        padding: 3px !important;
+    }
+
+    /* Grids Collapse to Single Column */
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-    .quick-access-grid { grid-template-columns: repeat(2, 1fr); }
+    .quick-access-grid { grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
     .filter-panel-grid { grid-template-columns: 1fr; }
     .filter-panel-grid > div:last-child { grid-column: span 1; }
 
-    /* Topbar adjustments for Mobile */
-    .system-status-pill { display: none; }
-    #topbarClock { display: none; }
-    div[title="Keterangan Notifikasi System"] { display: none !important; }
-    .page-title { font-size: 14px; font-weight: 700; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .system-status-pill, #topbarClock, div[title="Keterangan Notifikasi System"] { display: none !important; }
 
-    /* CEISA 4.0 Form Tabs Touch Scroll */
+    /* CEISA 4.0 Form Tabs Compact Touch Scroll */
     .pib-tabs, .peb-tabs {
         display: flex !important;
-        gap: 6px !important;
+        gap: 4px !important;
         overflow-x: auto !important;
         white-space: nowrap !important;
         -webkit-overflow-scrolling: touch !important;
-        padding: 4px 12px 10px !important;
-        margin: 0 -12px 20px !important;
+        padding: 2px 8px 6px !important;
+        margin: 0 -8px 14px !important;
         scrollbar-width: thin;
     }
     .pib-tab, .peb-tab {
         flex-shrink: 0 !important;
-        padding: 8px 12px !important;
-        font-size: 12px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        border-radius: 4px 4px 0 0 !important;
+    }
+    .tab-num {
+        width: 16px !important;
+        height: 16px !important;
+        font-size: 9.5px !important;
     }
 
-    /* All Multi-column Form Grids Collapse on Mobile */
+    /* Form Grids Collapse */
     .glass-card div[style*="display: grid"],
     .glass-card div[style*="display:grid"],
     .card div[style*="display: grid"],
@@ -677,70 +704,108 @@ select.form-control option { background: var(--bg-card); }
     .peb-panel div[style*="grid-template-columns"],
     .entity-section div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
-        gap: 12px !important;
+        gap: 8px !important;
     }
 
-    /* Hero Banner Mobile */
-    .hero-banner { padding: 16px 18px; }
-    .hero-banner h1 { font-size: 18px; }
-
-    /* Table Touch Scroll & Edge to Edge */
+    /* Table Compact Styling */
     .table-wrapper { 
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch; 
-        margin: 0 -12px 16px; 
+        margin: 0 -10px 12px; 
         border-radius: 0; 
         border-left: none; 
         border-right: none; 
     }
     .data-table {
-        min-width: 680px;
+        min-width: 600px;
+    }
+    .data-table th, .data-table td {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
     }
 
-    /* Input Controls Touch Targets */
-    .form-control, .btn {
-        min-height: 38px;
+    /* Compact Form Inputs & Buttons */
+    .form-control, select.form-control, input.form-control {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 4px 8px !important;
+        font-size: 11.5px !important;
+        border-radius: 6px !important;
     }
+    .form-label {
+        font-size: 10.5px !important;
+        margin-bottom: 2px !important;
+    }
+    .btn {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important;
+    }
+    .btn-sm {
+        height: 28px !important;
+        min-height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 10px !important;
+    }
+
     .card-header {
         flex-direction: column;
         align-items: flex-start !important;
-        gap: 12px;
+        gap: 8px;
+        padding-bottom: 12px !important;
+        margin-bottom: 14px !important;
     }
 
-    /* Footer Mobile */
+    /* Compact Footer Mobile */
     .app-main-footer {
-        padding: 20px 16px;
-        margin-top: 24px;
+        padding: 14px 12px;
+        margin-top: 16px;
+        font-size: 10.5px;
     }
     .footer-container {
         flex-direction: column;
         text-align: center;
-        gap: 16px;
+        gap: 10px;
+    }
+    .footer-logo-box {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    .footer-title {
+        font-size: 11.5px !important;
+    }
+    .footer-sub {
+        font-size: 10px !important;
     }
     .footer-brand {
         flex-direction: column;
         align-items: center;
         text-align: center;
+        gap: 6px;
     }
     .footer-links {
         justify-content: center;
-        gap: 8px 10px;
+        gap: 6px 8px;
+        font-size: 11px;
     }
     .footer-right {
         align-items: center;
         text-align: center;
+        gap: 4px;
     }
 }
 
 /* --- Small Mobile Phones (max-width: 480px) --- */
 @media (max-width: 480px) {
     .quick-access-grid { grid-template-columns: 1fr; }
-    .action-card { padding: 14px 12px; }
-    .stat-card { padding: 14px; }
-    .stat-value { font-size: 22px !important; }
-    .modal-box { margin: 10px; max-width: calc(100vw - 20px); padding: 16px; }
-    .page-title { font-size: 13px; max-width: 140px; }
+    .action-card { padding: 10px 8px; }
+    .stat-card { padding: 10px; }
+    .stat-value { font-size: 16px !important; }
+    .modal-box { margin: 8px; max-width: calc(100vw - 16px); padding: 12px; }
+    .page-title { font-size: 12px; max-width: 120px; }
 }
 
 /* ========== KEYFRAME ANIMATIONS ========== */
