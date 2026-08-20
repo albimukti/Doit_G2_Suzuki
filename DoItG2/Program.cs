@@ -1,11 +1,19 @@
 using DoItG2.Data;
 using DoItG2.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.ResponseCompression;
 using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
 
 builder.Services.AddControllersWithViews();
 
@@ -37,7 +45,6 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
 });
 
-
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
@@ -48,6 +55,8 @@ using (var scope = app.Services.CreateScope())
     await dbContext.EnsureDatabaseCreatedAsync();
 }
 
+app.UseResponseCompression();
+
 if (!app.Environment.IsDevelopment())   
 {
     app.UseExceptionHandler("/Home/Error");
@@ -55,7 +64,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var headers = ctx.Context.Response.Headers;
+        if (!headers.ContainsKey("Cache-Control"))
+        {
+            headers.Append("Cache-Control", "public, max-age=31536000, immutable");
+        }
+    }
+});
 app.UseRouting();
 
 app.UseSession();

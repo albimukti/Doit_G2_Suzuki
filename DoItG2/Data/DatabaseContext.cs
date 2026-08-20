@@ -83,7 +83,6 @@ public class DatabaseContext
             var builder = new SqlConnectionStringBuilder(_connectionString);
             var databaseName = string.IsNullOrWhiteSpace(builder.InitialCatalog) ? "DO_IT_G2" : builder.InitialCatalog;
 
-            // 1. Connect to master database to check & create database DO_IT_G2
             builder.InitialCatalog = "master";
             using (var masterConn = new SqlConnection(builder.ConnectionString))
             {
@@ -93,7 +92,6 @@ public class DatabaseContext
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            // 2. Connect to DO_IT_G2 database to check & initialize tables
             using (var dbConn = new SqlConnection(_connectionString))
             {
                 await dbConn.OpenAsync();
@@ -140,7 +138,6 @@ public class DatabaseContext
                     }
                 }
 
-                // Self-healing migration: Ensure financial & weight columns exist on PIB_DOIT_FINAL_HEADER
                 var alterColumnsSql = @"
                     IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PIB_DOIT_FINAL_HEADER')
                     BEGIN
@@ -168,7 +165,6 @@ public class DatabaseContext
                     await alterCmd.ExecuteNonQueryAsync();
                 }
 
-                // Ensure missing master tables exist
                 var createMasterTablesSql = @"
                     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_MASTER_PEMASOK')
                     BEGIN

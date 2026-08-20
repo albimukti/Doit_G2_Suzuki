@@ -234,13 +234,11 @@ document.getElementById('loginForm')?.addEventListener('submit', function() {
         if (bar) bar.style.width = '75%';
         if (txt) txt.textContent = 'Autentikasi Pengguna & Membuka Akses...';
     }
-});
-</script>
-
-document.querySelector('form').addEventListener('submit', function() {
     const btn = document.getElementById('loginBtn');
-    btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0"></div> Memeriksa...';
-    btn.disabled = true;
+    if (btn) {
+        btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0"></div> Memeriksa...';
+        btn.disabled = true;
+    }
 });
 </script>
 <script src="~/js/site.js" asp-append-version="true"></script>
