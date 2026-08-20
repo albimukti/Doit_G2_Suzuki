@@ -72,7 +72,7 @@
         </button>
     </div>
 
-    <form method="post" id="pibForm">
+    <form method="post" id="pibForm" autocomplete="off">
 
         <!-- TAB 1: Header Dokumen -->
         <div class="pib-panel active" id="pibPanel1">
@@ -88,13 +88,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Pelabuhan Tujuan<span class="required">*</span></label>
-                    <input type="text" name="PelTujuan" id="pib_PelTujuan" class="form-control req-field" value="IDCGK - CENGKARENG / SOEKARNO HATTA (U)" placeholder="Kode pelabuhan tujuan" required />
+                    <input type="text" name="PelTujuan" id="pib_PelTujuan" class="form-control req-field" value="" placeholder="Kode pelabuhan tujuan" required />
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Kantor Pabean Impor<span class="required">*</span></label>
-                    <input type="text" name="KdKantor" id="pib_KdKantor" class="form-control req-field" value="050100 - KPU BEA DAN CUKAI TIPE C SOEKARNO-HATTA" maxlength="60" required />
+                    <input type="text" name="KdKantor" id="pib_KdKantor" class="form-control req-field" value="" maxlength="60" required />
                     <span class="form-text">Kode KPPBC (6 digit).</span>
                 </div>
                 <div class="form-group">
@@ -158,21 +158,21 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NPWP Importir<span class="required">*</span></label>
-                        <input type="text" name="IdImp" id="pib_IdImp" class="form-control req-field" value="00174392740460000" maxlength="16" required />
+                        <input type="text" name="IdImp" id="pib_IdImp" class="form-control req-field" value="" placeholder="00174392740460000" maxlength="16" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">NITKU (22 Digit)</label>
-                        <input type="text" name="NitkuImp" id="pib_NitkuImp" class="form-control" value="0017439274046000000000" maxlength="22" />
+                        <input type="text" name="NitkuImp" id="pib_NitkuImp" class="form-control" value="" placeholder="0017439274046000000000" maxlength="22" />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Importir<span class="required">*</span></label>
-                        <input type="text" name="NmImo" id="pib_NmImo" class="form-control req-field" value="NNKGO INDONESIA" required />
+                        <input type="text" name="NmImo" id="pib_NmImo" class="form-control req-field" value="" placeholder="NNKGO INDONESIA" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Alamat Importir<span class="required">*</span></label>
-                        <input type="text" name="AlImp" id="pib_AlImp" class="form-control req-field" value="DAAN MOGOT" required />
+                        <input type="text" name="AlImp" id="pib_AlImp" class="form-control req-field" value="" placeholder="DAAN MOGOT" required />
                     </div>
                 </div>
             </div>
@@ -194,21 +194,21 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NPWP Pemilik</label>
-                        <input type="text" name="IdPemilik" id="pib_IdPemilik" class="form-control" value="00174392740460000" />
+                        <input type="text" name="IdPemilik" id="pib_IdPemilik" class="form-control" value="" placeholder="00174392740460000" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">NITKU Pemilik</label>
-                        <input type="text" name="NitkuPemilik" id="pib_NitkuPemilik" class="form-control" value="0017439274046000000000" />
+                        <input type="text" name="NitkuPemilik" id="pib_NitkuPemilik" class="form-control" value="" placeholder="0017439274046000000000" />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Pemilik</label>
-                        <input type="text" name="NmPemilik" id="pib_NmPemilik" class="form-control" value="NNKGO INDONESIA" />
+                        <input type="text" name="NmPemilik" id="pib_NmPemilik" class="form-control" value="" placeholder="NNKGO INDONESIA" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Alamat Pemilik</label>
-                        <input type="text" name="AlPemilik" id="pib_AlPemilik" class="form-control" value="DAAN MOGOT" />
+                        <input type="text" name="AlPemilik" id="pib_AlPemilik" class="form-control" value="" placeholder="DAAN MOGOT" />
                     </div>
                 </div>
             </div>
@@ -230,21 +230,21 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NPWP Pemusatan</label>
-                        <input type="text" name="IdPemusatan" id="pib_IdPemusatan" class="form-control" value="00174392740460000" />
+                        <input type="text" name="IdPemusatan" id="pib_IdPemusatan" class="form-control" value="" placeholder="00174392740460000" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">NITKU Pemusatan</label>
-                        <input type="text" name="NitkuPemusatan" id="pib_NitkuPemusatan" class="form-control" value="0017439274046000000000" />
+                        <input type="text" name="NitkuPemusatan" id="pib_NitkuPemusatan" class="form-control" value="" placeholder="0017439274046000000000" />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Pemusatan</label>
-                        <input type="text" name="NmPemusatan" id="pib_NmPemusatan" class="form-control" value="NNKGO INDONESIA" />
+                        <input type="text" name="NmPemusatan" id="pib_NmPemusatan" class="form-control" value="" placeholder="NNKGO INDONESIA" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Alamat Pemusatan</label>
-                        <input type="text" name="AlPemusatan" id="pib_AlPemusatan" class="form-control" value="DAAN MOGOT" />
+                        <input type="text" name="AlPemusatan" id="pib_AlPemusatan" class="form-control" value="" placeholder="DAAN MOGOT" />
                     </div>
                 </div>
             </div>
@@ -260,31 +260,31 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Penjual<span class="required">*</span></label>
-                        <input type="text" name="NmPenjual" id="pib_NmPenjual" class="form-control req-field" value="NESTLE (THAI) LTD" required />
+                        <input type="text" name="NmPenjual" id="pib_NmPenjual" class="form-control req-field" value="" placeholder="NESTLE (THAI) LTD" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nama Pengirim<span class="required">*</span></label>
-                        <input type="text" name="NmPemasok" id="pib_NmPemasok" class="form-control req-field" value="NESTLE (THAI) LTD" required />
+                        <input type="text" name="NmPemasok" id="pib_NmPemasok" class="form-control req-field" value="" placeholder="NESTLE (THAI) LTD" required />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Alamat Penjual</label>
-                        <textarea name="AlPenjual" id="pib_AlPenjual" class="form-control" rows="2">999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK</textarea>
+                        <textarea name="AlPenjual" id="pib_AlPenjual" class="form-control" rows="2" placeholder="999/9 RAMA 1 ROAD KWAENG PATHUMWAN, BANGKOK"></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Alamat Pengirim</label>
-                        <textarea name="AlPemasok" id="pib_AlPemasok" class="form-control" rows="2">999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK</textarea>
+                        <textarea name="AlPemasok" id="pib_AlPemasok" class="form-control" rows="2" placeholder="999/9 RAMA 1 ROAD KWAENG PATHUMWAN, BANGKOK"></textarea>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Negara Penjual</label>
-                        <input type="text" name="NegPenjual" id="pib_NegPenjual" class="form-control" value="TH - THAILAND" />
+                        <input type="text" name="NegPenjual" id="pib_NegPenjual" class="form-control" value="" placeholder="TH - THAILAND" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Negara Pengirim</label>
-                        <input type="text" name="NegPemasok" id="pib_NegPemasok" class="form-control" value="TH - THAILAND" />
+                        <input type="text" name="NegPemasok" id="pib_NegPemasok" class="form-control" value="" placeholder="TH - THAILAND" />
                     </div>
                 </div>
             </div>
@@ -302,11 +302,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nomor API / NIB</label>
-                        <input type="text" name="NoApi" id="pib_NoApi" class="form-control" value="2325256234234" />
+                        <input type="text" name="NoApi" id="pib_NoApi" class="form-control" value="" placeholder="2325256234234" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status</label>
-                        <input type="text" name="StatusApi" id="pib_StatusApi" class="form-control" value="LAINNYA" />
+                        <input type="text" name="StatusApi" id="pib_StatusApi" class="form-control" value="" placeholder="LAINNYA" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Afiliasi</label>
@@ -976,7 +976,7 @@
         if (currentTab > 1) DoIt.switchPibTab(currentTab - 1);
     };
 
-    // Dynamic Tab & Field Validation System (Green for complete, Red for empty/invalid)
+    // Dynamic Tab & Field Validation System (Green = complete, Red = ada field kosong)
     DoIt.validateAllPibTabs = function() {
         for (var i = 1; i <= totalTabs; i++) {
             var panel = document.getElementById('pibPanel' + i);
@@ -985,17 +985,16 @@
 
             var reqFields = panel.querySelectorAll('.req-field, [required]');
             var isComplete = true;
-            var hasAttemptedInput = false;
 
             reqFields.forEach(function(input) {
                 var val = (input.value || '').trim();
                 if (val !== '') {
-                    hasAttemptedInput = true;
                     input.classList.add('field-valid');
                     input.classList.remove('field-invalid');
                 } else {
                     isComplete = false;
                     input.classList.remove('field-valid');
+                    // Hanya warnai field merah jika sudah disentuh
                     if (input.dataset.touched === 'true') {
                         input.classList.add('field-invalid');
                     }
@@ -1003,9 +1002,12 @@
             });
 
             tabBtn.classList.remove('tab-success', 'tab-danger');
-            if (isComplete && reqFields.length > 0) {
+            if (reqFields.length === 0) {
+                // Tab tanpa field wajib: tidak diberi warna
+            } else if (isComplete) {
                 tabBtn.classList.add('tab-success');
-            } else if (!isComplete && (hasAttemptedInput || i === currentTab || tabBtn.dataset.touched === 'true')) {
+            } else {
+                // Selalu merah jika ada field wajib yang belum terisi
                 tabBtn.classList.add('tab-danger');
             }
         }
@@ -1044,65 +1046,115 @@
         DoIt.validateAllPibTabs();
     };
 
-    DoIt.fillPibSampleData = function() {
-        document.getElementById('pib_Car').value = '000020-000000-20251123-000005';
-        document.getElementById('pib_PelTujuan').value = 'IDCGK - CENGKARENG / SOEKARNO HATTA (U)';
-        document.getElementById('pib_KdKantor').value = '050100 - KPU BEA DAN CUKAI TIPE C SOEKARNO-HATTA';
-        document.getElementById('pib_JnsPib').value = '1';
-        document.getElementById('pib_JnsImp').value = '1';
-        document.getElementById('pib_JnsBayar').value = '1';
+    DoIt.fillPibSampleData = async function() {
+        var tabNames = ['Header', 'Entitas', 'Dokumen', 'Pengangkut', 'Kemasan & Peti', 'Transaksi', 'Barang', 'Pungutan', 'Pernyataan'];
+        var activeTabName = tabNames[currentTab - 1] || ('Tab ' + currentTab);
+        var confirmed = await DoIt.confirm(
+            'Isi sample data CEISA 4.0 (BC 2.0) untuk Tab ' + currentTab + ' – ' + activeTabName + '?',
+            'Konfirmasi Isi Sample Data'
+        );
+        if (!confirmed) return;
 
-        document.getElementById('pib_IdImp').value = '00174392740460000';
-        document.getElementById('pib_NitkuImp').value = '0017439274046000000000';
-        document.getElementById('pib_NmImo').value = 'NNKGO INDONESIA';
-        document.getElementById('pib_AlImp').value = 'DAAN MOGOT';
+        switch (currentTab) {
+            case 1:
+                if (document.getElementById('pib_Car')) document.getElementById('pib_Car').value = '000020-000000-20251123-000005';
+                if (document.getElementById('pib_PelTujuan')) document.getElementById('pib_PelTujuan').value = 'IDCGK - CENGKARENG / SOEKARNO HATTA (U)';
+                if (document.getElementById('pib_KdKantor')) document.getElementById('pib_KdKantor').value = '050100 - KPU BEA DAN CUKAI TIPE C SOEKARNO-HATTA';
+                if (document.getElementById('pib_JnsPib')) document.getElementById('pib_JnsPib').value = '1';
+                if (document.getElementById('pib_JnsImp')) document.getElementById('pib_JnsImp').value = '1';
+                if (document.getElementById('pib_JnsBayar')) document.getElementById('pib_JnsBayar').value = '1';
+                break;
+            case 2:
+                if (document.getElementById('pib_IdImp')) document.getElementById('pib_IdImp').value = '00174392740460000';
+                if (document.getElementById('pib_NitkuImp')) document.getElementById('pib_NitkuImp').value = '0017439274046000000000';
+                if (document.getElementById('pib_NmImo')) document.getElementById('pib_NmImo').value = 'NNKGO INDONESIA';
+                if (document.getElementById('pib_AlImp')) document.getElementById('pib_AlImp').value = 'DAAN MOGOT';
+                DoIt.copyPibImportir('pemilik');
+                DoIt.copyPibImportir('pemusatan');
+                if (document.getElementById('pib_NmPenjual')) document.getElementById('pib_NmPenjual').value = 'NESTLE (THAI) LTD';
+                if (document.getElementById('pib_AlPenjual')) document.getElementById('pib_AlPenjual').value = '999/9 RAMA 1 ROAD KWAENG PATHUMWAN, BANGKOK';
+                if (document.getElementById('pib_NegPenjual')) document.getElementById('pib_NegPenjual').value = 'TH - THAILAND';
+                DoIt.copyPibPengirim();
+                if (document.getElementById('pib_NoApi')) document.getElementById('pib_NoApi').value = '2325256234234';
+                if (document.getElementById('pib_StatusApi')) document.getElementById('pib_StatusApi').value = 'LAINNYA';
+                if (document.getElementById('pib_Afiliasi')) document.getElementById('pib_Afiliasi').value = 'AFL';
+                break;
+            case 3:
+                var docKd = document.querySelector('[name="DocKd[]"]'); if (docKd) docKd.value = '380';
+                var docNo = document.querySelector('[name="DocNo[]"]'); if (docNo) docNo.value = '4002310125';
+                var docTg = document.querySelector('[name="DocTg[]"]'); if (docTg) docTg.value = '04-11-2025';
+                var docFas = document.querySelector('[name="DocFas[]"]'); if (docFas) docFas.value = '00 - ATGA';
+                break;
+            case 4:
+                if (document.getElementById('pib_NoBc11')) document.getElementById('pib_NoBc11').value = 'BC11';
+                if (document.getElementById('pib_TglBc11')) document.getElementById('pib_TglBc11').value = '11-11-2025';
+                if (document.getElementById('pib_NoPosBc11')) document.getElementById('pib_NoPosBc11').value = '07';
+                if (document.getElementById('pib_NoSubPos')) document.getElementById('pib_NoSubPos').value = '00';
+                if (document.getElementById('pib_CaraAngkut')) document.getElementById('pib_CaraAngkut').value = '4';
+                if (document.getElementById('pib_NmAngkut')) document.getElementById('pib_NmAngkut').value = 'SUMATRA';
+                if (document.getElementById('pib_NoVoyFlight')) document.getElementById('pib_NoVoyFlight').value = '2003';
+                if (document.getElementById('pib_BenderaVoy')) document.getElementById('pib_BenderaVoy').value = 'SG - SINGAPORE';
+                if (document.getElementById('pib_TglTiba')) document.getElementById('pib_TglTiba').value = '11-11-2025';
+                if (document.getElementById('pib_PelMuat')) document.getElementById('pib_PelMuat').value = 'THBKK - LAEM CHABANG';
+                if (document.getElementById('pib_PelBongkar')) document.getElementById('pib_PelBongkar').value = 'IDCGK - CENGKARENG';
+                if (document.getElementById('pib_Gudang')) document.getElementById('pib_Gudang').value = 'AF03 - ANGKASA PURA KARGO';
+                break;
+            case 5:
+                var kmsJml = document.querySelector('[name="KmsJml[]"]'); if (kmsJml) kmsJml.value = '4543';
+                var kmsJns = document.querySelector('[name="KmsJns[]"]'); if (kmsJns) kmsJns.value = 'CT';
+                var kmsMerk = document.querySelector('[name="KmsMerk[]"]'); if (kmsMerk) kmsMerk.value = 'SESUAI IS';
+                var contNo = document.querySelector('[name="ContNo[]"]'); if (contNo) contNo.value = 'DNLU5203872';
+                var contUkr = document.querySelector('[name="ContUkr[]"]'); if (contUkr) contUkr.value = '20';
+                var contMuat = document.querySelector('[name="ContMuat[]"]'); if (contMuat) contMuat.value = 'L';
+                break;
+            case 6:
+                if (document.getElementById('pib_KdVal')) document.getElementById('pib_KdVal').value = 'JPY';
+                if (document.getElementById('pib_Ndpbm')) document.getElementById('pib_Ndpbm').value = '107.027';
+                if (document.getElementById('pib_JnsTransaksi')) document.getElementById('pib_JnsTransaksi').value = 'KMB - PEMBAYARAN KEMUDIAN';
+                if (document.getElementById('pib_Fob')) document.getElementById('pib_Fob').value = '27,100.00';
+                if (document.getElementById('pib_NilaiPabeanValas')) document.getElementById('pib_NilaiPabeanValas').value = '24,209.01';
+                if (document.getElementById('pib_Cif')) document.getElementById('pib_Cif').value = '2,720,853.24';
+                if (document.getElementById('pib_Freight')) document.getElementById('pib_Freight').value = '485.00';
+                if (document.getElementById('pib_Asuransi')) document.getElementById('pib_Asuransi').value = 'DALAM NEGERI 100.0000';
+                if (document.getElementById('pib_VoluntaryDeclaration')) document.getElementById('pib_VoluntaryDeclaration').value = '1270.56';
+                if (document.getElementById('pib_Bruto')) document.getElementById('pib_Bruto').value = '0.20177400';
+                if (document.getElementById('pib_Netto')) document.getElementById('pib_Netto').value = '0.20177000';
+                break;
+            case 7:
+                var brgHs = document.querySelector('[name="BrgHs[]"]'); if (brgHs) brgHs.value = '23099020';
+                var brgDesc = document.querySelector('[name="BrgDesc[]"]'); if (brgDesc) brgDesc.value = 'FELIX ADT SALMON IN JELLY(6x12)50G TBR';
+                var brgVal = document.querySelector('[name="BrgVal[]"]'); if (brgVal) brgVal.value = '8,382.00';
+                var brgQty = document.querySelector('[name="BrgQty[]"]'); if (brgQty) brgQty.value = '3,570';
+                var brgSat = document.querySelector('[name="BrgSat[]"]'); if (brgSat) brgSat.value = 'KGM - Kilogram';
+                break;
+            case 8:
+                if (document.getElementById('pib_KodeBank')) document.getElementById('pib_KodeBank').value = '008';
+                if (document.getElementById('pib_NoNtpn')) document.getElementById('pib_NoNtpn').value = '2608191100018899';
+                if (document.getElementById('pib_StatusBayar')) document.getElementById('pib_StatusBayar').value = 'LUNAS';
+                if (document.getElementById('pib_NilaiBm')) document.getElementById('pib_NilaiBm').value = '15000000';
+                if (document.getElementById('pib_NilaiPpn')) document.getElementById('pib_NilaiPpn').value = '33000000';
+                if (document.getElementById('pib_NilaiPph')) document.getElementById('pib_NilaiPph').value = '7500000';
+                if (document.getElementById('pib_NilaiPnbp')) document.getElementById('pib_NilaiPnbp').value = '100000';
+                DoIt.recalcPibPungutan();
+                break;
+            case 9:
+                if (document.getElementById('pib_TempatPernyataan')) document.getElementById('pib_TempatPernyataan').value = 'JAKARTA';
+                if (document.getElementById('pib_TglPernyataan')) document.getElementById('pib_TglPernyataan').value = '24-11-2025';
+                if (document.getElementById('pib_NamaPernyataan')) document.getElementById('pib_NamaPernyataan').value = 'ABD';
+                if (document.getElementById('pib_JabatanPernyataan')) document.getElementById('pib_JabatanPernyataan').value = 'MANAGER';
+                break;
+        }
 
-        DoIt.copyPibImportir('pemilik');
-        DoIt.copyPibImportir('pemusatan');
+        // Tandai semua field di tab aktif sebagai touched
+        var curPanel = document.getElementById('pibPanel' + currentTab);
+        if (curPanel) {
+            curPanel.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.dataset.touched = 'true';
+            });
+        }
+        document.querySelector('.pib-tab[data-tab="' + currentTab + '"]').dataset.touched = 'true';
 
-        document.getElementById('pib_NmPenjual').value = 'NESTLE (THAI) LTD';
-        document.getElementById('pib_AlPenjual').value = '999/9 RAMA 1 ROAD KWAENG PATHUMWAN,KHET PATHUMWAN, BANGKOK';
-        document.getElementById('pib_NegPenjual').value = 'TH - THAILAND';
-        DoIt.copyPibPengirim();
-
-        document.getElementById('pib_NoApi').value = '2325256234234';
-        document.getElementById('pib_StatusApi').value = 'LAINNYA';
-        document.getElementById('pib_Afiliasi').value = 'AFL';
-
-        document.getElementById('pib_NmAngkut').value = 'SUMATRA';
-        document.getElementById('pib_NoVoyFlight').value = '2003';
-        document.getElementById('pib_BenderaVoy').value = 'SG - SINGAPORE';
-        document.getElementById('pib_TglTiba').value = '11-11-2025';
-        document.getElementById('pib_PelMuat').value = 'THBKK - LAEM CHABANG';
-        document.getElementById('pib_PelBongkar').value = 'IDCGK - CENGKARENG';
-        document.getElementById('pib_Gudang').value = 'AF03 - ANGKASA PURA KARGO';
-
-        document.getElementById('pib_KdVal').value = 'JPY';
-        document.getElementById('pib_Ndpbm').value = '107.027';
-        document.getElementById('pib_Fob').value = '27,100.00';
-        document.getElementById('pib_NilaiPabeanValas').value = '24,209.01';
-        document.getElementById('pib_Cif').value = '2,720,853.24';
-        document.getElementById('pib_Freight').value = '485.00';
-        document.getElementById('pib_Asuransi').value = 'DALAM NEGERI 100.0000';
-        document.getElementById('pib_VoluntaryDeclaration').value = '1270.56';
-        document.getElementById('pib_Bruto').value = '0.20177400';
-        document.getElementById('pib_Netto').value = '0.20177000';
-
-        document.getElementById('pib_KodeBank').value = '008';
-        document.getElementById('pib_NoNtpn').value = '2608191100018899';
-        document.getElementById('pib_StatusBayar').value = 'LUNAS';
-        document.getElementById('pib_NilaiBm').value = '15000000';
-        document.getElementById('pib_NilaiPpn').value = '33000000';
-        document.getElementById('pib_NilaiPph').value = '7500000';
-        document.getElementById('pib_NilaiPnbp').value = '100000';
-        DoIt.recalcPibPungutan();
-
-        document.getElementById('pib_TempatPernyataan').value = 'JAKARTA';
-        document.getElementById('pib_TglPernyataan').value = '24-11-2025';
-        document.getElementById('pib_NamaPernyataan').value = 'ABD';
-        document.getElementById('pib_JabatanPernyataan').value = 'MANAGER';
-
-        DoIt.toast('Sample data BC 2.0 berhasil diisikan seluruh tab!', 'success');
+        DoIt.toast('Sample data Tab ' + currentTab + ' (' + activeTabName + ') berhasil diisikan!', 'success');
         DoIt.validateAllPibTabs();
     };
 
@@ -1173,6 +1225,22 @@
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Reset semua nilai field agar tidak terisi oleh browser autocomplete
+        document.querySelectorAll('#pibForm input[type="text"], #pibForm input[type="number"], #pibForm textarea').forEach(function(el) {
+            el.value = '';
+            el.removeAttribute('data-touched');
+        });
+        document.querySelectorAll('#pibForm select').forEach(function(el) {
+            // Reset select ke opsi pertama yang kosong jika ada, atau biarkan default
+            var firstEmpty = el.querySelector('option[value=""]');
+            if (firstEmpty) el.value = '';
+            el.removeAttribute('data-touched');
+        });
+        document.querySelectorAll('.pib-tab').forEach(function(btn) {
+            btn.removeAttribute('data-touched');
+        });
+
+        // Pasang event listener
         document.querySelectorAll('#pibForm input, #pibForm select, #pibForm textarea').forEach(function(el) {
             el.addEventListener('input', function() {
                 el.dataset.touched = 'true';

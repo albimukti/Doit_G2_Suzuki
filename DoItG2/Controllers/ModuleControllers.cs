@@ -57,7 +57,7 @@ public class PibController : Controller
                 else if (status == "DRAFT") sql += " AND (NO_PEN_PIB IS NULL OR NO_PEN_PIB = '')";
             }
             
-            sql += " ORDER BY CREATION_DATE DESC";
+            sql += " ORDER BY CREATION_DATE DESC, CAR DESC";
             
             var items = await _db.QueryAsync<PibHeaderModel>(sql, parameters);
             return View(items.ToList());
@@ -142,19 +142,25 @@ public class PibController : Controller
             var brgQty = form["BrgQty[]"];
             var brgSat = form["BrgSat[]"];
             var brgNeg = form["BrgNeg[]"];
+            var brgVal = form["BrgVal[]"];
 
             for (int i = 0; i < brgHs.Count; i++)
             {
                 if (!string.IsNullOrWhiteSpace(brgHs[i]))
                 {
                     decimal qty = 0, val = 0;
-                    decimal.TryParse(brgQty[i], out qty);
-                    decimal.TryParse(model.Cif, out val);
+                    if (brgQty.Count > i) decimal.TryParse(brgQty[i]?.Replace(",", ""), out qty);
+                    if (brgVal.Count > i) decimal.TryParse(brgVal[i]?.Replace(",", ""), out val);
+                    if (val == 0) decimal.TryParse(model.Cif?.Replace(",", ""), out val);
+
+                    var desc = brgDesc.Count > i ? brgDesc[i] : "";
+                    var unitType = brgSat.Count > i ? brgSat[i] : "";
+                    var negara = brgNeg.Count > i ? brgNeg[i] : (model.NegPemasok ?? "TH");
 
                     await _db.ExecuteAsync(
                         @"INSERT INTO PIB_DOIT_FINAL_DETAIL (CAR, SERIAL, HS_NO, GOOD_DESC1, QUANTITY, UNIT_TYPE, ORIGIN_COUNTRY, UNIT_VAL)
                            VALUES (@Car, @Serial, @HsNo, @Desc, @Qty, @UnitType, @Negara, @UnitVal)",
-                        new { Car = model.Car, Serial = i + 1, HsNo = brgHs[i], Desc = brgDesc[i], Qty = qty, UnitType = brgSat[i], Negara = brgNeg[i], UnitVal = val });
+                        new { Car = model.Car, Serial = i + 1, HsNo = brgHs[i], Desc = desc, Qty = qty, UnitType = unitType, Negara = negara, UnitVal = val });
                 }
             }
 
@@ -168,10 +174,14 @@ public class PibController : Controller
             {
                 if (!string.IsNullOrWhiteSpace(docKd[i]))
                 {
+                    var dNm = docNm.Count > i ? docNm[i] : "";
+                    var dNo = docNo.Count > i ? docNo[i] : "";
+                    var dTg = docTg.Count > i ? docTg[i] : "";
+
                     await _db.ExecuteAsync(
                         @"INSERT INTO PIB_DOIT_FINAL_DOCUMENT (CAR, SERIAL, DOKKD, DOKNM, DOKNO, DOKTG)
                            VALUES (@Car, @Serial, @DokKd, @DokNm, @DokNo, @DokTg)",
-                        new { Car = model.Car, Serial = i + 1, DokKd = docKd[i], DokNm = docNm[i], DokNo = docNo[i], DokTg = docTg[i] });
+                        new { Car = model.Car, Serial = i + 1, DokKd = docKd[i], DokNm = dNm, DokNo = dNo, DokTg = dTg });
                 }
             }
 
@@ -186,18 +196,42 @@ public class PibController : Controller
                 if (!string.IsNullOrWhiteSpace(contNo[i]))
                 {
                     int ukr = 20;
-                    int.TryParse(contUkr[i], out ukr);
+                    if (contUkr.Count > i) int.TryParse(contUkr[i], out ukr);
+                    var cMuat = contMuat.Count > i ? contMuat[i] : "F";
+                    var cTipe = contTipe.Count > i ? contTipe[i] : "";
+
                     await _db.ExecuteAsync(
                         @"INSERT INTO PIB_DOIT_FINAL_CONTAINER (CAR, NO_CONT, UKR_CONT, JNS_MUAT, JNS_CONT)
                            VALUES (@Car, @NoCont, @UkrCont, @JnsMuat, @JnsCont)",
-                        new { Car = model.Car, NoCont = contNo[i], UkrCont = ukr, JnsMuat = contMuat[i], JnsCont = contTipe[i] });
+                        new { Car = model.Car, NoCont = contNo[i], UkrCont = ukr, JnsMuat = cMuat, JnsCont = cTipe });
+                }
+            }
+
+            // Save Kemasan
+            var kmsJml = form["KmsJml[]"];
+            var kmsJns = form["KmsJns[]"];
+            var kmsMerk = form["KmsMerk[]"];
+
+            for (int i = 0; i < kmsJml.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(kmsJml[i]))
+                {
+                    int jml = 0;
+                    int.TryParse(kmsJml[i], out jml);
+                    var jns = kmsJns.Count > i ? kmsJns[i] : "CT";
+                    var merk = kmsMerk.Count > i ? kmsMerk[i] : "";
+
+                    await _db.ExecuteAsync(
+                        @"INSERT INTO PIB_DOIT_FINAL_KEMASAN (CAR, JML_KMS, JNS_KMS, MERK_KMS)
+                           VALUES (@Car, @JmlKms, @JnsKms, @MerkKms)",
+                        new { Car = model.Car, JmlKms = jml, JnsKms = jns, MerkKms = merk });
                 }
             }
 
             // Insert audit log
             await _db.ExecuteAsync(
                 @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'CREATE_PIB', 'PIB', @Car, 'Membuat dokumen PIB 8-Tab CEISA 4.0 baru', @Ip, GETDATE())",
+                  VALUES (@User, 'CREATE_PIB', 'PIB', @Car, 'Membuat dokumen PIB 9-Tab CEISA 4.0 baru', @Ip, GETDATE())",
                 new { User = User.Identity?.Name ?? "system", Car = model.Car, Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
 
             TempData["Success"] = $"Dokumen PIB (CEISA 4.0) dengan nomor CAR {model.Car} berhasil disimpan.";
@@ -442,7 +476,7 @@ public class PebController : Controller
                 else if (status == "DRAFT") sql += " AND STATUS <= 1";
             }
             
-            sql += " ORDER BY CREATED_DATE DESC";
+            sql += " ORDER BY CREATED_DATE DESC, CAR DESC";
             
             var items = await _db.QueryAsync<PebHeaderModel>(sql, parameters);
             return View(items.ToList());
@@ -529,13 +563,15 @@ public class PebController : Controller
                     int hsInt = 0, qtyInt = 0;
                     long fobLong = 0;
                     int.TryParse(brgHs[i], out hsInt);
-                    int.TryParse(brgQty[i], out qtyInt);
-                    long.TryParse(brgFob[i], out fobLong);
+                    if (brgQty.Count > i) int.TryParse(brgQty[i]?.Replace(",", ""), out qtyInt);
+                    if (brgFob.Count > i) long.TryParse(brgFob[i]?.Replace(",", ""), out fobLong);
+                    var desc = brgDesc.Count > i ? brgDesc[i] : "";
+                    var unitType = brgSat.Count > i ? brgSat[i] : "";
 
                     await _db.ExecuteAsync(
                         @"INSERT INTO PEB_DOIT_FINAL_DETAIL (CAR, SERIBRG, HS, URBRG1, JMSATUAN, JNSATUAN, FOBPERBRG, CREATED_DATE)
                            VALUES (@Car, @Seri, @Hs, @Desc, @Qty, @UnitType, @Fob, GETDATE())",
-                        new { Car = model.Car, Seri = i + 1, Hs = hsInt, Desc = brgDesc[i], Qty = qtyInt, UnitType = brgSat[i], Fob = fobLong });
+                        new { Car = model.Car, Seri = i + 1, Hs = hsInt, Desc = desc, Qty = qtyInt, UnitType = unitType, Fob = fobLong });
                 }
             }
 
@@ -550,12 +586,13 @@ public class PebController : Controller
                 if (!string.IsNullOrWhiteSpace(docKd[i]))
                 {
                     DateTime? docDate = null;
-                    if (DateTime.TryParse(docTg[i], out DateTime dt)) docDate = dt;
+                    if (docTg.Count > i && DateTime.TryParse(docTg[i], out DateTime dt)) docDate = dt;
+                    var dNo = docNo.Count > i ? docNo[i] : "";
 
                     await _db.ExecuteAsync(
                         @"INSERT INTO PEB_DOIT_FINAL_DOCUMENT (CAR, KDDOK, NODOK, TGDOK, CREATED_DATE)
                            VALUES (@Car, @KdDok, @NoDok, @TgDok, GETDATE())",
-                        new { Car = model.Car, KdDok = docKd[i], NoDok = docNo[i], TgDok = docDate });
+                        new { Car = model.Car, KdDok = docKd[i], NoDok = dNo, TgDok = docDate });
                 }
             }
 

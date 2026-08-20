@@ -72,7 +72,7 @@
         </button>
     </div>
 
-    <form method="post" id="pebForm">
+    <form method="post" id="pebForm" autocomplete="off">
 
         <!-- TAB 1: Header Dokumen Ekspor -->
         <div class="peb-panel active" id="pebPanel1">
@@ -88,17 +88,17 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Kantor Pabean Pemuatan<span class="required">*</span></label>
-                    <input type="text" name="KdKtrPemuatan" id="peb_KdKtrPemuatan" class="form-control req-field" value="010300 - CUKAI DUMAI, SUMATERA UTARA" required />
+                    <input type="text" name="KdKtrPemuatan" id="peb_KdKtrPemuatan" class="form-control req-field" value="" placeholder="010300 - CUKAI DUMAI, SUMATERA UTARA" required />
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Pelabuhan Muat Ekspor<span class="required">*</span></label>
-                    <input type="text" name="PelMuat" id="peb_PelMuat" class="form-control req-field" value="IDDUM - DUMAI" required />
+                    <input type="text" name="PelMuat" id="peb_PelMuat" class="form-control req-field" value="" placeholder="IDDUM - DUMAI" required />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Kantor Pabean Ekspor<span class="required">*</span></label>
-                    <input type="text" name="KdKtr" id="peb_KdKtr" class="form-control req-field" value="010300 - CUKAI DUMAI" required />
+                    <input type="text" name="KdKtr" id="peb_KdKtr" class="form-control req-field" value="" placeholder="010300 - CUKAI DUMAI" required />
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
@@ -165,26 +165,26 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NPWP Eksportir<span class="required">*</span></label>
-                        <input type="text" name="NpwpEks" id="peb_NpwpEks" class="form-control req-field" value="00174392740460000" maxlength="16" required />
+                        <input type="text" name="NpwpEks" id="peb_NpwpEks" class="form-control req-field" value="" placeholder="00174392740460000" maxlength="16" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">NITKU Eksportir</label>
-                        <input type="text" name="NitkuEks" id="peb_NitkuEks" class="form-control" value="0017439274046000000000" maxlength="22" />
+                        <input type="text" name="NitkuEks" id="peb_NitkuEks" class="form-control" value="" placeholder="0017439274046000000000" maxlength="22" />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Eksportir<span class="required">*</span></label>
-                        <input type="text" name="NamaEks" id="peb_NamaEks" class="form-control req-field" value="ELECTRONIC DATA INTERCHANGE INDONESIA" required />
+                        <input type="text" name="NamaEks" id="peb_NamaEks" class="form-control req-field" value="" placeholder="ELECTRONIC DATA INTERCHANGE INDONESIA" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status Eksportir</label>
-                        <input type="text" name="StatusEks" id="peb_StatusEks" class="form-control" value="BUMN" />
+                        <input type="text" name="StatusEks" id="peb_StatusEks" class="form-control" value="" placeholder="BUMN" />
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Alamat Eksportir<span class="required">*</span></label>
-                    <textarea name="AlmtEks" id="peb_AlmtEks" class="form-control req-field" rows="2" required>WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89 009/011</textarea>
+                    <textarea name="AlmtEks" id="peb_AlmtEks" class="form-control req-field" rows="2" placeholder="WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89" required></textarea>
                 </div>
             </div>
 
@@ -777,7 +777,7 @@
         if (currentTab > 1) DoIt.switchPebTab(currentTab - 1);
     };
 
-    // Dynamic Tab & Field Validation System for PEB (Green for complete, Red for empty/invalid)
+    // Dynamic Tab & Field Validation System for PEB (Green = complete, Red = ada field kosong)
     DoIt.validateAllPebTabs = function() {
         for (var i = 1; i <= totalTabs; i++) {
             var panel = document.getElementById('pebPanel' + i);
@@ -786,17 +786,16 @@
 
             var reqFields = panel.querySelectorAll('.req-field, [required]');
             var isComplete = true;
-            var hasAttemptedInput = false;
 
             reqFields.forEach(function(input) {
                 var val = (input.value || '').trim();
                 if (val !== '') {
-                    hasAttemptedInput = true;
                     input.classList.add('field-valid');
                     input.classList.remove('field-invalid');
                 } else {
                     isComplete = false;
                     input.classList.remove('field-valid');
+                    // Hanya warnai field merah jika sudah disentuh
                     if (input.dataset.touched === 'true') {
                         input.classList.add('field-invalid');
                     }
@@ -804,9 +803,12 @@
             });
 
             tabBtn.classList.remove('tab-success', 'tab-danger');
-            if (isComplete && reqFields.length > 0) {
+            if (reqFields.length === 0) {
+                // Tab tanpa field wajib: tidak diberi warna
+            } else if (isComplete) {
                 tabBtn.classList.add('tab-success');
-            } else if (!isComplete && (hasAttemptedInput || i === currentTab || tabBtn.dataset.touched === 'true')) {
+            } else {
+                // Selalu merah jika ada field wajib yang belum terisi
                 tabBtn.classList.add('tab-danger');
             }
         }
@@ -824,56 +826,106 @@
         DoIt.validateAllPebTabs();
     };
 
-    DoIt.fillPebSampleData = function() {
-        document.getElementById('peb_Car').value = '000030LA7820202511220000337';
-        document.getElementById('peb_KdKtrPemuatan').value = '010300 - CUKAI DUMAI, SUMATERA UTARA';
-        document.getElementById('peb_PelMuat').value = 'IDDUM - DUMAI';
-        document.getElementById('peb_KdKtr').value = '010300 - CUKAI DUMAI';
-        document.getElementById('peb_JnEks').value = '1';
-        document.getElementById('peb_KatEks').value = '25';
-        document.getElementById('peb_CaraBayar').value = '1';
-        document.getElementById('peb_Komoditi').value = '2';
-        document.getElementById('peb_BarangKiriman').value = '9';
+    DoIt.fillPebSampleData = async function() {
+        var tabNames = ['Header', 'Entitas', 'Dokumen', 'Pengangkut', 'Kemasan & Peti', 'Transaksi', 'Detail Barang', 'Pungutan', 'Pernyataan'];
+        var activeTabName = tabNames[currentTab - 1] || ('Tab ' + currentTab);
+        var confirmed = await DoIt.confirm(
+            'Isi sample data CEISA 4.0 (BC 3.0) untuk Tab ' + currentTab + ' – ' + activeTabName + '?',
+            'Konfirmasi Isi Sample Data'
+        );
+        if (!confirmed) return;
 
-        document.getElementById('peb_NpwpEks').value = '00174392740460000';
-        document.getElementById('peb_NitkuEks').value = '0017439274046000000000';
-        document.getElementById('peb_NamaEks').value = 'ELECTRONIC DATA INTERCHANGE INDONESIA';
-        document.getElementById('peb_AlmtEks').value = 'WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89 009/011';
-        document.getElementById('peb_StatusEks').value = 'BUMN';
+        switch (currentTab) {
+            case 1:
+                if (document.getElementById('peb_Car')) document.getElementById('peb_Car').value = '000030LA7820202511220000337';
+                if (document.getElementById('peb_KdKtrPemuatan')) document.getElementById('peb_KdKtrPemuatan').value = '010300 - CUKAI DUMAI, SUMATERA UTARA';
+                if (document.getElementById('peb_PelMuat')) document.getElementById('peb_PelMuat').value = 'IDDUM - DUMAI';
+                if (document.getElementById('peb_KdKtr')) document.getElementById('peb_KdKtr').value = '010300 - CUKAI DUMAI';
+                if (document.getElementById('peb_JnEks')) document.getElementById('peb_JnEks').value = '1';
+                if (document.getElementById('peb_KatEks')) document.getElementById('peb_KatEks').value = '25';
+                if (document.getElementById('peb_CaraBayar')) document.getElementById('peb_CaraBayar').value = '1';
+                if (document.getElementById('peb_Komoditi')) document.getElementById('peb_Komoditi').value = '2';
+                if (document.getElementById('peb_BarangKiriman')) document.getElementById('peb_BarangKiriman').value = '0';
+                break;
+            case 2:
+                if (document.getElementById('peb_NpwpEks')) document.getElementById('peb_NpwpEks').value = '00174392740460000';
+                if (document.getElementById('peb_NitkuEks')) document.getElementById('peb_NitkuEks').value = '0017439274046000000000';
+                if (document.getElementById('peb_NamaEks')) document.getElementById('peb_NamaEks').value = 'ELECTRONIC DATA INTERCHANGE INDONESIA';
+                if (document.getElementById('peb_AlmtEks')) document.getElementById('peb_AlmtEks').value = 'WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89 009/011';
+                if (document.getElementById('peb_StatusEks')) document.getElementById('peb_StatusEks').value = 'BUMN';
+                if (document.getElementById('peb_NamaPenerima')) document.getElementById('peb_NamaPenerima').value = 'SUZUKI MOTOR CORPORATION JAPAN';
+                if (document.getElementById('peb_AlmtPenerima')) document.getElementById('peb_AlmtPenerima').value = '300 TAKATSUKA-CHO, MINAMI-KU, HAMAMATSU-SHI, SHIZUOKA';
+                if (document.getElementById('peb_NegPenerima')) document.getElementById('peb_NegPenerima').value = 'JP - JAPAN';
+                if (document.getElementById('peb_NamaBeli')) document.getElementById('peb_NamaBeli').value = 'SUZUKI MOTOR CORPORATION JAPAN';
+                if (document.getElementById('peb_AlmtBeli')) document.getElementById('peb_AlmtBeli').value = '300 TAKATSUKA-CHO, MINAMI-KU, HAMAMATSU-SHI, SHIZUOKA';
+                if (document.getElementById('peb_NegBeli')) document.getElementById('peb_NegBeli').value = 'JP - JAPAN';
+                if (document.getElementById('peb_KatKonsolidasi')) document.getElementById('peb_KatKonsolidasi').value = 'KONSOLIDATOR';
+                if (document.getElementById('peb_NpwpKonsolidasi')) document.getElementById('peb_NpwpKonsolidasi').value = '4422354243424334';
+                if (document.getElementById('peb_NamaKonsolidasi')) document.getElementById('peb_NamaKonsolidasi').value = 'ARUBI';
+                if (document.getElementById('peb_AlmtKonsolidasi')) document.getElementById('peb_AlmtKonsolidasi').value = 'JAKARTA TIMUR';
+                break;
+            case 3:
+                var docKd = document.querySelector('#pebDocRows [name="DocKd[]"]'); if (docKd) docKd.value = '380';
+                var docNo = document.querySelector('#pebDocRows [name="DocNo[]"]'); if (docNo) docNo.value = 'EXP-INV-20251122';
+                var docTg = document.querySelector('#pebDocRows [name="DocTg[]"]'); if (docTg) docTg.value = '22-11-2025';
+                break;
+            case 4:
+                if (document.getElementById('peb_Tps')) document.getElementById('peb_Tps').value = 'TPSDUM - TPS DUMAI';
+                if (document.getElementById('peb_LokasiPeriksa')) document.getElementById('peb_LokasiPeriksa').value = 'GUDANG EKSPORTIR';
+                if (document.getElementById('peb_TglPeriksa')) document.getElementById('peb_TglPeriksa').value = '22-11-2025';
+                if (document.getElementById('peb_PelMuatAsal')) document.getElementById('peb_PelMuatAsal').value = 'IDDUM - DUMAI';
+                if (document.getElementById('peb_PelMuatEkspor')) document.getElementById('peb_PelMuatEkspor').value = 'IDDUM - DUMAI';
+                if (document.getElementById('peb_PelBongkar')) document.getElementById('peb_PelBongkar').value = 'JPTYO - TOKYO';
+                if (document.getElementById('peb_Carrier')) document.getElementById('peb_Carrier').value = 'MV SUZUKI EXPRESS';
+                break;
+            case 5:
+                var kmsJml = document.querySelector('[name="KmsJml"]'); if (kmsJml) kmsJml.value = '10';
+                var kmsJns = document.querySelector('[name="KmsJns"]'); if (kmsJns) kmsJns.value = 'PX';
+                var kmsMerk = document.querySelector('[name="KmsMerk"]'); if (kmsMerk) kmsMerk.value = 'SUZUKI EXPORT BOX';
+                break;
+            case 6:
+                if (document.getElementById('peb_KdVal')) document.getElementById('peb_KdVal').value = 'USD';
+                if (document.getElementById('peb_Ndpbm')) document.getElementById('peb_Ndpbm').value = '17,527.0000';
+                if (document.getElementById('peb_CaraPenyerahan')) document.getElementById('peb_CaraPenyerahan').value = 'EXW';
+                if (document.getElementById('peb_Fob')) document.getElementById('peb_Fob').value = '150000.00';
+                if (document.getElementById('peb_Freight')) document.getElementById('peb_Freight').value = '100.00';
+                if (document.getElementById('peb_Asuransi')) document.getElementById('peb_Asuransi').value = 'DALAM NEGERI 100.0000';
+                if (document.getElementById('peb_Bruto')) document.getElementById('peb_Bruto').value = '100.0000';
+                if (document.getElementById('peb_Netto')) document.getElementById('peb_Netto').value = '95.00';
+                break;
+            case 7:
+                var brgHs = document.querySelector('#pebBarangRows [name="BrgHs[]"]'); if (brgHs) brgHs.value = '87032110';
+                var brgDesc = document.querySelector('#pebBarangRows [name="BrgDesc[]"]'); if (brgDesc) brgDesc.value = 'SUZUKI AUTOMOBILE PASSENGER CAR';
+                var brgFob = document.querySelector('#pebBarangRows [name="BrgFob[]"]'); if (brgFob) brgFob.value = '150000.00';
+                var brgQty = document.querySelector('#pebBarangRows [name="BrgQty[]"]'); if (brgQty) brgQty.value = '1';
+                var brgSat = document.querySelector('#pebBarangRows [name="BrgSat[]"]'); if (brgSat) brgSat.value = 'UNT - Unit';
+                break;
+            case 8:
+                if (document.getElementById('peb_KodeBank')) document.getElementById('peb_KodeBank').value = '008';
+                if (document.getElementById('peb_NoNtpn')) document.getElementById('peb_NoNtpn').value = '0820263009918273';
+                if (document.getElementById('peb_StatusBayar')) document.getElementById('peb_StatusBayar').value = 'LUNAS';
+                if (document.getElementById('peb_NilaiBeaKeluar')) document.getElementById('peb_NilaiBeaKeluar').value = '0';
+                if (document.getElementById('peb_NilaiPnbpEks')) document.getElementById('peb_NilaiPnbpEks').value = '50000';
+                DoIt.recalcPebPungutan();
+                break;
+            case 9:
+                if (document.getElementById('peb_TempatPernyataan')) document.getElementById('peb_TempatPernyataan').value = 'DUMAI';
+                if (document.getElementById('peb_TglPernyataan')) document.getElementById('peb_TglPernyataan').value = '22-11-2025';
+                if (document.getElementById('peb_NamaPernyataan')) document.getElementById('peb_NamaPernyataan').value = 'SUZUKI EXPORT LOGISTICS';
+                if (document.getElementById('peb_JabatanPernyataan')) document.getElementById('peb_JabatanPernyataan').value = 'HEAD OF EXPORT';
+                break;
+        }
 
-        document.getElementById('peb_NamaPenerima').value = 'ARUBI';
-        document.getElementById('peb_NegPenerima').value = 'ID - INDONESIA';
-        document.getElementById('peb_AlmtPenerima').value = 'KP PRAPATAN RTS/RW02 CIBADAK TANAH SAREAL KOTA BOGOR';
+        // Tandai semua field di tab aktif sebagai touched
+        var curPanel = document.getElementById('pebPanel' + currentTab);
+        if (curPanel) {
+            curPanel.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.dataset.touched = 'true';
+            });
+        }
+        document.querySelector('.peb-tab[data-tab="' + currentTab + '"]').dataset.touched = 'true';
 
-        DoIt.copyPebPenerima();
-
-        document.getElementById('peb_KatKonsolidasi').value = 'KONSOLIDATOR';
-        document.getElementById('peb_NpwpKonsolidasi').value = '4422354243424334';
-        document.getElementById('peb_NamaKonsolidasi').value = 'ARUBI';
-        document.getElementById('peb_AlmtKonsolidasi').value = 'JAKARTA TIMUR';
-
-        document.getElementById('peb_KdVal').value = 'USD';
-        document.getElementById('peb_Ndpbm').value = '17,527.0000';
-        document.getElementById('peb_CaraPenyerahan').value = 'EXW';
-        document.getElementById('peb_Fob').value = '0.0000';
-        document.getElementById('peb_Freight').value = '100.00';
-        document.getElementById('peb_Asuransi').value = 'DALAM NEGERI 100.0000';
-        document.getElementById('peb_Bruto').value = '100.0000';
-        document.getElementById('peb_Netto').value = '0.00';
-
-        document.getElementById('peb_KodeBank').value = '008';
-        document.getElementById('peb_NoNtpn').value = '0820263009918273';
-        document.getElementById('peb_StatusBayar').value = 'LUNAS';
-        document.getElementById('peb_NilaiBeaKeluar').value = '2500000';
-        document.getElementById('peb_NilaiPnbpEks').value = '50000';
-        DoIt.recalcPebPungutan();
-
-        document.getElementById('peb_TempatPernyataan').value = 'DUMAI';
-        document.getElementById('peb_TglPernyataan').value = '22-11-2025';
-        document.getElementById('peb_NamaPernyataan').value = 'SUZUKI EXPORT LOGISTICS';
-        document.getElementById('peb_JabatanPernyataan').value = 'HEAD OF EXPORT';
-
-        DoIt.toast('Sample data BC 3.0 PEB berhasil diisikan seluruh tab!', 'success');
+        DoIt.toast('Sample data Tab ' + currentTab + ' (' + activeTabName + ') berhasil diisikan!', 'success');
         DoIt.validateAllPebTabs();
     };
 
@@ -914,6 +966,21 @@
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Reset semua nilai field agar tidak terisi oleh browser autocomplete
+        document.querySelectorAll('#pebForm input[type="text"], #pebForm input[type="number"], #pebForm textarea').forEach(function(el) {
+            el.value = '';
+            el.removeAttribute('data-touched');
+        });
+        document.querySelectorAll('#pebForm select').forEach(function(el) {
+            var firstEmpty = el.querySelector('option[value=""]');
+            if (firstEmpty) el.value = '';
+            el.removeAttribute('data-touched');
+        });
+        document.querySelectorAll('.peb-tab').forEach(function(btn) {
+            btn.removeAttribute('data-touched');
+        });
+
+        // Pasang event listener
         document.querySelectorAll('#pebForm input, #pebForm select, #pebForm textarea').forEach(function(el) {
             el.addEventListener('input', function() {
                 el.dataset.touched = 'true';

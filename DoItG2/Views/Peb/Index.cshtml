@@ -83,7 +83,8 @@
                             </td>
                             <td style="text-align: center;">
                                 <div style="display: inline-flex; gap: 6px;">
-                                    @if (item.Status == "DRAFT")
+                                    <a class="btn btn-secondary btn-sm" href="/Peb/Detail/@item.Car">Detail</a>
+                                    @if (item.Status == "DRAFT" || string.IsNullOrEmpty(item.Status))
                                     {
                                         <a class="btn btn-warning btn-sm" href="/Peb/Edit/@item.Car">Edit</a>
                                         <form method="post" action="/Ceisa/TransmitPeb" style="display:inline;">
