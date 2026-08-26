@@ -42,6 +42,7 @@ public class LoginViewModel
 {
     public string UserName { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+    public string Entity { get; set; } = "SIM"; // SIM (PT. Suzuki Indomobil Motor) or SIS (PT. Suzuki Indomobil Sales)
     public bool RememberMe { get; set; }
     public string? ReturnUrl { get; set; }
 }

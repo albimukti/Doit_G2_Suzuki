@@ -1,6 +1,7 @@
 @model DoItG2.Models.Auth.LoginViewModel
 @{
     Layout = null;
+    var defaultEntity = string.IsNullOrEmpty(Model?.Entity) ? "SIM" : Model.Entity;
 }
 <!DOCTYPE html>
 <html lang="id">
@@ -38,7 +39,7 @@
         .login-panel {
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.94);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
@@ -46,19 +47,41 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 440px;
-            padding: 40px 36px;
+            max-width: 450px;
+            padding: 36px 32px;
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
             transition: var(--transition);
         }
 
         .login-logo-container {
             align-self: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
-        .login-form-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; text-align: center; }
-        .login-form-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; text-align: center; }
+        .login-form-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-align: center; color: #0f172a; }
+        .login-form-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
+
+        .entity-toggle-btn {
+            padding: 10px 12px;
+            border-radius: var(--border-radius-sm);
+            border: 1.5px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .entity-toggle-btn:hover {
+            border-color: var(--accent-primary);
+            background: rgba(59,130,246,0.04);
+        }
+        .entity-toggle-btn.active {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(79,70,229,0.12));
+            color: #1e3a8a;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.18);
+        }
 
         .form-control-login {
             width: 100%;
@@ -100,7 +123,7 @@
         .login-btn:active { transform: translateY(0); }
 
         .login-footer {
-            margin-top: 24px;
+            margin-top: 20px;
             font-size: 12px;
             color: var(--text-muted);
             text-align: center;
@@ -121,10 +144,10 @@
         .password-toggle:hover { color: var(--text-secondary); }
 
         @@media (max-width: 480px) {
-            .login-panel { padding: 32px 20px; }
-            .login-logo-container { margin-bottom: 16px; }
+            .login-panel { padding: 28px 18px; }
+            .login-logo-container { margin-bottom: 14px; }
             .login-form-title { font-size: 20px; }
-            .login-form-sub { margin-bottom: 24px; }
+            .login-form-sub { margin-bottom: 20px; }
         }
     </style>
 </head>
@@ -147,7 +170,7 @@
     </div>
     <div class="suzuki-loading-brand">
         <div class="suzuki-loading-title">DO-IT G2</div>
-        <div class="suzuki-loading-subtitle">PT Suzuki Indomobil Motor</div>
+        <div class="suzuki-loading-subtitle">PT Suzuki Indomobil</div>
     </div>
     <div class="suzuki-progress-container">
         <div class="suzuki-progress-bar" id="suzukiProgressBar"></div>
@@ -164,7 +187,7 @@
         </div>
 
         <h2 class="login-form-title">Selamat Datang</h2>
-        <p class="login-form-sub">Silakan masuk ke akun Anda untuk melanjutkan</p>
+        <p class="login-form-sub">Silakan pilih entitas dan masuk ke akun Anda</p>
 
         @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
         {
@@ -180,18 +203,41 @@
         <form asp-controller="Account" asp-action="Login" method="post" id="loginForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="ReturnUrl" value="@Model?.ReturnUrl" />
+            <input type="hidden" name="Entity" id="selectedEntity" value="@defaultEntity" />
+
+            <!-- Entity Selector: SIM vs SIS -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span>Entitas Perusahaan</span>
+                    <span id="entityKeyBadge" class="badge badge-info" style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px;">Key: 81 (SIM)</span>
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button type="button" class="entity-toggle-btn @(defaultEntity == "SIM" ? "active" : "")" id="btnEntitySIM" onclick="selectEntity('SIM')">
+                        <div style="font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>🏭</span> SIM
+                        </div>
+                        <div style="font-size: 10.5px; opacity: 0.85; margin-top: 3px;">PT Suzuki Indomobil Motor</div>
+                    </button>
+                    <button type="button" class="entity-toggle-btn @(defaultEntity == "SIS" ? "active" : "")" id="btnEntitySIS" onclick="selectEntity('SIS')">
+                        <div style="font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>🚗</span> SIS
+                        </div>
+                        <div style="font-size: 10.5px; opacity: 0.85; margin-top: 3px;">PT Suzuki Indomobil Sales</div>
+                    </button>
+                </div>
+            </div>
 
             <div class="form-group">
                 <label class="form-label" for="UserName">Username</label>
                 <input type="text" id="UserName" name="UserName" class="form-control-login"
-                       placeholder="Masukkan username..." autocomplete="username" autofocus />
+                       placeholder="Masukkan username..." autocomplete="username" autofocus required />
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="Password">Password</label>
                 <div class="password-field">
                     <input type="password" id="Password" name="Password" class="form-control-login"
-                           placeholder="Masukkan password..." autocomplete="current-password" />
+                           placeholder="Masukkan password..." autocomplete="current-password" required />
                     <button type="button" class="password-toggle" onclick="togglePassword()">
                         <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -209,7 +255,7 @@
             </div>
 
             <button type="submit" class="login-btn" id="loginBtn">
-                Masuk ke Sistem
+                Masuk ke Sistem (<span id="btnEntityText">@defaultEntity</span>)
             </button>
         </form>
 
@@ -220,6 +266,28 @@
 </div>
 
 <script>
+function selectEntity(entity) {
+    document.getElementById('selectedEntity').value = entity;
+    const btnSim = document.getElementById('btnEntitySIM');
+    const btnSis = document.getElementById('btnEntitySIS');
+    const badge = document.getElementById('entityKeyBadge');
+    const btnText = document.getElementById('btnEntityText');
+
+    if (entity === 'SIS') {
+        btnSis.classList.add('active');
+        btnSim.classList.remove('active');
+        badge.innerText = 'Key: 84 (SIS - Sales)';
+        badge.className = 'badge badge-warning';
+        if (btnText) btnText.innerText = 'SIS';
+    } else {
+        btnSim.classList.add('active');
+        btnSis.classList.remove('active');
+        badge.innerText = 'Key: 81 (SIM - Motor)';
+        badge.className = 'badge badge-info';
+        if (btnText) btnText.innerText = 'SIM';
+    }
+}
+
 function togglePassword() {
     const input = document.getElementById('Password');
     input.type = input.type === 'password' ? 'text' : 'password';
@@ -229,10 +297,12 @@ document.getElementById('loginForm')?.addEventListener('submit', function() {
     const overlay = document.getElementById('suzukiLoadingOverlay');
     const bar = document.getElementById('suzukiProgressBar');
     const txt = document.getElementById('suzukiLoadingStatus');
+    const entity = document.getElementById('selectedEntity')?.value || 'SIM';
+    
     if (overlay) {
         overlay.classList.remove('fade-out');
         if (bar) bar.style.width = '75%';
-        if (txt) txt.textContent = 'Autentikasi Pengguna & Membuka Akses...';
+        if (txt) txt.textContent = `Autentikasi Pengguna & Membuka Akses ${entity}...`;
     }
     const btn = document.getElementById('loginBtn');
     if (btn) {

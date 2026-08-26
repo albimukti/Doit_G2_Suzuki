@@ -55,13 +55,19 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a class="sidebar-logo" asp-controller="Dashboard" asp-action="Index">
                 <div class="logo-icon-img-container">
                     <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" class="logo-img-square" asp-append-version="true" />
                 </div>
                 <div class="logo-text">
                     <div class="logo-title">DO-IT G2</div>
-                    <div class="logo-subtitle">Suzuki Indomobil</div>
+                    <div class="logo-subtitle" style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+                        @{
+                            var activeEntity = User.FindFirst("Entity")?.Value ?? "SIM";
+                            var activeEntityBadge = activeEntity == "SIS" ? "badge-warning" : "badge-primary";
+                        }
+                        <span class="badge @activeEntityBadge" style="font-size: 9px; padding: 2px 5px; font-weight: 800;">@activeEntity</span>
+                        <span style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(activeEntity == "SIS" ? "PT. Suzuki Sales" : "PT. Suzuki Motor")</span>
+                    </div>
                 </div>
             </a>
         </div>
@@ -234,6 +240,18 @@
                 </div>
             </div>
             <div class="topbar-right">
+                <!-- Active Entity Indicator (SIM vs SIS) -->
+                @{
+                    var topEntity = User.FindFirst("Entity")?.Value ?? "SIM";
+                    var topEntityName = User.FindFirst("EntityName")?.Value ?? "PT. Suzuki Indomobil Motor";
+                    var topEntityKey = User.FindFirst("EntityKey")?.Value ?? "81";
+                    var topEntityClass = topEntity == "SIS" ? "badge-warning" : "badge-primary";
+                }
+                <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 20px; padding: 4px 12px; font-size: 11px;" title="@topEntityName (Key: @topEntityKey)">
+                    <span class="badge @topEntityClass" style="font-size: 10px; font-weight: 800; padding: 2px 6px;">@topEntity</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">@topEntityName</span>
+                </div>
+
                 <div class="system-status-pill" title="Status Koneksi Integrasi System">
                     <span class="status-dot active"></span>
                     <span>CEISA 4.0 &amp; SILO Terhubung</span>

@@ -43,12 +43,21 @@ public class AccountController : Controller
             return View(model);
         }
 
+        var entity = string.Equals(model.Entity, "SIS", StringComparison.OrdinalIgnoreCase) ? "SIS" : "SIM";
+        var entityName = entity == "SIS" ? "PT. Suzuki Indomobil Sales" : "PT. Suzuki Indomobil Motor";
+        var entityKey = entity == "SIS" ? "84" : "81";
+        var entityNpwp = entity == "SIS" ? "01.129.738.9-411.000" : "01.129.737.1-411.000";
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, user.UserName),
             new(ClaimTypes.GivenName, user.FullName),
             new(ClaimTypes.Email, user.Email ?? ""),
             new(ClaimTypes.Role, user.UserType),
+            new("Entity", entity),
+            new("EntityName", entityName),
+            new("EntityKey", entityKey),
+            new("EntityNpwp", entityNpwp),
             new("IsAdmin", user.IsAdmin.ToString()),
             new("PibSim", user.PibSim.ToString()),
             new("PibSis", user.PibSis.ToString()),
@@ -69,7 +78,7 @@ public class AccountController : Controller
             new ClaimsPrincipal(identity), authProps);
 
         await _audit.LogAsync(user.UserName, "LOGIN", "AUTH",
-            description: "Login berhasil", ipAddress: GetClientIp());
+            description: $"Login berhasil sebagai {entity} ({entityName})", ipAddress: GetClientIp());
 
         if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
             return Redirect(model.ReturnUrl);
