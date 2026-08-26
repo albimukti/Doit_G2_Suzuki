@@ -39,8 +39,74 @@ const DoIt = {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         const popover = document.getElementById('notifPopover');
         if (popover) {
-            popover.style.display = (popover.style.display === 'block') ? 'none' : 'block';
+            const isVisible = popover.style.display === 'flex' || popover.style.display === 'block';
+            popover.style.display = isVisible ? 'none' : 'flex';
+            if (!isVisible) {
+                DoIt.loadNotifications();
+            }
         }
+    },
+
+    async loadNotifications() {
+        const container = document.getElementById('notifListContainer');
+        const dot = document.getElementById('notifUnreadDot');
+        try {
+            const res = await fetch('/Dashboard/GetNotifications');
+            const notifs = await res.json();
+            
+            const unread = notifs.filter(n => !n.isRead);
+            if (dot) {
+                dot.style.display = unread.length > 0 ? 'inline-block' : 'none';
+            }
+
+            if (!container) return;
+
+            if (!notifs || notifs.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 24px; color: #94a3b8; font-size: 12px;">Belum ada notifikasi aktivitas.</div>';
+                return;
+            }
+
+            let html = '';
+            notifs.forEach(n => {
+                const bg = n.isRead ? '#ffffff' : '#f0fdf4';
+                const border = n.isRead ? 'border: 1px solid #f1f5f9;' : 'border: 1px solid #bbf7d0;';
+                const typeIcon = n.type === 'ERROR' ? '❌' : (n.type === 'SUCCESS' ? '✅' : (n.type === 'WARNING' ? '⚠️' : 'ℹ️'));
+                const actionLink = n.actionUrl ? `<a href="${n.actionUrl}" style="font-size: 11px; color: #2563eb; text-decoration: underline; display: inline-block; margin-top: 4px;">Lihat Dokumen ➔</a>` : '';
+
+                html += `
+                    <div style="background: ${bg}; ${border} border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 6px;">
+                            <div style="font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px;">
+                                <span>${typeIcon}</span> ${n.title}
+                            </div>
+                            <span style="font-size: 10px; color: #94a3b8; white-space: nowrap;">${new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div style="color: #475569; margin-top: 3px; line-height: 1.4;">${n.message}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            ${actionLink}
+                            ${!n.isRead ? `<button onclick="DoIt.markNotifRead(${n.id})" style="background: none; border: none; font-size: 10px; color: #64748b; cursor: pointer;">Tandai Dibaca</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (err) {
+            if (container) container.innerHTML = '<div style="color: #ef4444; padding: 12px; font-size: 11px;">Gagal memuat notifikasi.</div>';
+        }
+    },
+
+    async markNotifRead(id) {
+        try {
+            await fetch(`/Dashboard/MarkNotifRead?id=${id}`, { method: 'POST' });
+            DoIt.loadNotifications();
+        } catch (e) {}
+    },
+
+    async markAllNotifsRead() {
+        try {
+            await fetch('/Dashboard/MarkAllNotifsRead', { method: 'POST' });
+            DoIt.loadNotifications();
+        } catch (e) {}
     },
 
     initTabs(container) {
@@ -300,9 +366,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const scaleSelect = document.getElementById('displayScaleSelect');
+    if (scaleSelect) {
+        const savedScale = localStorage.getItem('app-display-scale') || '100';
+        scaleSelect.value = savedScale;
+    }
+
     const successMsg = document.getElementById('tempSuccess')?.value;
     const errorMsg = document.getElementById('tempError')?.value;
     if (successMsg) DoIt.toast(successMsg, 'success');
     if (errorMsg) DoIt.toast(errorMsg, 'danger');
+
+    // Load initial notifications & set 30s background check
+    DoIt.loadNotifications();
+    setInterval(() => DoIt.loadNotifications(), 30000);
 });
+
+// Display Scale (Zoom) Handler
+DoIt.setDisplayScale = function(scale) {
+    if (!scale || scale === '100') {
+        document.documentElement.removeAttribute('data-scale');
+        localStorage.setItem('app-display-scale', '100');
+        DoIt.toast('Skala tampilan: 100% (Standar)', 'info', 2000);
+    } else {
+        document.documentElement.setAttribute('data-scale', scale);
+        localStorage.setItem('app-display-scale', scale);
+        DoIt.toast(`Skala tampilan: ${scale}% (Fullscreen Laptop)`, 'info', 2000);
+    }
+    const select = document.getElementById('displayScaleSelect');
+    if (select) select.value = scale;
+};
 

@@ -1,0 +1,183 @@
+@model IEnumerable<DoItG2.Models.Common.MasterKursModel>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Master Kurs Pajak Kemenkeu (NDPBM)";
+}
+
+<div class="card" style="max-width: 1200px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                💱
+            </div>
+            <div>
+                <h2 class="card-title" style="margin: 0; font-size: 18px;">Master Kurs Pajak Kemenkeu (NDPBM)</h2>
+                <div class="card-subtitle">Nilai Dasar Penghitungan Bea Masuk &amp; Pajak Dalam Rangka Impor (PDRI) Mingguan</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <form asp-action="SyncKemenkeuRates" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;" onclick="DoIt.showLoading('Sinkronisasi Kurs Kemenkeu...')">
+                    <span>⚡</span> Sinkronisasi Kurs Terbaru (KMK)
+                </button>
+            </form>
+            <button type="button" class="btn btn-secondary" onclick="openKursModal('', '', 0, '', '', '')">
+                + Tambah / Update Kurs
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success" style="margin: 16px 24px 0;">
+            ✓ @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin: 16px 24px 0;">
+            ✕ @TempData["Error"]
+        </div>
+    }
+
+    <div style="padding: 24px;">
+        <!-- Info Alert -->
+        <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155;">
+            <strong>💡 Ketentuan Pabean:</strong> Nilai Kurs Pajak (NDPBM) diperbarui setiap pekan berdasarkan Keputusan Menteri Keuangan (KMK) resmi. Sistem otomatis menghitung Bea Masuk, PPN, dan PPh 22 untuk dokumen PIB berdasarkan tanggal kurs yang berlaku.
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">No</th>
+                        <th>Kode Valuta</th>
+                        <th>Nama Mata Uang</th>
+                        <th style="text-align: right;">Nilai Kurs (IDR)</th>
+                        <th>Periode Berlaku</th>
+                        <th>Nomor KMK</th>
+                        <th style="text-align: center;">Status</th>
+                        <th style="width: 140px; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int no = 1;
+                    }
+                    @foreach (var rate in Model)
+                    {
+                        <tr>
+                            <td style="text-align: center; font-weight: bold; color: var(--text-muted);">@(no++)</td>
+                            <td>
+                                <span class="badge" style="background: #1e3a8a; color: #ffffff; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;">
+                                    @rate.KdVal
+                                </span>
+                            </td>
+                            <td style="font-weight: 600;">@rate.NmVal</td>
+                            <td style="text-align: right; font-family: monospace; font-size: 14px; font-weight: 700; color: #0f172a;">
+                                Rp @rate.NilaiNdpbm.ToString("N2")
+                                @if (rate.KdVal == "JPY")
+                                {
+                                    <span style="font-size: 10px; color: #64748b; display: block;">(per 100 JPY)</span>
+                                }
+                            </td>
+                            <td style="font-size: 12px; color: #475569;">
+                                @rate.TglAwal.ToString("dd MMM yyyy") s/d @rate.TglAkhir.ToString("dd MMM yyyy")
+                            </td>
+                            <td>
+                                <span style="font-size: 12px; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
+                                    @rate.NoKmk
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                @if (rate.IsActive)
+                                {
+                                    <span class="badge badge-success">AKTIF</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">NON-AKTIF</span>
+                                }
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 6px;">
+                                    <button type="button" class="btn btn-sm btn-secondary" 
+                                            onclick="openKursModal('@rate.KdVal', '@rate.NmVal', @rate.NilaiNdpbm, '@rate.TglAwal.ToString("yyyy-MM-dd")', '@rate.TglAkhir.ToString("yyyy-MM-dd")', '@rate.NoKmk')">
+                                        Edit
+                                    </button>
+                                    <form asp-action="DeleteKursPajak" method="post" style="display: inline;" onsubmit="return confirm('Hapus kurs @rate.KdVal?')">
+                                        <input type="hidden" name="id" value="@rate.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form Kurs -->
+<div class="modal-overlay" id="kursModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="kursModalTitle">Tambah / Update Kurs Pajak</h3>
+            <button type="button" class="modal-close" onclick="DoIt.closeModal('kursModal')">&times;</button>
+        </div>
+        <form asp-action="SaveKursPajak" method="post">
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Kode Valuta (3 Huruf)</label>
+                    <input type="text" name="kdVal" id="modalKdVal" class="form-control" maxlength="5" required placeholder="Contoh: USD, JPY, EUR" style="text-transform: uppercase;" />
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Nama Mata Uang</label>
+                    <input type="text" name="nmVal" id="modalNmVal" class="form-control" placeholder="Contoh: US Dollar" />
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Nilai Kurs NDPBM (IDR)</label>
+                    <input type="number" step="0.0001" name="nilaiNdpbm" id="modalNilaiNdpbm" class="form-control" required placeholder="Contoh: 16250.00" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Awal</label>
+                        <input type="date" name="tglAwal" id="modalTglAwal" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Akhir</label>
+                        <input type="date" name="tglAkhir" id="modalTglAkhir" class="form-control" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nomor KMK Kemenkeu</label>
+                    <input type="text" name="noKmk" id="modalNoKmk" class="form-control" placeholder="Contoh: KMK-38/MK.10/2026" />
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="DoIt.closeModal('kursModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Kurs</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openKursModal(kdVal, nmVal, nilaiNdpbm, tglAwal, tglAkhir, noKmk) {
+        document.getElementById('modalKdVal').value = kdVal || '';
+        document.getElementById('modalNmVal').value = nmVal || '';
+        document.getElementById('modalNilaiNdpbm').value = nilaiNdpbm || '';
+        
+        const now = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(now.getDate() + 7);
+
+        document.getElementById('modalTglAwal').value = tglAwal || now.toISOString().split('T')[0];
+        document.getElementById('modalTglAkhir').value = tglAkhir || nextWeek.toISOString().split('T')[0];
+        document.getElementById('modalNoKmk').value = noKmk || 'KMK/2026/WEEKLY';
+        
+        document.getElementById('kursModalTitle').innerText = kdVal ? `Edit Kurs ${kdVal}` : 'Tambah / Update Kurs Pajak';
+        DoIt.openModal('kursModal');
+    }
+</script>

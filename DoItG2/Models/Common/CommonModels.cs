@@ -154,6 +154,77 @@ public class DashboardStats
     public List<RecentActivity> RecentActivities { get; set; } = [];
 }
 
+public class MasterKursModel
+{
+    public int Id { get; set; }
+    public string KdVal { get; set; } = string.Empty;
+    public string NmVal { get; set; } = string.Empty;
+    public decimal NilaiNdpbm { get; set; }
+    public DateTime TglAwal { get; set; }
+    public DateTime TglAkhir { get; set; }
+    public string NoKmk { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class NotificationModel
+{
+    public int Id { get; set; }
+    public string? UserName { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string Type { get; set; } = "INFO"; // INFO, SUCCESS, WARNING, DANGER
+    public string? LinkUrl { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class ApprovalActionModel
+{
+    public string Car { get; set; } = string.Empty;
+    public string DocumentType { get; set; } = "PIB"; // PIB, PEB
+    public string Action { get; set; } = "SUBMIT"; // SUBMIT, APPROVE, REJECT
+    public string? Notes { get; set; }
+}
+
+public class ApprovalLogModel
+{
+    public int Id { get; set; }
+    public string Car { get; set; } = string.Empty;
+    public string DokumenType { get; set; } = string.Empty;
+    public string? PrevStatus { get; set; }
+    public string NewStatus { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public string ActionBy { get; set; } = string.Empty;
+    public DateTime ActionDate { get; set; }
+}
+
+public class TaxCalculationResult
+{
+    public string Car { get; set; } = string.Empty;
+    public string Valuta { get; set; } = "USD";
+    public decimal Ndpbm { get; set; }
+    public decimal FobValas { get; set; }
+    public decimal AsuransiValas { get; set; }
+    public decimal FreightValas { get; set; }
+    public decimal CifValas { get; set; }
+    public decimal CifIdr { get; set; }
+    public decimal NilaiPabean => CifIdr;
+    public decimal BeaMasukTarif { get; set; } // %
+    public decimal BeaMasukIdr { get; set; }
+    public decimal NilaiImpor => NilaiPabean + BeaMasukIdr;
+    public decimal PpnTarif { get; set; } = 11.0m; // %
+    public decimal PpnIdr { get; set; }
+    public decimal PphTarif { get; set; } = 2.5m; // % API (2.5%) or Non-API (7.5%)
+    public decimal PphIdr { get; set; }
+    public decimal TotalPungutan => BeaMasukIdr + PpnIdr + PphIdr;
+    public decimal TotalDibebaskan { get; set; }
+    public decimal TotalDitanggung { get; set; }
+    public decimal TotalBayar => Math.Max(0, TotalPungutan - TotalDibebaskan - TotalDitanggung);
+}
+
 public class ChartDataPoint
 {
     public string Label { get; set; } = string.Empty;

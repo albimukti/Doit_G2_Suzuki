@@ -1,0 +1,99 @@
+@model DoItG2.Models.CEISA.CeisaStatusTrackingResponse
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = $"CEISA 4.0 Tracking — {Model.Car}";
+}
+
+<div class="card" style="max-width: 1100px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                🛰️
+            </div>
+            <div>
+                <h2 class="card-title" style="margin: 0; font-size: 18px;">CEISA 4.0 Real-time Tracking</h2>
+                <div class="card-subtitle">Nomor Pengajuan (CAR): <strong style="font-family: monospace; color: #1e3a8a;">@Model.Car</strong> | Dokumen: <strong class="badge badge-info">@Model.DocumentType</strong></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="@(Model.DocumentType == "PEB" ? $"/Peb/Detail?id={Model.Car}" : $"/Pib/Detail?id={Model.Car}")" class="btn btn-secondary">
+                Kembali ke Detail Dokumen
+            </a>
+            <a href="@(Model.DocumentType == "PEB" ? $"/Peb/PrintPdf?id={Model.Car}" : $"/Pib/PrintPdf?id={Model.Car}")" target="_blank" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
+                <span>📄</span> Cetak PDF Resmi
+            </a>
+        </div>
+    </div>
+
+    <div style="padding: 24px;">
+        <!-- Status Header Card -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #ffffff; padding: 20px 24px; border-radius: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Status Kepabeanan Terkini</div>
+                <div style="font-size: 22px; font-weight: 800; margin-top: 4px; color: #60a5fa;">@Model.CurrentStatus</div>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Kantor Pabean: @Model.CustomsOffice</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 12px; opacity: 0.8;">Terakhir Diperbarui</div>
+                <div style="font-size: 15px; font-weight: 700; font-family: monospace;">@Model.LastUpdated?.ToString("dd MMM yyyy HH:mm:ss") WIB</div>
+                <span class="badge badge-success" style="margin-top: 6px; display: inline-block;">● Connected to CEISA 4.0</span>
+            </div>
+        </div>
+
+        <!-- Tracking Timeline -->
+        <div style="position: relative; padding-left: 30px; margin-top: 20px;">
+            <div style="position: absolute; left: 14px; top: 10px; bottom: 10px; width: 3px; background: #e2e8f0;"></div>
+
+            @foreach (var step in Model.TrackingTimeline)
+            {
+                var isDone = step.Status == "COMPLETED";
+                var isActive = step.Status == "ACTIVE";
+                var dotColor = isDone ? "#16a34a" : (isActive ? "#3b82f6" : "#cbd5e1");
+                var boxBorder = isDone ? "border-left: 4px solid #16a34a;" : (isActive ? "border-left: 4px solid #3b82f6;" : "border-left: 4px solid #cbd5e1;");
+
+                <div style="position: relative; margin-bottom: 24px;">
+                    <!-- Step Dot -->
+                    <div style="position: absolute; left: -24px; top: 12px; width: 16px; height: 16px; border-radius: 50%; background: @dotColor; border: 3px solid #ffffff; box-shadow: 0 0 0 2px @dotColor;"></div>
+
+                    <!-- Step Box -->
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; @boxBorder border-radius: 8px; padding: 16px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-weight: 700; font-size: 15px; color: #1e293b;">@step.StepName</div>
+                            <div>
+                                @if (isDone)
+                                {
+                                    <span class="badge badge-success">SELESAI</span>
+                                }
+                                else if (isActive)
+                                {
+                                    <span class="badge badge-warning">SEDANG BERJALAN</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">MENUNGGU</span>
+                                }
+                            </div>
+                        </div>
+
+                        <p style="margin: 8px 0 0 0; font-size: 13px; color: #475569; line-height: 1.5;">@step.Description</p>
+
+                        <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 12px; color: #64748b; flex-wrap: wrap;">
+                            @if (step.Timestamp.HasValue)
+                            {
+                                <span>🕒 Waktu: <strong>@step.Timestamp.Value.ToString("dd/MM/yyyy HH:mm:ss") WIB</strong></span>
+                            }
+                            @if (!string.IsNullOrEmpty(step.Officer))
+                            {
+                                <span>👤 Petugas/Sistem: <strong>@step.Officer</strong></span>
+                            }
+                            @if (!string.IsNullOrEmpty(step.DocumentRef))
+                            {
+                                <span>📑 No. Ref: <strong style="color: #1e3a8a;">@step.DocumentRef</strong></span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -40,11 +40,20 @@ public class PebHeaderModel
     public DateTime CreatedDate { get; set; } = DateTime.Now;
     public string CreatedBy { get; set; } = string.Empty;
 
+    // Workflow & Approval
+    public string ApprovalStatus { get; set; } = "DRAFT"; // DRAFT, PENDING, APPROVED, REJECTED, TRANSMITTED, COMPLETED
+    public string? ReviewNotes { get; set; }
+    public string? SubmittedBy { get; set; }
+    public DateTime? SubmittedDate { get; set; }
+    public string? ApprovedBy { get; set; }
+    public DateTime? ApprovedDate { get; set; }
+
     // Collections
     public List<PebDetailModel> Details { get; set; } = [];
     public List<PebDocumentModel> Documents { get; set; } = [];
     public List<PebContainerModel> Containers { get; set; } = [];
     public List<PebResponModel> Responses { get; set; } = [];
+    public List<ApprovalLogModel> ApprovalLogs { get; set; } = [];
 }
 
 public class PebDetailModel

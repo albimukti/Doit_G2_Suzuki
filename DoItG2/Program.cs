@@ -23,6 +23,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<ITaxCalculationService, TaxCalculationService>();
+builder.Services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<ICeisaIntegrationService, CeisaIntegrationService>();
+builder.Services.AddScoped<IPdfReportService, PdfReportService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

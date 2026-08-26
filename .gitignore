@@ -8,6 +8,7 @@ obj/
 *.sln.docstates
 *.cache
 *.log
+*.exe
 
 ## IDE & Editors
 .vscode/

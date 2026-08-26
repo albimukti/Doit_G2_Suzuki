@@ -93,6 +93,21 @@ public class PibHeaderModel
     public string Currency { get; set; } = string.Empty;
     public string Rate { get; set; } = string.Empty;
 
+    // Workflow & Approval
+    public string ApprovalStatus { get; set; } = "DRAFT"; // DRAFT, PENDING, APPROVED, REJECTED, TRANSMITTED, COMPLETED
+    public string? ReviewNotes { get; set; }
+    public string? SubmittedBy { get; set; }
+    public DateTime? SubmittedDate { get; set; }
+    public string? ApprovedBy { get; set; }
+    public DateTime? ApprovedDate { get; set; }
+
+    // Tax & Duty Totals
+    public decimal TotalBm { get; set; }
+    public decimal TotalPpn { get; set; }
+    public decimal TotalPph { get; set; }
+    public decimal TotalPungutan { get; set; }
+    public decimal NilaiPabean { get; set; }
+
     // Collections
     public List<PibDetailModel> Details { get; set; } = [];
     public List<PibDocumentModel> Documents { get; set; } = [];
@@ -101,6 +116,7 @@ public class PibHeaderModel
     public List<PibTaxModel> Taxes { get; set; } = [];
     public List<PibVehicleModel> Vehicles { get; set; } = [];
     public List<PibResponModel> Responses { get; set; } = [];
+    public List<ApprovalLogModel> ApprovalLogs { get; set; } = [];
 }
 
 public class PibDetailModel

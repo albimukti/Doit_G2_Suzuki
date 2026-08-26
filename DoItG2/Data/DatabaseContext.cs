@@ -142,23 +142,61 @@ public class DatabaseContext
                     IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PIB_DOIT_FINAL_HEADER')
                     BEGIN
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'FOB')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD FOB VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD FOB VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'CIF')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD CIF VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD CIF VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'NETTO')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NETTO VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NETTO VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'BRUTO')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD BRUTO VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD BRUTO VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'ASURANSI')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD ASURANSI VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD ASURANSI VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'FREIGHT')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD FREIGHT VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD FREIGHT VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'NDPBM')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NDPBM VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NDPBM VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'KD_VAL')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD KD_VAL VARCHAR(10) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD KD_VAL VARCHAR(20) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'STATUS')
-                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD STATUS VARCHAR(20) NULL;
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD STATUS VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'APPROVAL_STATUS')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD APPROVAL_STATUS VARCHAR(50) DEFAULT 'DRAFT';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'REVIEW_NOTES')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD REVIEW_NOTES VARCHAR(1000) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'SUBMITTED_BY')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD SUBMITTED_BY VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'SUBMITTED_DATE')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD SUBMITTED_DATE DATETIME NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'APPROVED_BY')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD APPROVED_BY VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'APPROVED_DATE')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD APPROVED_DATE DATETIME NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'TOTAL_BM')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD TOTAL_BM DECIMAL(18,2) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'TOTAL_PPN')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD TOTAL_PPN DECIMAL(18,2) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'TOTAL_PPH')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD TOTAL_PPH DECIMAL(18,2) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'TOTAL_PUNGUTAN')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD TOTAL_PUNGUTAN DECIMAL(18,2) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'NILAI_PABEAN')
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NILAI_PABEAN DECIMAL(18,2) DEFAULT 0;
+                    END
+
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_HEADER')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'APPROVAL_STATUS')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVAL_STATUS VARCHAR(50) DEFAULT 'DRAFT';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'REVIEW_NOTES')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD REVIEW_NOTES VARCHAR(1000) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'SUBMITTED_BY')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD SUBMITTED_BY VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'SUBMITTED_DATE')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD SUBMITTED_DATE DATETIME NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'APPROVED_BY')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVED_BY VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'APPROVED_DATE')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVED_DATE DATETIME NULL;
                     END";
                 using (var alterCmd = new SqlCommand(alterColumnsSql, dbConn))
                 {
@@ -228,6 +266,60 @@ public class DatabaseContext
                             NOPHONE VARCHAR(50),
                             ALMTSIAP VARCHAR(300),
                             IS_ACTIVE BIT NOT NULL DEFAULT 1
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_KURS_PAJAK')
+                    BEGIN
+                        CREATE TABLE DOIT_KURS_PAJAK (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            KD_VAL VARCHAR(10) NOT NULL,
+                            NM_VAL VARCHAR(100) NOT NULL,
+                            NILAI_NDPBM DECIMAL(18,4) NOT NULL,
+                            TGL_AWAL DATE NOT NULL,
+                            TGL_AKHIR DATE NOT NULL,
+                            NO_KMK VARCHAR(100) DEFAULT 'KMK/2026/WEEKLY',
+                            IS_ACTIVE BIT NOT NULL DEFAULT 1,
+                            CREATED_AT DATETIME DEFAULT GETDATE(),
+                            UPDATED_AT DATETIME DEFAULT GETDATE()
+                        );
+
+                        INSERT INTO DOIT_KURS_PAJAK (KD_VAL, NM_VAL, NILAI_NDPBM, TGL_AWAL, TGL_AKHIR, NO_KMK)
+                        VALUES 
+                        ('USD', 'US Dollar', 16250.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026'),
+                        ('JPY', 'Japanese Yen (100)', 10650.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026'),
+                        ('EUR', 'Euro', 17480.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026'),
+                        ('SGD', 'Singapore Dollar', 12150.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026'),
+                        ('CNY', 'Chinese Yuan', 2240.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026'),
+                        ('THB', 'Thai Baht', 450.0000, CAST(GETDATE() AS DATE), DATEADD(DAY, 7, CAST(GETDATE() AS DATE)), 'KMK-38/MK.10/2026');
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_NOTIFIKASI')
+                    BEGIN
+                        CREATE TABLE DOIT_NOTIFIKASI (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            USER_NAME VARCHAR(50) NULL,
+                            TITLE VARCHAR(200) NOT NULL,
+                            MESSAGE VARCHAR(1000) NOT NULL,
+                            TYPE VARCHAR(20) DEFAULT 'INFO', -- INFO, SUCCESS, WARNING, DANGER
+                            LINK_URL VARCHAR(255) NULL,
+                            IS_READ BIT NOT NULL DEFAULT 0,
+                            CREATED_AT DATETIME DEFAULT GETDATE()
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_APPROVAL_LOG')
+                    BEGIN
+                        CREATE TABLE DOIT_APPROVAL_LOG (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            CAR VARCHAR(50) NOT NULL,
+                            DOKUMEN_TYPE VARCHAR(20) NOT NULL, -- PIB, PEB
+                            PREV_STATUS VARCHAR(50),
+                            NEW_STATUS VARCHAR(50) NOT NULL,
+                            ACTION VARCHAR(50) NOT NULL, -- SUBMIT, APPROVE, REJECT, TRANSMIT
+                            NOTES VARCHAR(1000),
+                            ACTION_BY VARCHAR(50) NOT NULL,
+                            ACTION_DATE DATETIME DEFAULT GETDATE()
                         );
                     END";
                 using (var masterCmd = new SqlCommand(createMasterTablesSql, dbConn))

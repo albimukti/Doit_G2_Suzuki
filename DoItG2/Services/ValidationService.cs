@@ -95,6 +95,35 @@ public class ValidationService : IValidationService
             if (containerCount == 0)
                 result.Errors.Add(new ValidationError("KEMASAN", "Data peti kemas (container) belum diisi.", ValidationSeverity.Info));
 
+            // 8. Math Consistency & Weight Checks
+            var values = await _db.QueryFirstOrDefaultAsync<dynamic>(
+                "SELECT FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO FROM PIB_DOIT_FINAL_HEADER WHERE CAR = @Car",
+                new { Car = car });
+
+            if (values != null)
+            {
+                decimal.TryParse(values.FOB?.ToString(), out decimal fob);
+                decimal.TryParse(values.ASURANSI?.ToString(), out decimal asuransi);
+                decimal.TryParse(values.FREIGHT?.ToString(), out decimal freight);
+                decimal.TryParse(values.CIF?.ToString(), out decimal cif);
+                decimal.TryParse(values.NETTO?.ToString(), out decimal netto);
+                decimal.TryParse(values.BRUTO?.ToString(), out decimal bruto);
+
+                if (fob > 0 && cif > 0 && Math.Abs((fob + asuransi + freight) - cif) > 1.0m)
+                {
+                    result.Errors.Add(new ValidationError("TRANSAKSI",
+                        $"Inkonsistensi Nilai: CIF ({cif:N2}) tidak sama dengan FOB + Asuransi + Freight ({fob + asuransi + freight:N2}).",
+                        ValidationSeverity.Warning));
+                }
+
+                if (netto > 0 && bruto > 0 && netto > bruto)
+                {
+                    result.Errors.Add(new ValidationError("KEMASAN",
+                        $"Berat Netto ({netto:N2} Kg) tidak boleh melebihi Berat Bruto ({bruto:N2} Kg).",
+                        ValidationSeverity.Error));
+                }
+            }
+
             result.IsValid = !result.Errors.Any(e => e.Severity == ValidationSeverity.Error);
         }
         catch (Exception ex)

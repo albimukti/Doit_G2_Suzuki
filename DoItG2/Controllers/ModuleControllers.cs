@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Dapper;
 using DoItG2.Data;
 using DoItG2.Models.PIB;
 using DoItG2.Models.PEB;
 using DoItG2.Models.Auth;
+using DoItG2.Models.Common;
+using DoItG2.Models.CEISA;
 using DoItG2.Services;
+using ClosedXML.Excel;
 using Oracle.ManagedDataAccess.Client;
 
 namespace DoItG2.Controllers;
@@ -18,24 +24,46 @@ namespace DoItG2.Controllers;
 public class PibController : Controller
 {
     private readonly DatabaseContext _db;
+    private readonly ITaxCalculationService _tax;
+    private readonly IWorkflowService _workflow;
+    private readonly IValidationService _validation;
+    private readonly IPdfReportService _pdf;
+    private readonly ICeisaIntegrationService _ceisa;
+    private readonly IAuditService _audit;
     private readonly ILogger<PibController> _logger;
 
-    public PibController(DatabaseContext db, ILogger<PibController> logger)
+    public PibController(
+        DatabaseContext db,
+        ITaxCalculationService tax,
+        IWorkflowService workflow,
+        IValidationService validation,
+        IPdfReportService pdf,
+        ICeisaIntegrationService ceisa,
+        IAuditService audit,
+        ILogger<PibController> logger)
     {
         _db = db;
+        _tax = tax;
+        _workflow = workflow;
+        _validation = validation;
+        _pdf = pdf;
+        _ceisa = ceisa;
+        _audit = audit;
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index(string search, string status, int page = 1)
+    public async Task<IActionResult> Index(string search, string status, string approvalStatus, int page = 1)
     {
-        ViewData["Title"] = "Daftar PIB";
+        ViewData["Title"] = "Daftar PIB (BC 2.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> PIB";
         
         try
         {
             var sql = @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, 
                        TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg,
-                       NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg,
+                       NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, KD_VAL AS KdVal, CIF AS Cif,
+                       TOTAL_PUNGUTAN AS TotalPungutan, NILAI_PABEAN AS NilaiPabean,
+                       ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
                        CASE 
                             WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
                             WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
@@ -56,6 +84,11 @@ public class PibController : Controller
                 else if (status == "NOPEN") sql += " AND NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' AND (NO_SPPB IS NULL OR NO_SPPB = '')";
                 else if (status == "DRAFT") sql += " AND (NO_PEN_PIB IS NULL OR NO_PEN_PIB = '')";
             }
+            if (!string.IsNullOrEmpty(approvalStatus))
+            {
+                sql += " AND APPROVAL_STATUS = @ApprovalStatus";
+                parameters.Add("ApprovalStatus", approvalStatus);
+            }
             
             sql += " ORDER BY CREATION_DATE DESC, CAR DESC";
             
@@ -71,7 +104,7 @@ public class PibController : Controller
 
     public IActionResult Create()
     {
-        ViewData["Title"] = "Buat PIB Baru";
+        ViewData["Title"] = "Buat PIB Baru (BC 2.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
         return View();
     }
@@ -81,11 +114,15 @@ public class PibController : Controller
     {
         try
         {
-            // Bind additional 8-tab CEISA 4.0 fields from form
-            model.KdKantor = form["KdKantor"].FirstOrDefault() ?? model.KdKantor;
-            model.JnsPib = form["JnsPib"].FirstOrDefault() ?? model.JnsPib;
-            model.JnsImp = form["JnsImp"].FirstOrDefault() ?? model.JnsImp;
-            model.JnsBayar = form["JnsBayar"].FirstOrDefault() ?? model.JnsBayar;
+            if (string.IsNullOrWhiteSpace(model.Car))
+            {
+                model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+            }
+
+            model.KdKantor = form["KdKantor"].FirstOrDefault() ?? "010100";
+            model.JnsPib = form["JnsPib"].FirstOrDefault() ?? "1";
+            model.JnsImp = form["JnsImp"].FirstOrDefault() ?? "1";
+            model.JnsBayar = form["JnsBayar"].FirstOrDefault() ?? "1";
             model.AsalData = form["AsalData"].FirstOrDefault() ?? "M";
             model.KdSkepFas = form["KdSkepFas"].FirstOrDefault() ?? "";
             
@@ -97,46 +134,64 @@ public class PibController : Controller
             model.NmPpjk = form["NmPpjk"].FirstOrDefault() ?? "";
             model.AlPpjk = form["AlPpjk"].FirstOrDefault() ?? "";
 
-            model.NegPemasok = form["NegPemasok"].FirstOrDefault() ?? model.NegPemasok;
-            model.NmPemasok = form["NmPemasok"].FirstOrDefault() ?? model.NmPemasok;
-            model.AlPemasok = form["AlPemasok"].FirstOrDefault() ?? model.AlPemasok;
+            model.NegPemasok = form["NegPemasok"].FirstOrDefault() ?? (model.NegPemasok ?? "JP");
+            model.NmPemasok = form["NmPemasok"].FirstOrDefault() ?? (model.NmPemasok ?? "SUZUKI MOTOR CORPORATION JAPAN");
+            model.AlPemasok = form["AlPemasok"].FirstOrDefault() ?? (model.AlPemasok ?? "300 TAKATSUKA-CHO, CHUO-KU, HAMAMATSU-SHI, SHIZUOKA, JAPAN");
 
             model.CaraAngkut = form["CaraAngkut"].FirstOrDefault() ?? "1";
-            model.NmAngkut = form["NmAngkut"].FirstOrDefault() ?? "";
-            model.BenderaVoy = form["BenderaVoy"].FirstOrDefault() ?? "";
-            model.NoVoyFlight = form["NoVoyFlight"].FirstOrDefault() ?? "";
-            model.TglTiba = form["TglTiba"].FirstOrDefault() ?? model.TglTiba;
-            model.PelMuat = form["PelMuat"].FirstOrDefault() ?? "";
-            model.PelBongkar = form["PelBongkar"].FirstOrDefault() ?? "";
+            model.NmAngkut = form["NmAngkut"].FirstOrDefault() ?? "WAN HAI 315";
+            model.BenderaVoy = form["BenderaVoy"].FirstOrDefault() ?? "SG";
+            model.NoVoyFlight = form["NoVoyFlight"].FirstOrDefault() ?? "WH-315";
+            model.TglTiba = form["TglTiba"].FirstOrDefault() ?? DateTime.Now.ToString("yyyy-MM-dd");
+            model.PelMuat = form["PelMuat"].FirstOrDefault() ?? "JPTYO";
+            model.PelBongkar = form["PelBongkar"].FirstOrDefault() ?? "IDTPP";
             model.PelTransit = form["PelTransit"].FirstOrDefault() ?? "";
-            model.Gudang = form["Gudang"].FirstOrDefault() ?? "";
+            model.Gudang = form["Gudang"].FirstOrDefault() ?? "UTP1";
             model.NoBc11 = form["NoBc11"].FirstOrDefault() ?? "";
             model.TglBc11 = form["TglBc11"].FirstOrDefault() ?? "";
-            model.NoPosBc11 = form["NoPosBc11"].FirstOrDefault() ?? "";
+            model.NoPosBc11 = form["NoPosBc11"].FirstOrDefault() ?? "0001";
 
             model.KdVal = form["KdVal"].FirstOrDefault() ?? "USD";
-            model.Ndpbm = form["Ndpbm"].FirstOrDefault() ?? "";
-            model.Fob = form["Fob"].FirstOrDefault() ?? "0";
-            model.Asuransi = form["Asuransi"].FirstOrDefault() ?? "0";
-            model.Freight = form["Freight"].FirstOrDefault() ?? "0";
-            model.Cif = form["Cif"].FirstOrDefault() ?? "0";
-            model.Netto = form["Netto"].FirstOrDefault() ?? "0";
-            model.Bruto = form["Bruto"].FirstOrDefault() ?? "0";
-            model.KdJaminan = form["KdJaminan"].FirstOrDefault() ?? "1";
-            model.JmlCont = form["JmlCont"].FirstOrDefault() ?? "0";
+            var ndpbmVal = await _tax.GetCurrentNdpbmAsync(model.KdVal);
+            model.Ndpbm = ndpbmVal.ToString("F2");
+            
+            decimal.TryParse(form["Fob"].FirstOrDefault(), out decimal fob);
+            decimal.TryParse(form["Asuransi"].FirstOrDefault(), out decimal asuransi);
+            decimal.TryParse(form["Freight"].FirstOrDefault(), out decimal freight);
+            decimal.TryParse(form["Cif"].FirstOrDefault(), out decimal cif);
 
-            // Insert full header
+            if (cif <= 0 && fob > 0) cif = fob + asuransi + freight;
+
+            model.Fob = fob.ToString("F2");
+            model.Asuransi = asuransi.ToString("F2");
+            model.Freight = freight.ToString("F2");
+            model.Cif = cif.ToString("F2");
+            model.Netto = form["Netto"].FirstOrDefault() ?? "15000";
+            model.Bruto = form["Bruto"].FirstOrDefault() ?? "16200";
+            model.KdJaminan = form["KdJaminan"].FirstOrDefault() ?? "1";
+            model.JmlCont = form["JmlCont"].FirstOrDefault() ?? "1";
+            model.JmlBrg = form["BrgHs[]"].Count.ToString();
+            model.ApprovalStatus = "DRAFT";
+
+            var taxCalc = await _tax.CalculatePibTaxPreviewAsync(model.KdVal, fob, asuransi, freight, 5.0m, 11.0m, 2.5m);
+            model.TotalBm = taxCalc.BeaMasukIdr;
+            model.TotalPpn = taxCalc.PpnIdr;
+            model.TotalPph = taxCalc.PphIdr;
+            model.TotalPungutan = taxCalc.TotalBayar;
+            model.NilaiPabean = taxCalc.NilaiPabean;
+
             var sqlHeader = @"INSERT INTO PIB_DOIT_FINAL_HEADER 
                 (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, STATUS_IMP, ID_PPJK, NM_PPJK, AL_PPJK, KD_KANTOR, JNS_PIB, JNS_IMP, JNS_BAYAR, KD_SKEP_FAS,
                  NEG_PEMASOK, NM_PEMASOK, AL_PEMASOK, CARA_ANGKUT, NM_ANGKUT, BENDERA_VOY, NO_VOY_FLIGHT, TGL_TIBA, PEL_MUAT, PEL_BONGKAR, PEL_TRANSIT, GUDANG, NO_BC11, TGL_BC11, NO_POS_BC11,
-                 KD_VAL, NDPBM, FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO, KD_JAMINAN, JML_CONT, JML_BRG, CREATION_DATE, FL_VALID, STATUS)
+                 KD_VAL, NDPBM, FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO, KD_JAMINAN, JML_CONT, JML_BRG, CREATION_DATE, FL_VALID, STATUS, APPROVAL_STATUS,
+                 TOTAL_BM, TOTAL_PPN, TOTAL_PPH, TOTAL_PUNGUTAN, NILAI_PABEAN)
                 VALUES (@Car, @AsalData, @IdImp, @NmImo, @AlImp, @StatusImp, @IdPpjk, @NmPpjk, @AlPpjk, @KdKantor, @JnsPib, @JnsImp, @JnsBayar, @KdSkepFas,
                  @NegPemasok, @NmPemasok, @AlPemasok, @CaraAngkut, @NmAngkut, @BenderaVoy, @NoVoyFlight, @TglTiba, @PelMuat, @PelBongkar, @PelTransit, @Gudang, @NoBc11, @TglBc11, @NoPosBc11,
-                 @KdVal, @Ndpbm, @Fob, @Asuransi, @Freight, @Cif, @Netto, @Bruto, @KdJaminan, @JmlCont, @JmlBrg, GETDATE(), 'N', 'DRAFT')";
+                 @KdVal, @Ndpbm, @Fob, @Asuransi, @Freight, @Cif, @Netto, @Bruto, @KdJaminan, @JmlCont, @JmlBrg, GETDATE(), 'N', 'DRAFT', 'DRAFT',
+                 @TotalBm, @TotalPpn, @TotalPph, @TotalPungutan, @NilaiPabean)";
             
             await _db.ExecuteAsync(sqlHeader, model);
 
-            // Save Items (Detail Barang)
             var brgHs = form["BrgHs[]"];
             var brgDesc = form["BrgDesc[]"];
             var brgQty = form["BrgQty[]"];
@@ -151,41 +206,33 @@ public class PibController : Controller
                     decimal qty = 0, val = 0;
                     if (brgQty.Count > i) decimal.TryParse(brgQty[i]?.Replace(",", ""), out qty);
                     if (brgVal.Count > i) decimal.TryParse(brgVal[i]?.Replace(",", ""), out val);
-                    if (val == 0) decimal.TryParse(model.Cif?.Replace(",", ""), out val);
 
                     var desc = brgDesc.Count > i ? brgDesc[i] : "";
-                    var unitType = brgSat.Count > i ? brgSat[i] : "";
-                    var negara = brgNeg.Count > i ? brgNeg[i] : (model.NegPemasok ?? "TH");
+                    var unitType = brgSat.Count > i ? brgSat[i] : "PCE";
+                    var negara = brgNeg.Count > i ? brgNeg[i] : (model.NegPemasok ?? "JP");
 
                     await _db.ExecuteAsync(
-                        @"INSERT INTO PIB_DOIT_FINAL_DETAIL (CAR, SERIAL, HS_NO, GOOD_DESC1, QUANTITY, UNIT_TYPE, ORIGIN_COUNTRY, UNIT_VAL)
-                           VALUES (@Car, @Serial, @HsNo, @Desc, @Qty, @UnitType, @Negara, @UnitVal)",
-                        new { Car = model.Car, Serial = i + 1, HsNo = brgHs[i], Desc = desc, Qty = qty, UnitType = unitType, Negara = negara, UnitVal = val });
+                        @"INSERT INTO PIB_DOIT_FINAL_DETAIL (CAR, SERIAL, HS_NO, GOOD_DESC1, QUANTITY, UNIT_TYPE, UNIT_VAL, CIF_PER_UNIT, ORIGIN_COUNTRY, KD_FAS)
+                           VALUES (@Car, @Serial, @HsNo, @Desc, @Qty, @UnitType, @UnitVal, @CifPerUnit, @Country, 'KITE')",
+                        new { Car = model.Car, Serial = i + 1, HsNo = brgHs[i], Desc = desc, Qty = qty, UnitType = unitType, UnitVal = val, CifPerUnit = (qty * val), Country = negara });
                 }
             }
 
-            // Save Documents
-            var docKd = form["DocKd[]"];
-            var docNm = form["DocNm[]"];
-            var docNo = form["DocNo[]"];
-            var docTg = form["DocTg[]"];
+            var dokKd = form["DokKd[]"];
+            var dokNo = form["DokNo[]"];
+            var dokTg = form["DokTg[]"];
 
-            for (int i = 0; i < docKd.Count; i++)
+            for (int i = 0; i < dokKd.Count; i++)
             {
-                if (!string.IsNullOrWhiteSpace(docKd[i]))
+                if (!string.IsNullOrWhiteSpace(dokNo[i]))
                 {
-                    var dNm = docNm.Count > i ? docNm[i] : "";
-                    var dNo = docNo.Count > i ? docNo[i] : "";
-                    var dTg = docTg.Count > i ? docTg[i] : "";
-
                     await _db.ExecuteAsync(
-                        @"INSERT INTO PIB_DOIT_FINAL_DOCUMENT (CAR, SERIAL, DOKKD, DOKNM, DOKNO, DOKTG)
-                           VALUES (@Car, @Serial, @DokKd, @DokNm, @DokNo, @DokTg)",
-                        new { Car = model.Car, Serial = i + 1, DokKd = docKd[i], DokNm = dNm, DokNo = dNo, DokTg = dTg });
+                        @"INSERT INTO PIB_DOIT_FINAL_DOCUMENT (CAR, SERIAL, DOKKD, DOKNO, DOKTG)
+                           VALUES (@Car, @Serial, @DokKd, @DokNo, @DokTg)",
+                        new { Car = model.Car, Serial = i + 1, DokKd = dokKd[i], DokNo = dokNo[i], DokTg = dokTg.Count > i ? dokTg[i] : DateTime.Now.ToString("yyyy-MM-dd") });
                 }
             }
 
-            // Save Containers
             var contNo = form["ContNo[]"];
             var contUkr = form["ContUkr[]"];
             var contMuat = form["ContMuat[]"];
@@ -195,10 +242,9 @@ public class PibController : Controller
             {
                 if (!string.IsNullOrWhiteSpace(contNo[i]))
                 {
-                    int ukr = 20;
-                    if (contUkr.Count > i) int.TryParse(contUkr[i], out ukr);
+                    var ukr = contUkr.Count > i ? contUkr[i] : "40";
                     var cMuat = contMuat.Count > i ? contMuat[i] : "F";
-                    var cTipe = contTipe.Count > i ? contTipe[i] : "";
+                    var cTipe = contTipe.Count > i ? contTipe[i] : "1";
 
                     await _db.ExecuteAsync(
                         @"INSERT INTO PIB_DOIT_FINAL_CONTAINER (CAR, NO_CONT, UKR_CONT, JNS_MUAT, JNS_CONT)
@@ -207,35 +253,10 @@ public class PibController : Controller
                 }
             }
 
-            // Save Kemasan
-            var kmsJml = form["KmsJml[]"];
-            var kmsJns = form["KmsJns[]"];
-            var kmsMerk = form["KmsMerk[]"];
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "CREATE_PIB", "PIB", model.Car, $"Membuat dokumen PIB BC 2.0 (Nilai CIF: {model.Cif} {model.KdVal})");
 
-            for (int i = 0; i < kmsJml.Count; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(kmsJml[i]))
-                {
-                    int jml = 0;
-                    int.TryParse(kmsJml[i], out jml);
-                    var jns = kmsJns.Count > i ? kmsJns[i] : "CT";
-                    var merk = kmsMerk.Count > i ? kmsMerk[i] : "";
-
-                    await _db.ExecuteAsync(
-                        @"INSERT INTO PIB_DOIT_FINAL_KEMASAN (CAR, JML_KMS, JNS_KMS, MERK_KMS)
-                           VALUES (@Car, @JmlKms, @JnsKms, @MerkKms)",
-                        new { Car = model.Car, JmlKms = jml, JnsKms = jns, MerkKms = merk });
-                }
-            }
-
-            // Insert audit log
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'CREATE_PIB', 'PIB', @Car, 'Membuat dokumen PIB 9-Tab CEISA 4.0 baru', @Ip, GETDATE())",
-                new { User = User.Identity?.Name ?? "system", Car = model.Car, Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
-
-            TempData["Success"] = $"Dokumen PIB (CEISA 4.0) dengan nomor CAR {model.Car} berhasil disimpan.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = $"Dokumen PIB (BC 2.0) dengan nomor CAR {model.Car} berhasil dibuat!";
+            return RedirectToAction(nameof(Detail), new { id = model.Car });
         }
         catch (Exception ex)
         {
@@ -254,9 +275,17 @@ public class PibController : Controller
         try
         {
             var header = await _db.QueryFirstOrDefaultAsync<PibHeaderModel>(
-                @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, AL_PEMASOK AS AlPemasok, 
+                @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_IMO AS NmImo, AL_IMP AS AlImp, 
+                  NM_PEMASOK AS NmPemasok, AL_PEMASOK AS AlPemasok, NEG_PEMASOK AS NegPemasok,
                   TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg, 
-                  NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg,
+                  NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, KD_VAL AS KdVal, NDPBM AS Ndpbm,
+                  FOB AS Fob, ASURANSI AS Asuransi, FREIGHT AS Freight, CIF AS Cif, NETTO AS Netto, BRUTO AS Bruto,
+                  NM_ANGKUT AS NmAngkut, NO_VOY_FLIGHT AS NoVoyFlight, PEL_MUAT AS PelMuat, PEL_BONGKAR AS PelBongkar,
+                  NO_BC11 AS NoBc11, NO_POS_BC11 AS NoPosBc11, KD_KANTOR AS KdKantor,
+                  TOTAL_BM AS TotalBm, TOTAL_PPN AS TotalPpn, TOTAL_PPH AS TotalPph, TOTAL_PUNGUTAN AS TotalPungutan, NILAI_PABEAN AS NilaiPabean,
+                  ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus, REVIEW_NOTES AS ReviewNotes,
+                  SUBMITTED_BY AS SubmittedBy, SUBMITTED_DATE AS SubmittedDate,
+                  APPROVED_BY AS ApprovedBy, APPROVED_DATE AS ApprovedDate,
                   CASE 
                        WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
                        WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
@@ -269,7 +298,8 @@ public class PibController : Controller
             
             var details = await _db.QueryAsync<PibDetailModel>(
                 @"SELECT SERIAL AS Serial, HS_NO AS HsNo, GOOD_DESC1 AS GoodDesc1, 
-                   QUANTITY AS Quantity, UNIT_TYPE AS UnitType, UNIT_VAL AS UnitVal 
+                   QUANTITY AS Quantity, UNIT_TYPE AS UnitType, UNIT_VAL AS UnitVal, CIF_PER_UNIT AS CifPerUnit,
+                   ORIGIN_COUNTRY AS OriginCountry, KD_FAS AS KdFas
                    FROM PIB_DOIT_FINAL_DETAIL WHERE CAR = @Car ORDER BY SERIAL",
                 new { Car = id });
             header.Details = details.ToList();
@@ -279,6 +309,22 @@ public class PibController : Controller
                   FROM PIB_DOIT_FINAL_DOCUMENT WHERE CAR = @Car ORDER BY SERIAL",
                 new { Car = id });
             header.Documents = docs.ToList();
+
+            var containers = await _db.QueryAsync<PibContainerModel>(
+                @"SELECT NO_CONT AS NoCont, UKR_CONT AS UkurCont, JNS_MUAT AS JenisMuat, JNS_CONT AS JenisCont 
+                  FROM PIB_DOIT_FINAL_CONTAINER WHERE CAR = @Car",
+                new { Car = id });
+            header.Containers = containers.ToList();
+
+            var responses = await _db.QueryAsync<PibResponModel>(
+                @"SELECT RESKD AS ResKd, RESTG AS ResTg, DOKRESNO AS DokResNo, DOKRESTG AS DokResTg, 
+                         KPBC AS Kpbc, PIBNO AS PibNo, PIBTG AS PibTg, DESKRIPSI AS Deskripsi
+                  FROM PIB_DOIT_FINAL_RESPON WHERE CAR = @Car ORDER BY RESTG DESC",
+                new { Car = id });
+            header.Responses = responses.ToList();
+
+            var approvalHistory = await _workflow.GetApprovalHistoryAsync(id);
+            header.ApprovalLogs = approvalHistory.ToList();
             
             return View(header);
         }
@@ -289,60 +335,227 @@ public class PibController : Controller
         }
     }
 
-    public async Task<IActionResult> Edit(string id)
+    [HttpPost]
+    public async Task<IActionResult> CalculateTax(string car)
     {
-        ViewData["Title"] = $"Edit PIB — {id}";
-        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Edit";
-        
-        try
-        {
-            var header = await _db.QueryFirstOrDefaultAsync<PibHeaderModel>(
-                @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, AL_PEMASOK AS AlPemasok, 
-                  TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg FROM PIB_DOIT_FINAL_HEADER WHERE CAR = @Car",
-                new { Car = id });
-                
-            if (header == null) return NotFound();
-            return View(header);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading edit view for PIB: {Car}", id);
-            return RedirectToAction(nameof(Index));
-        }
+        var result = await _tax.CalculatePibTaxAsync(car);
+        await _tax.SaveCalculatedTaxToPibHeaderAsync(car, result);
+        return Json(new { success = true, data = result });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CalculatePreview(string valuta, decimal fob, decimal asuransi, decimal freight, decimal bmTarif = 5.0m, decimal ppnTarif = 11.0m, decimal pphTarif = 2.5m)
+    {
+        var result = await _tax.CalculatePibTaxPreviewAsync(valuta, fob, asuransi, freight, bmTarif, ppnTarif, pphTarif);
+        return Json(new { success = true, data = result });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ValidatePib(string car)
+    {
+        var result = await _validation.ValidatePibAsync(car);
+        return Json(new { success = true, data = result });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Edit(PibHeaderModel model)
+    public async Task<IActionResult> SubmitForApproval(string car, string? notes)
+    {
+        var username = User.Identity?.Name ?? "operator";
+        var success = await _workflow.SubmitForReviewAsync(car, "PIB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PIB {car} sukses diajukan untuk review persetujuan!";
+        else
+            TempData["Error"] = $"Gagal mengajukan persetujuan untuk dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ApproveDocument(string car, string? notes)
+    {
+        var username = User.Identity?.Name ?? "supervisor";
+        var success = await _workflow.ApproveAsync(car, "PIB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PIB {car} berhasil disetujui (Approved)! Siap dikirim ke CEISA 4.0.";
+        else
+            TempData["Error"] = $"Gagal menyetujui dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RejectDocument(string car, string notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            TempData["Error"] = "Catatan revisi / alasan penolakan wajib diisi.";
+            return RedirectToAction(nameof(Detail), new { id = car });
+        }
+
+        var username = User.Identity?.Name ?? "supervisor";
+        var success = await _workflow.RejectAsync(car, "PIB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PIB {car} telah dikembalikan untuk revisi.";
+        else
+            TempData["Error"] = $"Gagal memproses penolakan dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PrintPdf(string id)
     {
         try
         {
-            await _db.ExecuteAsync(
-                @"UPDATE PIB_DOIT_FINAL_HEADER 
-                  SET NM_PEMASOK = @NmPemasok, AL_PEMASOK = @AlPemasok, TGL_TIBA = @TglTiba, JML_BRG = @JmlBrg
-                  WHERE CAR = @Car",
-                model);
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'EDIT_PIB', 'PIB', @Car, 'Mengubah dokumen PIB', @Ip, GETDATE())",
-                new { User = User.Identity?.Name ?? "system", Car = model.Car, Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
-
-            TempData["Success"] = $"Dokumen PIB dengan nomor CAR {model.Car} berhasil diperbarui.";
-            return RedirectToAction(nameof(Index));
+            var pdfBytes = await _pdf.GeneratePibPdfAsync(id);
+            return File(pdfBytes, "application/pdf", $"PIB_BC20_{id}.pdf");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error editing PIB: {Car}", model.Car);
-            TempData["Error"] = $"Gagal memperbarui dokumen PIB: {ex.Message}";
-            ModelState.AddModelError("", $"Gagal memperbarui dokumen PIB: {ex.Message}");
-            return View(model);
+            _logger.LogError(ex, "Error generating PIB PDF: {Car}", id);
+            TempData["Error"] = $"Gagal mencetak dokumen PDF: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id });
         }
     }
 
-    public async Task<IActionResult> Response()
+    [HttpGet]
+    public async Task<IActionResult> ExportJson(string id)
     {
-        ViewData["Title"] = "Respons PIB";
-        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Respons";
+        try
+        {
+            var json = await _ceisa.GeneratePibPayloadJsonAsync(id);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            return File(bytes, "application/json", $"CEISA_PIB_{id}.json");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting PIB JSON: {Car}", id);
+            TempData["Error"] = $"Gagal export JSON CEISA: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult DownloadTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("PIB_Items");
+        
+        ws.Cell(1, 1).Value = "HS_CODE";
+        ws.Cell(1, 2).Value = "URAIAN_BARANG";
+        ws.Cell(1, 3).Value = "JUMLAH";
+        ws.Cell(1, 4).Value = "SATUAN";
+        ws.Cell(1, 5).Value = "HARGA_SATUAN";
+        ws.Cell(1, 6).Value = "NEGARA_ASAL";
+
+        var headerRow = ws.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#1E3A8A");
+        headerRow.Style.Font.FontColor = XLColor.White;
+
+        ws.Cell(2, 1).Value = "8708.29.90";
+        ws.Cell(2, 2).Value = "AUTOMOTIVE BODY PARTS STAMPING";
+        ws.Cell(2, 3).Value = 1200;
+        ws.Cell(2, 4).Value = "PCE";
+        ws.Cell(2, 5).Value = 45.50;
+        ws.Cell(2, 6).Value = "JP";
+
+        ws.Cell(3, 1).Value = "8708.40.99";
+        ws.Cell(3, 2).Value = "TRANSMISSION GEARBOX ASSEMBLY";
+        ws.Cell(3, 3).Value = 400;
+        ws.Cell(3, 4).Value = "SET";
+        ws.Cell(3, 5).Value = 350.00;
+        ws.Cell(3, 6).Value = "JP";
+
+        ws.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Upload_PIB_DoIT.xlsx");
+    }
+
+    public IActionResult Upload()
+    {
+        ViewData["Title"] = "Upload File — PIB";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Upload File";
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadExcel(IFormFile excelFile, string car)
+    {
+        if (excelFile == null || excelFile.Length == 0)
+        {
+            TempData["Error"] = "File upload tidak boleh kosong.";
+            return RedirectToAction(nameof(Upload));
+        }
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(car))
+            {
+                car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+                await _db.ExecuteAsync(
+                    @"INSERT INTO PIB_DOIT_FINAL_HEADER (CAR, ID_IMP, NM_IMO, ASAL_DATA, KD_VAL, STATUS, APPROVAL_STATUS, CREATION_DATE)
+                      VALUES (@Car, '011297371411000', 'PT. SUZUKI INDOMOBIL MOTOR', 'E', 'USD', 'DRAFT', 'DRAFT', GETDATE())",
+                    new { Car = car });
+            }
+
+            using var stream = excelFile.OpenReadStream();
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheet(1);
+            var rows = worksheet.RowsUsed().Skip(1);
+            
+            int serial = 1;
+            int importedCount = 0;
+            decimal totalFob = 0;
+
+            foreach (var row in rows)
+            {
+                var hsCode = row.Cell(1).GetString().Trim();
+                var description = row.Cell(2).GetString().Trim();
+                var qty = row.Cell(3).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(3).Value);
+                var unitType = row.Cell(4).GetString().Trim();
+                var unitVal = row.Cell(5).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(5).Value);
+                var country = row.Cell(6).GetString().Trim();
+
+                if (string.IsNullOrWhiteSpace(hsCode) && string.IsNullOrWhiteSpace(description))
+                    continue;
+
+                var itemTotal = qty * unitVal;
+                totalFob += itemTotal;
+
+                await _db.ExecuteAsync(
+                    @"INSERT INTO PIB_DOIT_FINAL_DETAIL (CAR, SERIAL, HS_NO, GOOD_DESC1, QUANTITY, UNIT_TYPE, UNIT_VAL, CIF_PER_UNIT, ORIGIN_COUNTRY, KD_FAS)
+                       VALUES (@Car, @Serial, @HsNo, @Desc, @Qty, @UnitType, @UnitVal, @CifPerUnit, @Country, 'KITE')",
+                    new { Car = car, Serial = serial++, HsNo = hsCode, Desc = description, Qty = qty, UnitType = string.IsNullOrEmpty(unitType) ? "PCE" : unitType, UnitVal = unitVal, CifPerUnit = itemTotal, Country = string.IsNullOrEmpty(country) ? "JP" : country });
+                importedCount++;
+            }
+
+            await _db.ExecuteAsync(
+                "UPDATE PIB_DOIT_FINAL_HEADER SET JML_BRG = @Count, FOB = @Fob, CIF = @Fob WHERE CAR = @Car",
+                new { Count = importedCount.ToString(), Fob = totalFob.ToString("F2"), Car = car });
+
+            var calc = await _tax.CalculatePibTaxAsync(car);
+            await _tax.SaveCalculatedTaxToPibHeaderAsync(car, calc);
+
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "UPLOAD_EXCEL_PIB", "PIB", car, $"Upload Excel sukses: {importedCount} item barang diimport");
+
+            TempData["Success"] = $"Upload file berhasil! {importedCount} item barang berhasil diimpor ke dokumen PIB {car}.";
+            return RedirectToAction(nameof(Detail), new { id = car });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading file for PIB");
+            TempData["Error"] = $"Gagal mengimpor file: {ex.Message}";
+            return RedirectToAction(nameof(Upload));
+        }
+    }
+
+    public new async Task<IActionResult> Response()
+    {
+        ViewData["Title"] = "Respons Resmi CEISA PIB";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Respons CEISA";
         
         try
         {
@@ -360,100 +573,47 @@ public class PibController : Controller
             return View(new List<PibResponModel>());
         }
     }
-
-    public IActionResult Upload()
-    {
-        ViewData["Title"] = "Upload Excel — PIB";
-        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Upload Excel";
-        return View();
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UploadExcel(IFormFile excelFile, string car)
-    {
-        if (excelFile == null || excelFile.Length == 0)
-        {
-            TempData["Error"] = "File Excel tidak boleh kosong.";
-            return RedirectToAction(nameof(Upload));
-        }
-
-        try
-        {
-            using var stream = excelFile.OpenReadStream();
-            using var workbook = new ClosedXML.Excel.XLWorkbook(stream);
-            var worksheet = workbook.Worksheet(1);
-            var rows = worksheet.RowsUsed().Skip(1); // skip header row
-            
-            int serial = 1;
-            int importedCount = 0;
-
-            foreach (var row in rows)
-            {
-                var hsCode = row.Cell(1).GetString().Trim();
-                var description = row.Cell(2).GetString().Trim();
-                var qty = row.Cell(3).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(3).Value);
-                var unitType = row.Cell(4).GetString().Trim();
-                var unitVal = row.Cell(5).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(5).Value);
-                var country = row.Cell(6).GetString().Trim();
-
-                if (string.IsNullOrWhiteSpace(hsCode) && string.IsNullOrWhiteSpace(description))
-                    continue;
-
-                await _db.ExecuteAsync(
-                    @"INSERT INTO PIB_DOIT_FINAL_DETAIL (CAR, SERIAL, HS_NO, GOOD_DESC1, QUANTITY, UNIT_TYPE, UNIT_VAL, ORIGIN_COUNTRY)
-                       VALUES (@Car, @Serial, @HsNo, @Desc, @Qty, @UnitType, @UnitVal, @Country)",
-                    new { Car = car, Serial = serial++, HsNo = hsCode, Desc = description, Qty = qty, UnitType = unitType, UnitVal = unitVal, Country = country });
-                importedCount++;
-            }
-
-            // Update JML_BRG in header
-            await _db.ExecuteAsync(
-                "UPDATE PIB_DOIT_FINAL_HEADER SET JML_BRG = @Count WHERE CAR = @Car",
-                new { Count = importedCount.ToString(), Car = car });
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                   VALUES (@User, 'UPLOAD_EXCEL_PIB', 'PIB', @Car, @Desc, @Ip, GETDATE())",
-                new {
-                    User = User.Identity?.Name ?? "system",
-                    Car = car,
-                    Desc = $"Upload Excel berhasil: {importedCount} item barang diimport",
-                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString()
-                });
-
-            TempData["Success"] = $"Upload Excel berhasil! {importedCount} item barang diimport ke dokumen PIB {car}.";
-            return RedirectToAction(nameof(Index));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error uploading Excel for PIB");
-            TempData["Error"] = $"Gagal upload Excel: {ex.Message}";
-            return RedirectToAction(nameof(Upload));
-        }
-    }
 }
 
 [Authorize]
 public class PebController : Controller
 {
     private readonly DatabaseContext _db;
+    private readonly IWorkflowService _workflow;
+    private readonly IValidationService _validation;
+    private readonly IPdfReportService _pdf;
+    private readonly ICeisaIntegrationService _ceisa;
+    private readonly IAuditService _audit;
     private readonly ILogger<PebController> _logger;
 
-    public PebController(DatabaseContext db, ILogger<PebController> logger)
+    public PebController(
+        DatabaseContext db,
+        IWorkflowService workflow,
+        IValidationService validation,
+        IPdfReportService pdf,
+        ICeisaIntegrationService ceisa,
+        IAuditService audit,
+        ILogger<PebController> logger)
     {
         _db = db;
+        _workflow = workflow;
+        _validation = validation;
+        _pdf = pdf;
+        _ceisa = ceisa;
+        _audit = audit;
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index(string search, string status, int page = 1)
+    public async Task<IActionResult> Index(string search, string status, string approvalStatus, int page = 1)
     {
-        ViewData["Title"] = "Daftar PEB";
+        ViewData["Title"] = "Daftar PEB (BC 3.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> PEB";
         
         try
         {
-            var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, 
-                       STATUS AS Nopen,
+            var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, BRUTO, FOB,
+                       NOPEN AS Nopen, TGL_NOPEN AS TglNopen, KDVAL AS KdVal,
+                       ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
                        CASE 
                             WHEN STATUS >= 3 THEN 'APPROVED'
                             WHEN STATUS = 2 THEN 'SENT'
@@ -466,7 +626,7 @@ public class PebController : Controller
             
             if (!string.IsNullOrWhiteSpace(search))
             {
-                sql += " AND (CAR LIKE @Search OR NAMAEKS LIKE @Search OR NPWPEKS LIKE @Search OR NEGBELI LIKE @Search OR CARRIER LIKE @Search)";
+                sql += " AND (CAR LIKE @Search OR NAMAEKS LIKE @Search OR NPWPEKS LIKE @Search OR NEGBELI LIKE @Search OR CARRIER LIKE @Search OR NOPEN LIKE @Search)";
                 parameters.Add("Search", $"%{search.Trim()}%");
             }
             if (!string.IsNullOrEmpty(status))
@@ -474,6 +634,11 @@ public class PebController : Controller
                 if (status == "APPROVED") sql += " AND STATUS >= 3";
                 else if (status == "SENT") sql += " AND STATUS = 2";
                 else if (status == "DRAFT") sql += " AND STATUS <= 1";
+            }
+            if (!string.IsNullOrEmpty(approvalStatus))
+            {
+                sql += " AND APPROVAL_STATUS = @ApprovalStatus";
+                parameters.Add("ApprovalStatus", approvalStatus);
             }
             
             sql += " ORDER BY CREATED_DATE DESC, CAR DESC";
@@ -490,7 +655,7 @@ public class PebController : Controller
 
     public IActionResult Create()
     {
-        ViewData["Title"] = "Buat PEB Baru";
+        ViewData["Title"] = "Buat PEB Baru (BC 3.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
         return View();
     }
@@ -500,187 +665,91 @@ public class PebController : Controller
     {
         try
         {
-            var kdKtr = form["KdKtr"].FirstOrDefault() ?? "040300";
-            var jnEks = form["JnEks"].FirstOrDefault() ?? "1";
-            var katEks = form["KatEks"].FirstOrDefault() ?? "1";
-            var caraBayar = form["CaraBayar"].FirstOrDefault() ?? "1";
-            var moda = form["Moda"].FirstOrDefault() ?? "1";
-            var carrier = form["Carrier"].FirstOrDefault() ?? "";
-            var voy = form["Voy"].FirstOrDefault() ?? "";
-            var pelMuat = form["PelMuat"].FirstOrDefault() ?? "IDTPP";
-            var pelTransit = form["PelTransit"].FirstOrDefault() ?? "";
-            var pelBongkar = form["PelBongkar"].FirstOrDefault() ?? "";
-            var kdVal = form["KdVal"].FirstOrDefault() ?? "USD";
-            var incoterms = form["Incoterms"].FirstOrDefault() ?? "FOB";
+            if (string.IsNullOrWhiteSpace(model.Car))
+            {
+                model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+            }
 
-            int jnEksInt = 1, katEksInt = 1, jnpebInt = 1, modaInt = 1;
-            int.TryParse(jnEks, out jnEksInt);
-            int.TryParse(katEks, out katEksInt);
-            int.TryParse(moda, out modaInt);
+            model.KdKtr = form["KdKtr"].FirstOrDefault() ?? "010100";
+            model.NamaBeli = form["NamaBeli"].FirstOrDefault() ?? model.NamaBeli;
+            model.AlmtBeli = form["AlmtBeli"].FirstOrDefault() ?? model.AlmtBeli;
+            model.NegBeli = form["NegBeli"].FirstOrDefault() ?? (model.NegBeli ?? "JP");
+            model.Carrier = form["Carrier"].FirstOrDefault() ?? "WAN HAI 315";
+            model.Voy = form["Voy"].FirstOrDefault() ?? "WH-315";
+            model.PelMuat = form["PelMuat"].FirstOrDefault() ?? "IDTPP";
+            model.PelBongkar = form["PelBongkar"].FirstOrDefault() ?? "JPTYO";
+            model.NoInv = form["NoInv"].FirstOrDefault() ?? ("INV-EXP-" + DateTime.Now.ToString("yyMMdd"));
+            model.KdVal = form["KdVal"].FirstOrDefault() ?? "USD";
+            model.Status = "DRAFT";
+            model.ApprovalStatus = "DRAFT";
 
-            var npwpEks = !string.IsNullOrWhiteSpace(form["NpwpEks"]) ? form["NpwpEks"].FirstOrDefault()! : "011297371411000";
-            var namaEks = !string.IsNullOrWhiteSpace(form["NamaEks"]) ? form["NamaEks"].FirstOrDefault()! : "PT. SUZUKI INDOMOBIL MOTOR";
-            var almtEks = !string.IsNullOrWhiteSpace(form["AlmtEks"]) ? form["AlmtEks"].FirstOrDefault()! : "JL. RAYA PENGGILINGAN KM. 19";
+            decimal.TryParse(form["Fob"].FirstOrDefault(), out decimal fob);
+            decimal.TryParse(form["Netto"].FirstOrDefault(), out decimal netto);
+            decimal.TryParse(form["Bruto"].FirstOrDefault(), out decimal bruto);
+            model.Fob = fob;
+            model.Netto = netto > 0 ? netto : 12500;
+            model.Bruto = bruto > 0 ? bruto : 13800;
 
             var sqlHeader = @"INSERT INTO PEB_DOIT_FINAL_HEADER 
-                (CAR, JNEKS, KATEKS, JNPEB, NPWPEKS, NAMAEKS, ALMTEKS, NEGBELI, MODA, CARRIER, VOY, PELMUAT, PELTRANSIT, PELBONGKAR, KDVAL, TGEKS, NETTO, BRUTO, FOB, KDKTR, CREATED_DATE, STATUS)
-                VALUES (@Car, @JnEks, @KatEks, @JnPeb, @NpwpEks, @NamaEks, @AlmtEks, @NegBeli, @Moda, @Carrier, @Voy, @PelMuat, @PelTransit, @PelBongkar, @KdVal, @TgEks, @Netto, @Bruto, @Fob, @KdKtr, GETDATE(), 1)";
-            
-            await _db.ExecuteAsync(sqlHeader, new {
-                Car = model.Car,
-                JnEks = jnEksInt,
-                KatEks = katEksInt,
-                JnPeb = jnpebInt,
-                NpwpEks = npwpEks,
-                NamaEks = namaEks,
-                AlmtEks = almtEks,
-                NegBeli = !string.IsNullOrWhiteSpace(model.NegBeli) ? model.NegBeli : (form["NegBeli"].FirstOrDefault() ?? "ID"),
-                Moda = modaInt,
-                Carrier = carrier,
-                Voy = voy,
-                PelMuat = pelMuat,
-                PelTransit = pelTransit,
-                PelBongkar = pelBongkar,
-                KdVal = kdVal,
-                TgEks = model.TgEks,
-                Netto = model.Netto,
-                Bruto = model.Bruto,
-                Fob = model.Fob,
-                KdKtr = kdKtr
-            });
+                (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NAMABELI, ALMTBELI, NEGBELI, TGEKS, NETTO, BRUTO, FOB, 
+                 KDKTR, CARRIER, VOY, PELMUAT, PELBONGKAR, NOINV, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE)
+                VALUES (@Car, @NamaEks, @AlmtEks, @NpwpEks, @NamaBeli, @AlmtBeli, @NegBeli, GETDATE(), @Netto, @Bruto, @Fob,
+                 @KdKtr, @Carrier, @Voy, @PelMuat, @PelBongkar, @NoInv, @KdVal, 0, 'DRAFT', GETDATE())";
 
-            // Save PEB Items (Detail Barang Ekspor)
+            await _db.ExecuteAsync(sqlHeader, model);
+
+            // Save Items
             var brgHs = form["BrgHs[]"];
             var brgDesc = form["BrgDesc[]"];
             var brgQty = form["BrgQty[]"];
             var brgSat = form["BrgSat[]"];
             var brgFob = form["BrgFob[]"];
+            var brgNetto = form["BrgNetto[]"];
 
             for (int i = 0; i < brgHs.Count; i++)
             {
                 if (!string.IsNullOrWhiteSpace(brgHs[i]))
                 {
-                    int hsInt = 0, qtyInt = 0;
-                    long fobLong = 0;
-                    int.TryParse(brgHs[i], out hsInt);
-                    if (brgQty.Count > i) int.TryParse(brgQty[i]?.Replace(",", ""), out qtyInt);
-                    if (brgFob.Count > i) long.TryParse(brgFob[i]?.Replace(",", ""), out fobLong);
+                    decimal qty = 0, valFob = 0, valNetto = 0;
+                    if (brgQty.Count > i) decimal.TryParse(brgQty[i]?.Replace(",", ""), out qty);
+                    if (brgFob.Count > i) decimal.TryParse(brgFob[i]?.Replace(",", ""), out valFob);
+                    if (brgNetto.Count > i) decimal.TryParse(brgNetto[i]?.Replace(",", ""), out valNetto);
+
                     var desc = brgDesc.Count > i ? brgDesc[i] : "";
-                    var unitType = brgSat.Count > i ? brgSat[i] : "";
+                    var sat = brgSat.Count > i ? brgSat[i] : "PCE";
 
                     await _db.ExecuteAsync(
-                        @"INSERT INTO PEB_DOIT_FINAL_DETAIL (CAR, SERIBRG, HS, URBRG1, JMSATUAN, JNSATUAN, FOBPERBRG, CREATED_DATE)
-                           VALUES (@Car, @Seri, @Hs, @Desc, @Qty, @UnitType, @Fob, GETDATE())",
-                        new { Car = model.Car, Seri = i + 1, Hs = hsInt, Desc = desc, Qty = qtyInt, UnitType = unitType, Fob = fobLong });
+                        @"INSERT INTO PEB_DOIT_FINAL_DETAIL (CAR, SERIBRG, HS, URBRG, JMLSAT, KDSAT, NETTODET, FOBDET)
+                           VALUES (@Car, @Seri, @Hs, @UrBrg, @JmlSat, @KdSat, @NettoDet, @FobDet)",
+                        new { Car = model.Car, Seri = i + 1, Hs = brgHs[i], UrBrg = desc, JmlSat = qty, KdSat = sat, NettoDet = valNetto, FobDet = valFob });
                 }
             }
 
-            // Save PEB Documents
-            var docKd = form["DocKd[]"];
-            var docNm = form["DocNm[]"];
-            var docNo = form["DocNo[]"];
-            var docTg = form["DocTg[]"];
+            // Save Documents
+            var dokKd = form["DokKd[]"];
+            var dokNo = form["DokNo[]"];
 
-            for (int i = 0; i < docKd.Count; i++)
+            for (int i = 0; i < dokKd.Count; i++)
             {
-                if (!string.IsNullOrWhiteSpace(docKd[i]))
+                if (!string.IsNullOrWhiteSpace(dokNo[i]))
                 {
-                    DateTime? docDate = null;
-                    if (docTg.Count > i && DateTime.TryParse(docTg[i], out DateTime dt)) docDate = dt;
-                    var dNo = docNo.Count > i ? docNo[i] : "";
-
                     await _db.ExecuteAsync(
-                        @"INSERT INTO PEB_DOIT_FINAL_DOCUMENT (CAR, KDDOK, NODOK, TGDOK, CREATED_DATE)
-                           VALUES (@Car, @KdDok, @NoDok, @TgDok, GETDATE())",
-                        new { Car = model.Car, KdDok = docKd[i], NoDok = dNo, TgDok = docDate });
+                        @"INSERT INTO PEB_DOIT_FINAL_DOCUMENT (CAR, SERI, KDDOK, NODOK, TGDOK)
+                           VALUES (@Car, @Seri, @KdDok, @NoDok, GETDATE())",
+                        new { Car = model.Car, Seri = i + 1, KdDok = dokKd[i], NoDok = dokNo[i] });
                 }
             }
 
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'CREATE_PEB', 'PEB', @Car, 'Membuat dokumen PEB 8-Tab CEISA 4.0 baru', @Ip, GETDATE())",
-                new { User = User.Identity?.Name ?? "system", Car = model.Car, Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "CREATE_PEB", "PEB", model.Car, $"Membuat dokumen PEB BC 3.0 baru (FOB: {model.Fob:N2} {model.KdVal})");
 
-            TempData["Success"] = $"Dokumen PEB (CEISA 4.0) dengan nomor CAR {model.Car} berhasil dibuat.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = $"Dokumen PEB (BC 3.0) dengan nomor CAR {model.Car} berhasil disimpan.";
+            return RedirectToAction(nameof(Detail), new { id = model.Car });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating PEB: {Car}", model.Car);
             TempData["Error"] = $"Gagal membuat dokumen PEB: {ex.Message}";
-            ModelState.AddModelError("", $"Gagal membuat dokumen PEB: {ex.Message}");
             return View(model);
-        }
-    }
-
-    public async Task<IActionResult> Edit(string id)
-    {
-        ViewData["Title"] = $"Edit PEB — {id}";
-        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Edit";
-        
-        try
-        {
-            var header = await _db.QueryFirstOrDefaultAsync<PebHeaderModel>(
-                @"SELECT CAR, NAMAEKS AS NamaBeli, ALMTEKS AS AlmtBeli, NEGBELI AS NegBeli, TGEKS AS TgEks, 
-                   NETTO, BRUTO, FOB FROM PEB_DOIT_FINAL_HEADER WHERE CAR = @Car",
-                new { Car = id });
-                
-            if (header == null) return NotFound();
-            return View(header);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading edit view for PEB: {Car}", id);
-            return RedirectToAction(nameof(Index));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Edit(PebHeaderModel model)
-    {
-        try
-        {
-            await _db.ExecuteAsync(
-                @"UPDATE PEB_DOIT_FINAL_HEADER 
-                   SET NAMAEKS = @NamaBeli, ALMTEKS = @AlmtBeli, NEGBELI = @NegBeli, TGEKS = @TgEks, 
-                       NETTO = @Netto, BRUTO = @Bruto, FOB = @Fob
-                   WHERE CAR = @Car",
-                model);
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'EDIT_PEB', 'PEB', @Car, 'Mengubah dokumen PEB', @Ip, GETDATE())",
-                new { User = User.Identity?.Name ?? "system", Car = model.Car, Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
-
-            TempData["Success"] = $"Dokumen PEB dengan nomor CAR {model.Car} berhasil diperbarui.";
-            return RedirectToAction(nameof(Index));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error editing PEB: {Car}", model.Car);
-            TempData["Error"] = $"Gagal memperbarui dokumen PEB: {ex.Message}";
-            ModelState.AddModelError("", $"Gagal memperbarui dokumen PEB: {ex.Message}");
-            return View(model);
-        }
-    }
-
-    public async Task<IActionResult> Response()
-    {
-        ViewData["Title"] = "Respons PEB";
-        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Respons";
-        
-        try
-        {
-            var responses = await _db.QueryAsync<PebResponModel>(
-                @"SELECT r.CAR, r.RESKD AS ResKd, r.RESTG AS ResTg, r.NOPEN AS NoPen, r.TGPEN AS TgPen, r.DESKRIPSI
-                   FROM PEB_DOIT_FINAL_RESPON r
-                   ORDER BY r.RESTG DESC");
-            return View(responses.ToList());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching PEB responses");
-            return View(new List<PebResponModel>());
         }
     }
 
@@ -692,37 +761,53 @@ public class PebController : Controller
         try
         {
             var header = await _db.QueryFirstOrDefaultAsync<PebHeaderModel>(
-                @"SELECT CAR, NAMAEKS AS NamaBeli, ALMTEKS AS AlmtBeli, NEGBELI AS NegBeli, TGEKS AS TgEks, 
-                   NETTO, BRUTO, FOB, CREATED_DATE AS CreatedDate,
-                   CASE 
-                        WHEN STATUS >= 3 THEN 'APPROVED'
-                        WHEN STATUS = 2 THEN 'SENT'
-                        WHEN STATUS = 1 THEN 'PENDING'
-                        ELSE 'DRAFT'
-                   END AS Status 
-                   FROM PEB_DOIT_FINAL_HEADER WHERE CAR = @Car",
+                @"SELECT CAR, NAMAEKS AS NamaEks, ALMTEKS AS AlmtEks, NPWPEKS AS NpwpEks,
+                  NAMABELI AS NamaBeli, ALMTBELI AS AlmtBeli, NEGBELI AS NegBeli,
+                  TGEKS AS TgEks, NETTO AS Netto, BRUTO AS Bruto, FOB AS Fob,
+                  NOPEN AS Nopen, TGL_NOPEN AS TglNopen, KDKTR AS KdKtr,
+                  CARRIER AS Carrier, VOY AS Voy, PELMUAT AS PelMuat, PELBONGKAR AS PelBongkar,
+                  NOINV AS NoInv, KDVAL AS KdVal,
+                  ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus, REVIEW_NOTES AS ReviewNotes,
+                  SUBMITTED_BY AS SubmittedBy, SUBMITTED_DATE AS SubmittedDate,
+                  APPROVED_BY AS ApprovedBy, APPROVED_DATE AS ApprovedDate,
+                  CASE 
+                       WHEN STATUS >= 3 THEN 'APPROVED'
+                       WHEN STATUS = 2 THEN 'SENT'
+                       WHEN STATUS = 1 THEN 'PENDING'
+                       ELSE 'DRAFT'
+                  END AS Status 
+                  FROM PEB_DOIT_FINAL_HEADER WHERE CAR = @Car",
                 new { Car = id });
                 
             if (header == null) return NotFound();
             
             var details = await _db.QueryAsync<PebDetailModel>(
-                @"SELECT SERIBRG AS Seri, CAST(HS AS VARCHAR) AS HsNo, URBRG1 AS UrBrg, 
-                   JMSATUAN AS JmlSat, JNSATUAN AS KdSat, FOBPERBRG AS FobDet 
+                @"SELECT SERIBRG AS Seri, HS AS HsNo, URBRG AS UrBrg, 
+                   JMLSAT AS JmlSat, KDSAT AS KdSat, NETTODET AS NettoDet, FOBDET AS FobDet 
                    FROM PEB_DOIT_FINAL_DETAIL WHERE CAR = @Car ORDER BY SERIBRG",
                 new { Car = id });
             header.Details = details.ToList();
             
             var docs = await _db.QueryAsync<PebDocumentModel>(
-                @"SELECT KDDOK AS KdDok, NODOK AS NoDok, TGDOK AS TgDok 
-                   FROM PEB_DOIT_FINAL_DOCUMENT WHERE CAR = @Car",
+                @"SELECT SERI AS Seri, KDDOK AS KdDok, NODOK AS NoDok, TGDOK AS TgDok 
+                  FROM PEB_DOIT_FINAL_DOCUMENT WHERE CAR = @Car ORDER BY SERI",
                 new { Car = id });
             header.Documents = docs.ToList();
 
+            var containers = await _db.QueryAsync<PebContainerModel>(
+                @"SELECT NOCONT AS NoCont, UKURCONT AS UkurCont, TIPECONT AS TipeCont 
+                  FROM PEB_DOIT_FINAL_CONTAINER WHERE CAR = @Car",
+                new { Car = id });
+            header.Containers = containers.ToList();
+
             var responses = await _db.QueryAsync<PebResponModel>(
                 @"SELECT RESKD AS ResKd, RESTG AS ResTg, NOPEN AS NoPen, TGPEN AS TgPen, DESKRIPSI AS Deskripsi
-                   FROM PEB_DOIT_FINAL_RESPON WHERE CAR = @Car ORDER BY RESTG DESC",
+                  FROM PEB_DOIT_FINAL_RESPON WHERE CAR = @Car ORDER BY RESTG DESC",
                 new { Car = id });
             header.Responses = responses.ToList();
+
+            var approvalHistory = await _workflow.GetApprovalHistoryAsync(id);
+            header.ApprovalLogs = approvalHistory.ToList();
             
             return View(header);
         }
@@ -733,10 +818,134 @@ public class PebController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ValidatePeb(string car)
+    {
+        var result = await _validation.ValidatePebAsync(car);
+        return Json(new { success = true, data = result });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SubmitForApproval(string car, string? notes)
+    {
+        var username = User.Identity?.Name ?? "operator";
+        var success = await _workflow.SubmitForReviewAsync(car, "PEB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PEB {car} sukses diajukan untuk review persetujuan!";
+        else
+            TempData["Error"] = $"Gagal mengajukan persetujuan untuk dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ApproveDocument(string car, string? notes)
+    {
+        var username = User.Identity?.Name ?? "supervisor";
+        var success = await _workflow.ApproveAsync(car, "PEB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PEB {car} berhasil disetujui (Approved)! Siap dikirim ke CEISA 4.0.";
+        else
+            TempData["Error"] = $"Gagal menyetujui dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RejectDocument(string car, string notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            TempData["Error"] = "Catatan revisi / alasan penolakan wajib diisi.";
+            return RedirectToAction(nameof(Detail), new { id = car });
+        }
+
+        var username = User.Identity?.Name ?? "supervisor";
+        var success = await _workflow.RejectAsync(car, "PEB", username, notes);
+        if (success)
+            TempData["Success"] = $"Dokumen PEB {car} telah dikembalikan untuk revisi.";
+        else
+            TempData["Error"] = $"Gagal memproses penolakan dokumen {car}.";
+
+        return RedirectToAction(nameof(Detail), new { id = car });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PrintPdf(string id)
+    {
+        try
+        {
+            var pdfBytes = await _pdf.GeneratePebPdfAsync(id);
+            return File(pdfBytes, "application/pdf", $"PEB_BC30_{id}.pdf");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PEB PDF: {Car}", id);
+            TempData["Error"] = $"Gagal mencetak dokumen PDF: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportJson(string id)
+    {
+        try
+        {
+            var json = await _ceisa.GeneratePebPayloadJsonAsync(id);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            return File(bytes, "application/json", $"CEISA_PEB_{id}.json");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting PEB JSON: {Car}", id);
+            TempData["Error"] = $"Gagal export JSON CEISA: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult DownloadTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("PEB_Items");
+        
+        ws.Cell(1, 1).Value = "HS_CODE";
+        ws.Cell(1, 2).Value = "URAIAN_BARANG";
+        ws.Cell(1, 3).Value = "JUMLAH";
+        ws.Cell(1, 4).Value = "SATUAN";
+        ws.Cell(1, 5).Value = "FOB_USD";
+        ws.Cell(1, 6).Value = "NETTO_KG";
+
+        var headerRow = ws.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#1E3A8A");
+        headerRow.Style.Font.FontColor = XLColor.White;
+
+        ws.Cell(2, 1).Value = "8703.22.90";
+        ws.Cell(2, 2).Value = "SUZUKI ERTIGA SMART HYBRID GL AT";
+        ws.Cell(2, 3).Value = 24;
+        ws.Cell(2, 4).Value = "UNT";
+        ws.Cell(2, 5).Value = 384000.00;
+        ws.Cell(2, 6).Value = 28800.00;
+
+        ws.Cell(3, 1).Value = "8703.23.90";
+        ws.Cell(3, 2).Value = "SUZUKI XL7 ALPHA AT PASSENGER CAR";
+        ws.Cell(3, 3).Value = 16;
+        ws.Cell(3, 4).Value = "UNT";
+        ws.Cell(3, 5).Value = 272000.00;
+        ws.Cell(3, 6).Value = 19600.00;
+
+        ws.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Upload_PEB_DoIT.xlsx");
+    }
+
     public IActionResult Upload()
     {
-        ViewData["Title"] = "Upload Excel — PEB";
-        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Upload Excel";
+        ViewData["Title"] = "Upload File — PEB";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Upload File";
         return View();
     }
 
@@ -745,65 +954,87 @@ public class PebController : Controller
     {
         if (excelFile == null || excelFile.Length == 0)
         {
-            TempData["Error"] = "File Excel tidak boleh kosong.";
+            TempData["Error"] = "File upload tidak boleh kosong.";
             return RedirectToAction(nameof(Upload));
         }
 
         try
         {
+            if (string.IsNullOrWhiteSpace(car))
+            {
+                car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+                await _db.ExecuteAsync(
+                    @"INSERT INTO PEB_DOIT_FINAL_HEADER (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NAMABELI, NEGBELI, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE)
+                      VALUES (@Car, 'PT. SUZUKI INDOMOBIL MOTOR', 'JL. RAYA PENGGILINGAN KM 19', '011297371411000', 'SUZUKI MOTOR CORPORATION JAPAN', 'JP', 'USD', 0, 'DRAFT', GETDATE())",
+                    new { Car = car });
+            }
+
             using var stream = excelFile.OpenReadStream();
-            using var workbook = new ClosedXML.Excel.XLWorkbook(stream);
+            using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheet(1);
-            var rows = worksheet.RowsUsed().Skip(1); // skip header row
+            var rows = worksheet.RowsUsed().Skip(1);
             
             int serial = 1;
             int importedCount = 0;
+            decimal totalFob = 0;
+            decimal totalNetto = 0;
 
             foreach (var row in rows)
             {
                 var hsCode = row.Cell(1).GetString().Trim();
                 var description = row.Cell(2).GetString().Trim();
-                var qty = row.Cell(3).IsEmpty() ? 0 : Convert.ToInt32(row.Cell(3).Value);
+                var qty = row.Cell(3).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(3).Value);
                 var unitType = row.Cell(4).GetString().Trim();
-                var fob = row.Cell(5).IsEmpty() ? 0L : Convert.ToInt64(row.Cell(5).Value);
-                var originCountry = row.Cell(6).GetString().Trim();
+                var fob = row.Cell(5).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(5).Value);
+                var netto = row.Cell(6).IsEmpty() ? 0m : Convert.ToDecimal(row.Cell(6).Value);
 
                 if (string.IsNullOrWhiteSpace(hsCode) && string.IsNullOrWhiteSpace(description))
                     continue;
 
-                int hsInt = 0;
-                int.TryParse(hsCode, out hsInt);
+                totalFob += fob;
+                totalNetto += netto;
 
                 await _db.ExecuteAsync(
-                    @"INSERT INTO PEB_DOIT_FINAL_DETAIL (CAR, SERIBRG, HS, URBRG1, JMSATUAN, JNSATUAN, FOBPERBRG, NEGASAL, CREATED_DATE)
-                       VALUES (@Car, @Seri, @Hs, @Desc, @Qty, @UnitType, @Fob, @OriginCountry, GETDATE())",
-                    new { Car = car, Seri = serial++, Hs = hsInt, Desc = description, Qty = qty, UnitType = unitType, Fob = fob, OriginCountry = originCountry });
+                    @"INSERT INTO PEB_DOIT_FINAL_DETAIL (CAR, SERIBRG, HS, URBRG, JMLSAT, KDSAT, NETTODET, FOBDET)
+                       VALUES (@Car, @Seri, @Hs, @Desc, @Qty, @UnitType, @Netto, @Fob)",
+                    new { Car = car, Seri = serial++, Hs = hsCode, Desc = description, Qty = qty, UnitType = string.IsNullOrEmpty(unitType) ? "PCE" : unitType, Netto = netto, Fob = fob });
                 importedCount++;
             }
 
-            // Update JMBRG in PEB header
             await _db.ExecuteAsync(
-                "UPDATE PEB_DOIT_FINAL_HEADER SET JMBRG = @Count WHERE CAR = @Car",
-                new { Count = importedCount, Car = car });
+                "UPDATE PEB_DOIT_FINAL_HEADER SET FOB = @Fob, NETTO = @Netto WHERE CAR = @Car",
+                new { Fob = totalFob, Netto = totalNetto, Car = car });
 
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                   VALUES (@User, 'UPLOAD_EXCEL_PEB', 'PEB', @Car, @Desc, @Ip, GETDATE())",
-                new {
-                    User = User.Identity?.Name ?? "system",
-                    Car = car,
-                    Desc = $"Upload Excel PEB berhasil: {importedCount} item barang diimport",
-                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString()
-                });
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "UPLOAD_EXCEL_PEB", "PEB", car, $"Upload Excel PEB berhasil: {importedCount} item barang diimport");
 
-            TempData["Success"] = $"Upload Excel PEB berhasil! {importedCount} item barang diimport ke dokumen PEB {car}.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = $"Upload file PEB berhasil! {importedCount} item barang diimpor ke dokumen PEB {car}.";
+            return RedirectToAction(nameof(Detail), new { id = car });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error uploading Excel for PEB");
-            TempData["Error"] = $"Gagal upload Excel PEB: {ex.Message}";
+            _logger.LogError(ex, "Error uploading file for PEB");
+            TempData["Error"] = $"Gagal mengimpor file PEB: {ex.Message}";
             return RedirectToAction(nameof(Upload));
+        }
+    }
+
+    public new async Task<IActionResult> Response()
+    {
+        ViewData["Title"] = "Respons Resmi CEISA PEB (NPE)";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Respons CEISA";
+        
+        try
+        {
+            var responses = await _db.QueryAsync<PebResponModel>(
+                @"SELECT r.CAR, r.RESKD AS ResKd, r.RESTG AS ResTg, r.NOPEN AS NoPen, r.TGPEN AS TgPen, r.DESKRIPSI
+                  FROM PEB_DOIT_FINAL_RESPON r
+                  ORDER BY r.RESTG DESC");
+            return View(responses.ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching PEB responses");
+            return View(new List<PebResponModel>());
         }
     }
 }
@@ -1133,36 +1364,59 @@ public class SiloController : Controller
 public class CeisaController : Controller
 {
     private readonly DatabaseContext _db;
-    private readonly ILogger<CeisaController> _logger;
+    private readonly ICeisaIntegrationService _ceisa;
     private readonly IValidationService _validation;
+    private readonly IAuditService _audit;
+    private readonly ILogger<CeisaController> _logger;
 
-    public CeisaController(DatabaseContext db, ILogger<CeisaController> logger, IValidationService validation)
+    public CeisaController(
+        DatabaseContext db,
+        ICeisaIntegrationService ceisa,
+        IValidationService validation,
+        IAuditService audit,
+        ILogger<CeisaController> logger)
     {
         _db = db;
-        _logger = logger;
+        _ceisa = ceisa;
         _validation = validation;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<IActionResult> SendPib()
     {
-        ViewData["Title"] = "Kirim PIB ke CEISA";
+        ViewData["Title"] = "Kirim PIB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PIB";
         
-        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, 'DRAFT' AS Status 
+        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, 
+                           ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           KD_VAL AS KdVal, CIF AS Cif,
+                           CASE 
+                               WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
+                               WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
+                               ELSE 'DRAFT'
+                           END AS Status 
                     FROM PIB_DOIT_FINAL_HEADER 
-                    WHERE NO_PEN_PIB IS NULL OR NO_PEN_PIB = ''";
+                    ORDER BY CREATION_DATE DESC";
         var drafts = await _db.QueryAsync<PibHeaderModel>(sql);
         return View(drafts.ToList());
     }
 
     public async Task<IActionResult> SendPeb()
     {
-        ViewData["Title"] = "Kirim PEB ke CEISA";
+        ViewData["Title"] = "Kirim PEB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PEB";
         
-        var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, 'DRAFT' AS Status 
+        var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, BRUTO, FOB,
+                           ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           NOPEN AS Nopen,
+                           CASE 
+                               WHEN STATUS >= 3 THEN 'APPROVED'
+                               WHEN STATUS = 2 THEN 'SENT'
+                               ELSE 'DRAFT'
+                           END AS Status 
                      FROM PEB_DOIT_FINAL_HEADER 
-                     WHERE STATUS <= 1";
+                     ORDER BY CREATED_DATE DESC";
         var drafts = await _db.QueryAsync<PebHeaderModel>(sql);
         return View(drafts.ToList());
     }
@@ -1172,53 +1426,24 @@ public class CeisaController : Controller
     {
         try
         {
-            // Run automatic validation before sending
-            var validationResult = await _validation.ValidatePibAsync(car);
-            if (!validationResult.IsValid)
+            var username = User.Identity?.Name ?? "operator";
+            var result = await _ceisa.TransmitPibAsync(car, username, isSandbox: true);
+            
+            if (result.Success)
             {
-                var errorMessages = string.Join("; ", validationResult.Errors
-                    .Where(e => e.Severity == ValidationSeverity.Error)
-                    .Select(e => $"[{e.Tab}] {e.Message}"));
-                TempData["Error"] = $"Validasi gagal ({validationResult.ErrorCount} error): {errorMessages}";
-                return RedirectToAction(nameof(SendPib));
+                TempData["Success"] = result.Message;
             }
-
-            var random = new Random();
-            var nopen = random.Next(100000, 999999).ToString();
-            var sppb = random.Next(100000, 999999).ToString();
-
-            // Simulate sending payload to CEISA 4.0 API and obtaining registration number & SPPB
-            await _db.ExecuteAsync(
-                @"UPDATE PIB_DOIT_FINAL_HEADER 
-                  SET NO_PEN_PIB = @Nopen, TGL_PEND_PIB = GETDATE(), NO_SPPB = @Sppb, TGL_SPPB = GETDATE()
-                  WHERE CAR = @Car",
-                new { Car = car, Nopen = nopen, Sppb = sppb });
-
-            // Seed response
-            await _db.ExecuteAsync(
-                @"INSERT INTO PIB_DOIT_FINAL_RESPON (CAR, RESKD, RESTG, DOKRESNO, DOKRESTG, KPBC, PIBNO, PIBTG, DESKRIPSI)
-                  VALUES (@Car, '300', GETDATE(), @Sppb, GETDATE(), '010100', @Nopen, GETDATE(), 'Surat Persetujuan Pengeluaran Barang (SPPB) Terbit')",
-                new { Car = car, Nopen = nopen, Sppb = sppb });
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'SEND_CEISA_PIB', 'CEISA', @Car, @Desc, @Ip, GETDATE())",
-                new { 
-                    User = User.Identity?.Name ?? "system", 
-                    Car = car, 
-                    Desc = $"Dokumen PIB berhasil dikirim ke CEISA 4.0. No Pendaftaran: {nopen}, No SPPB: {sppb}", 
-                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
-                });
-
-            TempData["Success"] = $"PIB dengan CAR {car} sukses terkirim ke CEISA! Respon SPPB {sppb} terbit.";
-            return RedirectToAction(nameof(SendPib));
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transmitting PIB to CEISA");
             TempData["Error"] = $"Gagal mengirim PIB ke CEISA: {ex.Message}";
-            return RedirectToAction(nameof(SendPib));
         }
+        return RedirectToAction(nameof(SendPib));
     }
 
     [HttpPost]
@@ -1226,50 +1451,24 @@ public class CeisaController : Controller
     {
         try
         {
-            // Run automatic CEISA 4.0 validation before sending PEB
-            var validationResult = await _validation.ValidatePebAsync(car);
-            if (!validationResult.IsValid)
+            var username = User.Identity?.Name ?? "operator";
+            var result = await _ceisa.TransmitPebAsync(car, username, isSandbox: true);
+            
+            if (result.Success)
             {
-                var errorMessages = string.Join("; ", validationResult.Errors
-                    .Where(e => e.Severity == ValidationSeverity.Error)
-                    .Select(e => $"[{e.Tab}] {e.Message}"));
-                TempData["Error"] = $"Validasi PEB gagal ({validationResult.ErrorCount} error): {errorMessages}";
-                return RedirectToAction(nameof(SendPeb));
+                TempData["Success"] = result.Message;
             }
-
-            var random = new Random();
-            var nopen = random.Next(100000, 999999).ToString();
-
-            await _db.ExecuteAsync(
-                @"UPDATE PEB_DOIT_FINAL_HEADER 
-                   SET STATUS = 3
-                   WHERE CAR = @Car",
-                new { Car = car });
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO PEB_DOIT_FINAL_RESPON (CAR, RESKD, RESTG, NOPEN, TGPEN, DESKRIPSI)
-                   VALUES (@Car, 'NPE', GETDATE(), @Nopen, GETDATE(), 'Nota Pelayanan Ekspor (NPE) Terbit')",
-                new { Car = car, Nopen = nopen });
-
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'SEND_CEISA_PEB', 'CEISA', @Car, @Desc, @Ip, GETDATE())",
-                new { 
-                    User = User.Identity?.Name ?? "system", 
-                    Car = car, 
-                    Desc = $"Dokumen PEB berhasil dikirim ke CEISA 4.0. No NPE: {nopen}", 
-                    Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
-                });
-
-            TempData["Success"] = $"PEB dengan CAR {car} sukses terkirim ke CEISA! Respon NPE {nopen} terbit.";
-            return RedirectToAction(nameof(SendPeb));
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transmitting PEB to CEISA");
             TempData["Error"] = $"Gagal mengirim PEB ke CEISA: {ex.Message}";
-            return RedirectToAction(nameof(SendPeb));
         }
+        return RedirectToAction(nameof(SendPeb));
     }
 
     public IActionResult GetBc11()
@@ -1280,28 +1479,33 @@ public class CeisaController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ProcessGetBc11(string noBc11, string tglBc11, string carNo, string pelMuat, string pelBongkar)
+    public async Task<IActionResult> ProcessGetBc11(string noBc11, string tglBc11, string carNo, string posNo, string subPosNo, string pelMuat, string pelBongkar)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(noBc11) || string.IsNullOrWhiteSpace(carNo))
+            if (string.IsNullOrWhiteSpace(noBc11))
             {
-                TempData["Error"] = "Nomor BC 1.1 dan CAR Wajib diisi!";
+                TempData["Error"] = "Nomor BC 1.1 wajib diisi!";
                 return RedirectToAction(nameof(GetBc11));
             }
 
-            await _db.ExecuteAsync(
-                @"UPDATE PIB_DOIT_FINAL_HEADER 
-                  SET DOKTUPNO = @NoBc11, DOKTUPTG = @TglBc11, PELBKR = @PelBongkar, PELMUAT = @PelMuat
-                  WHERE CAR = @Car",
-                new { NoBc11 = noBc11, TglBc11 = tglBc11, PelBongkar = pelBongkar, PelMuat = pelMuat, Car = carNo });
+            var username = User.Identity?.Name ?? "operator";
+            var req = new CeisaBc11PullRequest
+            {
+                NoBc11 = noBc11,
+                PosNo = posNo ?? "0001",
+                SubPosNo = subPosNo ?? "0000",
+                Car = carNo,
+                PelMuat = pelMuat,
+                PelBongkar = pelBongkar
+            };
 
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_audit_log (user_name, action, module, document_id, description, ip_address, created_at)
-                  VALUES (@User, 'GET_BC11_CEISA', 'CEISA', @Car, @Desc, @Ip, GETDATE())",
-                new { User = User.Identity?.Name ?? "system", Car = carNo, Desc = $"Tarik data BC 1.1 ({noBc11}) dari CEISA 4.0 ke dokumen CAR {carNo} berhasil", Ip = HttpContext.Connection.RemoteIpAddress?.ToString() });
+            if (DateTime.TryParse(tglBc11, out var parsedDate))
+                req.TglBc11 = parsedDate;
 
-            TempData["Success"] = $"Sukses menarik data Manifes BC 1.1 ({noBc11}) dari CEISA 4.0 untuk CAR {carNo}!";
+            var manifest = await _ceisa.PullBc11ManifestAsync(req, username);
+
+            TempData["Success"] = $"Sukses menarik data Manifes BC 1.1 No. {manifest.NoBc11} (Pengangkut: {manifest.NamaPengangkut}, Voyage: {manifest.NoVoyage}, Bruto: {manifest.Bruto} Kg)!";
         }
         catch (Exception ex)
         {
@@ -1310,18 +1514,143 @@ public class CeisaController : Controller
         }
         return RedirectToAction(nameof(GetBc11));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Tracking(string car, string type = "PIB")
+    {
+        ViewData["Title"] = $"Real-time Tracking CEISA — {car}";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Tracking";
+
+        var tracking = await _ceisa.GetTrackingTimelineAsync(car, type);
+        return View(tracking);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetTrackingTimeline(string car, string docType = "PIB")
+    {
+        var tracking = await _ceisa.GetTrackingTimelineAsync(car, docType);
+        return Json(new { success = true, data = tracking });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRawPayloadJson(string car, string docType = "PIB")
+    {
+        try
+        {
+            var json = docType.Equals("PEB", StringComparison.OrdinalIgnoreCase) 
+                ? await _ceisa.GeneratePebPayloadJsonAsync(car)
+                : await _ceisa.GeneratePibPayloadJsonAsync(car);
+            return Content(json, "application/json");
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = ex.Message });
+        }
+    }
 }
 
 [Authorize]
 public class MasterController : Controller
 {
     private readonly DatabaseContext _db;
+    private readonly ITaxCalculationService _tax;
+    private readonly IAuditService _audit;
     private readonly ILogger<MasterController> _logger;
 
-    public MasterController(DatabaseContext db, ILogger<MasterController> logger)
+    public MasterController(
+        DatabaseContext db,
+        ITaxCalculationService tax,
+        IAuditService audit,
+        ILogger<MasterController> logger)
     {
         _db = db;
+        _tax = tax;
+        _audit = audit;
         _logger = logger;
+    }
+
+    public async Task<IActionResult> KursPajak()
+    {
+        ViewData["Title"] = "Master Kurs Pajak Kemenkeu (NDPBM)";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> Master <span class='breadcrumb-sep'>/</span> Kurs Pajak";
+
+        var rates = await _tax.GetAllActiveRatesAsync();
+        return View(rates);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SaveKursPajak(string kdVal, string nmVal, decimal nilaiNdpbm, DateTime tglAwal, DateTime tglAkhir, string noKmk)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(kdVal) || nilaiNdpbm <= 0)
+            {
+                TempData["Error"] = "Kode Valuta dan Nilai NDPBM wajib diisi dengan benar!";
+                return RedirectToAction(nameof(KursPajak));
+            }
+
+            var success = await _tax.UpdateRateAsync(kdVal, nilaiNdpbm, tglAwal, tglAkhir, noKmk ?? "KMK/2026/WEEKLY");
+            if (success)
+            {
+                await _audit.LogAsync(User.Identity?.Name ?? "system", "UPDATE_KURS_PAJAK", "MASTER", kdVal, $"Update Kurs NDPBM {kdVal} menjadi {nilaiNdpbm:N2}");
+                TempData["Success"] = $"Kurs Pajak {kdVal.ToUpper()} berhasil disimpan!";
+            }
+            else
+            {
+                TempData["Error"] = $"Gagal menyimpan kurs {kdVal}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving kurs pajak");
+            TempData["Error"] = $"Terjadi kesalahan: {ex.Message}";
+        }
+        return RedirectToAction(nameof(KursPajak));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteKursPajak(int id)
+    {
+        try
+        {
+            await _db.ExecuteAsync("DELETE FROM DOIT_KURS_PAJAK WHERE ID = @Id", new { Id = id });
+            TempData["Success"] = "Data kurs berhasil dihapus.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting kurs pajak");
+            TempData["Error"] = $"Gagal menghapus kurs: {ex.Message}";
+        }
+        return RedirectToAction(nameof(KursPajak));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SyncKemenkeuRates()
+    {
+        try
+        {
+            // Simulated live sync with Kementerian Keuangan Kurs Pajak API
+            var now = DateTime.Now;
+            var endDate = now.AddDays(7);
+            var kmkNo = $"KMK-{(now.DayOfYear / 7) + 1}/MK.10/{now.Year}";
+
+            await _tax.UpdateRateAsync("USD", 16285.0000m, now, endDate, kmkNo);
+            await _tax.UpdateRateAsync("JPY", 10675.0000m, now, endDate, kmkNo);
+            await _tax.UpdateRateAsync("EUR", 17520.0000m, now, endDate, kmkNo);
+            await _tax.UpdateRateAsync("SGD", 12190.0000m, now, endDate, kmkNo);
+            await _tax.UpdateRateAsync("CNY", 2248.0000m, now, endDate, kmkNo);
+            await _tax.UpdateRateAsync("THB", 452.5000m, now, endDate, kmkNo);
+
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "SYNC_KURS_KEMENKEU", "MASTER", "SYNC", $"Sinkronisasi Kurs Pajak Kemenkeu ({kmkNo}) otomatis berhasil.");
+
+            TempData["Success"] = $"Sukses sinkronisasi Kurs Pajak Kemenkeu terbaru ({kmkNo})!";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error syncing Kemenkeu rates");
+            TempData["Error"] = $"Gagal sinkronisasi kurs Kemenkeu: {ex.Message}";
+        }
+        return RedirectToAction(nameof(KursPajak));
     }
 
     public async Task<IActionResult> Part(string? search)
@@ -2026,12 +2355,46 @@ public class MasterController : Controller
 public class ReportController : Controller
 {
     private readonly DatabaseContext _db;
+    private readonly IPdfReportService _pdf;
     private readonly ILogger<ReportController> _logger;
 
-    public ReportController(DatabaseContext db, ILogger<ReportController> logger)
+    public ReportController(DatabaseContext db, IPdfReportService pdf, ILogger<ReportController> logger)
     {
         _db = db;
+        _pdf = pdf;
         _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PrintPibPdf(string car)
+    {
+        try
+        {
+            var pdfBytes = await _pdf.GeneratePibPdfAsync(car);
+            return File(pdfBytes, "application/pdf", $"PIB_BC20_{car}.pdf");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PIB PDF in ReportController: {Car}", car);
+            TempData["Error"] = $"Gagal mencetak dokumen PDF: {ex.Message}";
+            return RedirectToAction(nameof(Pib));
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PrintPebPdf(string car)
+    {
+        try
+        {
+            var pdfBytes = await _pdf.GeneratePebPdfAsync(car);
+            return File(pdfBytes, "application/pdf", $"PEB_BC30_{car}.pdf");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PEB PDF in ReportController: {Car}", car);
+            TempData["Error"] = $"Gagal mencetak dokumen PDF: {ex.Message}";
+            return RedirectToAction(nameof(Peb));
+        }
     }
 
     private static string FormatExcelDate(object? dateObj)
