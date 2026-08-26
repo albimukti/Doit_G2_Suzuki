@@ -2871,13 +2871,17 @@ public class UserController : Controller
         {
             // Default working hash of Admin@123
             var hash = "$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6";
-            
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, is_admin)
-                  VALUES (@Username, @Fullname, @Email, @Hash, @Role, 1, @IsAdmin)",
-                new { Username = username, Fullname = fullname, Email = email, Hash = hash, Role = role, IsAdmin = (role == "ADMIN" ? 1 : 0) });
+            var isAdmin = (role == "ADMIN_DOKUMEN" || role == "ADMIN") ? 1 : 0;
+            var isAuthorize = (role == "MANAJER_OPS" || role == "SUPERVISOR") ? 1 : 0;
 
-            TempData["Success"] = $"User {username} berhasil dibuat dengan password default Admin@123.";
+            await _db.ExecuteAsync(
+                @"INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, is_admin,
+                    pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, peb_authorize_81, is_partmaster, is_fasilitas, is_pkb, is_pi)
+                  VALUES (@Username, @Fullname, @Email, @Hash, @Role, 1, @IsAdmin,
+                    1, 1, 1, 1, @IsAuthorize, @IsAuthorize, @IsAdmin, @IsAdmin, @IsAdmin, @IsAdmin)",
+                new { Username = username.Trim(), Fullname = fullname.Trim(), Email = email.Trim(), Hash = hash, Role = role, IsAdmin = isAdmin, IsAuthorize = isAuthorize });
+
+            TempData["Success"] = $"User {username} ({role}) berhasil dibuat dengan password default Admin@123.";
         }
         catch (Exception ex)
         {

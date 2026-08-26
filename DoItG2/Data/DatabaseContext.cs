@@ -326,6 +326,17 @@ public class DatabaseContext
                 {
                     await masterCmd.ExecuteNonQueryAsync();
                 }
+
+                // Update legacy user roles to standard 3 roles
+                var updateRolesSql = @"
+                    UPDATE doit_user SET user_type = 'STAFF_EXIM' WHERE user_type IN ('STAFF', 'VIEWER', 'KITE');
+                    UPDATE doit_user SET user_type = 'ADMIN_DOKUMEN' WHERE user_type = 'ADMIN';
+                    UPDATE doit_user SET user_type = 'MANAJER_OPS' WHERE user_type IN ('SUPERVISOR', 'MANAGER');
+                ";
+                using (var roleCmd = new SqlCommand(updateRolesSql, dbConn))
+                {
+                    await roleCmd.ExecuteNonQueryAsync();
+                }
             }
         }
         catch (Exception ex)

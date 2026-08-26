@@ -1,9 +1,8 @@
 @model List<DoItG2.Models.Auth.UserModel>
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Kelola Pengguna";
+    ViewData["Title"] = "Manajemen Pengguna";
     int activeCount = Model.Count(u => u.IsActive);
-    int adminCount = Model.Count(u => u.UserType == "ADMIN");
 }
 
 <!-- Hero Header -->
@@ -14,8 +13,8 @@
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             </div>
             <div>
-                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Manajemen Pengguna Aplikasi</h1>
-                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Kelola akun pengguna, penetapan role &amp; hak akses modul DO-IT G2</p>
+                <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.3px;">Manajemen Pengguna &amp; Hak Akses</h1>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Pengelolaan 3 Role Utama: Staf Ekspor-Impor, Admin Dokumen, &amp; Manajer Operasional</p>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
@@ -30,6 +29,15 @@
         </div>
     </div>
 </div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 20px;">✓ @TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" style="margin-bottom: 20px;">✕ @TempData["Error"]</div>
+}
 
 <div class="user-management-grid">
 
@@ -46,7 +54,7 @@
                         <th>Pengguna</th>
                         <th>Nama Lengkap</th>
                         <th>Email</th>
-                        <th>Role</th>
+                        <th>Role Resmi</th>
                         <th>Status</th>
                         <th style="text-align: center;">Aksi</th>
                     </tr>
@@ -65,12 +73,10 @@
                     {
                         @foreach (var user in Model)
                         {
-                            var roleColor = user.UserType switch {
-                                "ADMIN" => ("rgba(239,68,68,0.12)", "var(--accent-danger)", "🛡️"),
-                                "SUPERVISOR" => ("rgba(59,130,246,0.12)", "var(--accent-primary)", "⭐"),
-                                "VIEWER" => ("rgba(100,116,139,0.12)", "var(--text-secondary)", "👁️"),
-                                "KITE" => ("rgba(16,185,129,0.12)", "var(--accent-success)", "📜"),
-                                _ => ("rgba(99,102,241,0.12)", "var(--accent-secondary)", "👤")
+                            var roleDisplay = user.UserType switch {
+                                "ADMIN_DOKUMEN" or "ADMIN" => ("Admin Dokumen", "rgba(239,68,68,0.12)", "#dc2626", "🛡️", "Pengelolaan arsip digital"),
+                                "MANAJER_OPS" or "SUPERVISOR" or "MANAGER" => ("Manajer Operasional", "rgba(59,130,246,0.12)", "#2563eb", "⭐", "Monitoring & keputusan strategis"),
+                                _ => ("Staf Ekspor-Impor", "rgba(16,185,129,0.12)", "#059669", "👤", "Operator input/pengiriman")
                             };
                             <tr>
                                 <td>
@@ -84,10 +90,13 @@
                                 <td style="font-weight: 600; color: var(--text-primary); font-size: 13px;">@user.FullName</td>
                                 <td style="font-size: 12px; color: var(--text-secondary);">@(string.IsNullOrEmpty(user.Email) ? "—" : user.Email)</td>
                                 <td>
-                                    <span style="font-size: 11px; font-weight: 700; background: @roleColor.Item1; color: @roleColor.Item2; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <span>@roleColor.Item3</span>
-                                        @user.UserType
-                                    </span>
+                                    <div>
+                                        <span style="font-size: 11px; font-weight: 700; background: @roleDisplay.Item2; color: @roleDisplay.Item3; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span>@roleDisplay.Item4</span>
+                                            @roleDisplay.Item1
+                                        </span>
+                                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">@roleDisplay.Item5</div>
+                                    </div>
                                 </td>
                                 <td>
                                     @if (user.IsActive)
@@ -148,19 +157,17 @@
                 <input type="email" name="email" class="form-control" placeholder="Contoh: budi@suzuki.co.id" required />
             </div>
             <div class="form-group">
-                <label class="form-label">Role / Hak Akses <span class="required">*</span></label>
-                <select name="role" class="form-control" required>
-                    <option value="STAFF">👤 STAFF — Operator Dokumen PIB/PEB</option>
-                    <option value="SUPERVISOR">⭐ SUPERVISOR — Approval & Monitoring</option>
-                    <option value="ADMIN">🛡️ ADMIN — Full System Administrator</option>
-                    <option value="VIEWER">👁️ VIEWER — Read-only Access</option>
-                    <option value="KITE">📜 KITE — Petugas Laporan Fasilitas</option>
+                <label class="form-label">Role Pengguna <span class="required">*</span></label>
+                <select name="role" class="form-control" required style="font-size: 13px;">
+                    <option value="STAFF_EXIM">👤 Staf ekspor-impor (operator input/pengiriman)</option>
+                    <option value="ADMIN_DOKUMEN">🛡️ Admin dokumen (pengelolaan arsip digital)</option>
+                    <option value="MANAJER_OPS">⭐ Manajer operasional (monitoring &amp; keputusan strategis)</option>
                 </select>
             </div>
 
             <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); border-radius: var(--border-radius-sm); padding: 12px 14px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px;">
                 <svg width="16" height="16" fill="none" stroke="var(--accent-primary)" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">Password awal akun baru: <span class="code-badge" style="font-size: 11px;">Admin@123</span> — segera ubah setelah login pertama.</div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">Password default untuk pengguna baru: <span class="code-badge" style="font-size: 11px;">Admin@123</span></div>
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; font-size: 13.5px; font-weight: 700; letter-spacing: 0.2px;">

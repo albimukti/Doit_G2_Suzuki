@@ -201,7 +201,15 @@
                     <div class="user-name">@User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value</div>
                     <div class="user-role" style="display: flex; align-items: center; gap: 5px;">
                         <span style="width: 6px; height: 6px; background: var(--accent-success); border-radius: 50%; display: inline-block; box-shadow: 0 0 5px var(--accent-success);"></span>
-                        @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                        @{
+                            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                            var roleTitle = role switch {
+                                "ADMIN_DOKUMEN" or "ADMIN" => "Admin Dokumen",
+                                "MANAJER_OPS" or "SUPERVISOR" or "MANAGER" => "Manajer Operasional",
+                                _ => "Staf Ekspor-Impor"
+                            };
+                        }
+                        @roleTitle
                     </div>
                 </div>
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--text-muted); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
