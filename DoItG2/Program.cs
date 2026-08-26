@@ -28,6 +28,7 @@ builder.Services.AddScoped<IEmailNotificationService, EmailNotificationService>(
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<ICeisaIntegrationService, CeisaIntegrationService>();
 builder.Services.AddScoped<IPdfReportService, PdfReportService>();
+builder.Services.AddScoped<IDocumentLockService, DocumentLockService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

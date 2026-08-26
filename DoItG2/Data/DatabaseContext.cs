@@ -399,6 +399,21 @@ public class DatabaseContext
                             ACTION_BY VARCHAR(50) NOT NULL,
                             ACTION_DATE DATETIME DEFAULT GETDATE()
                         );
+                    END
+                    
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_DOCUMENT_LOCK')
+                    BEGIN
+                        CREATE TABLE DOIT_DOCUMENT_LOCK (
+                            CAR VARCHAR(50) NOT NULL PRIMARY KEY,
+                            DOC_TYPE VARCHAR(20) NOT NULL, -- PIB, PEB
+                            LOCKED_BY_USER VARCHAR(50) NOT NULL,
+                            LOCKED_BY_NAME VARCHAR(100) NOT NULL,
+                            LOCKED_BY_ENTITY VARCHAR(20) NOT NULL, -- SIM, SIS
+                            LOCKED_AT DATETIME NOT NULL DEFAULT GETDATE(),
+                            EXPIRES_AT DATETIME NOT NULL,
+                            LAST_HEARTBEAT DATETIME NOT NULL DEFAULT GETDATE()
+                        );
+                        CREATE INDEX IX_doc_lock_expires ON DOIT_DOCUMENT_LOCK (EXPIRES_AT);
                     END";
                 using (var masterCmd = new SqlCommand(createMasterTablesSql, dbConn))
                 {

@@ -9,6 +9,29 @@
 }
 
 <div style="display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto;">
+    @if (ViewBag.IsLockedByOther == true)
+    {
+        <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 28px;">🔒</div>
+                <div>
+                    <div style="font-weight: 700; color: #92400e; font-size: 15px;">
+                        DOKUMEN SEDANG DIAKSES / DIEDIT PENGGUNA LAIN
+                    </div>
+                    <div style="font-size: 13px; color: #b45309; margin-top: 2px;">
+                        Dokumen ini sedang dibuka/diedit oleh <strong>@ViewBag.LockedByName</strong> (<em>@ViewBag.LockedByUser</em>) sejak <strong>@ViewBag.LockedAt</strong>. Anda berada dalam mode <strong>Hanya Baca (Read-Only)</strong>.
+                    </div>
+                </div>
+            </div>
+            @if (User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.Contains("ADMIN") == true)
+            {
+                <button type="button" class="btn btn-danger" onclick="forceUnlockDocument('@Model.Car')" style="white-space: nowrap; font-size: 13px; padding: 8px 16px;">
+                    🔓 Buka Paksa Kunci (Force Unlock)
+                </button>
+            }
+        </div>
+    }
+
     <!-- Top Action Bar -->
     <div class="card" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
         <div style="display: flex; align-items: center; gap: 14px;">
@@ -397,6 +420,47 @@
             document.getElementById('validationModalBody').innerHTML = html;
         } catch (err) {
             document.getElementById('validationModalBody').innerHTML = `<div style="color:#dc2626;">Gagal memproses validasi: ${err.message}</div>`;
+        }
+    }
+
+    @if (ViewBag.IsLockedByOther != true)
+    {
+        <text>
+        // Heartbeat document lock every 60s
+        const heartbeatInterval = setInterval(() => {
+            fetch('/api/doc-lock/heartbeat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ car: '@Model.Car', docType: 'PEB' })
+            }).catch(console.error);
+        }, 60000);
+
+        window.addEventListener('beforeunload', () => {
+            navigator.sendBeacon('/api/doc-lock/release', new Blob([JSON.stringify({ car: '@Model.Car' })], { type: 'application/json' }));
+        });
+        </text>
+    }
+
+    async function forceUnlockDocument(car) {
+        if (!confirm(`Apakah Anda yakin ingin membuka paksa kunci dokumen CAR ${car}? User yang sedang mengakses akan kehilangan hak edit.`)) return;
+        DoIt.showLoading('Membuka kunci dokumen...');
+        try {
+            const res = await fetch('/api/doc-lock/force-unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ car: car })
+            });
+            const json = await res.json();
+            DoIt.hideLoading();
+            if (json.success) {
+                alert(json.message || 'Kunci berhasil dibuka!');
+                window.location.reload();
+            } else {
+                alert(json.message || 'Gagal membuka kunci.');
+            }
+        } catch (err) {
+            DoIt.hideLoading();
+            alert('Gagal membuka kunci: ' + err.message);
         }
     }
 </script>

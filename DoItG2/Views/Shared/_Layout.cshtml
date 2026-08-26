@@ -23,55 +23,28 @@
     </script>
 </head>
 <body>
-<!-- 3D SUZUKI LOADING SCREEN OVERLAY -->
+<!-- UIVERSE.IO LOADING SCREEN OVERLAY (By Praashoo7) -->
 <div class="suzuki-loading-overlay fade-out" id="suzukiLoadingOverlay">
-    <!-- Animated background orbital rings -->
-    <div class="suzuki-orbit-system">
-        <div class="orbit-ring orbit-1"></div>
-        <div class="orbit-ring orbit-2"></div>
-        <div class="orbit-ring orbit-3"></div>
-        <div class="orbit-core-glow"></div>
-    </div>
-
-    <div class="suzuki-3d-scene">
-        <div class="suzuki-3d-sphere-bg"></div>
-        <div class="suzuki-3d-ring-outer"></div>
-        <div class="suzuki-3d-ring-inner"></div>
-        <div class="suzuki-3d-emblem-box">
-            <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo 3D" class="suzuki-3d-logo-img" asp-append-version="true" />
+    <div class="loading-card">
+        <div class="loading">
+            <span class="l">L</span>
+            <span class="o">o</span>
+            <span class="a">a</span>
+            <span class="d">d</span>
+            <span class="i">i</span>
+            <span class="n">n</span>
+            <span class="g">g</span>
+            <span class="d1">.</span>
+            <span class="d2">.</span>
         </div>
-        <div class="suzuki-3d-particles">
-            <span class="suzuki-3d-particle"></span>
-            <span class="suzuki-3d-particle"></span>
-            <span class="suzuki-3d-particle"></span>
-            <span class="suzuki-3d-particle"></span>
-            <span class="pulse-dot dot-1"></span>
-            <span class="pulse-dot dot-2"></span>
+        <div class="load">
+            <div class="progress"></div>
+            <div class="progress"></div>
+            <div class="progress"></div>
+            <div class="progress"></div>
         </div>
+        <div class="suzuki-loading-status" id="suzukiLoadingStatus">Inisialisasi sistem...</div>
     </div>
-    
-    <!-- ✨ 3D EXTREME ROTATION & TRIPLE GLOW TYPOGRAPHY -->
-    <div class="suzuki-loading-brand">
-        <div class="extreme-3d-title">
-            <span class="glow-letter" style="--i:1">D</span>
-            <span class="glow-letter" style="--i:2">O</span>
-            <span class="glow-letter" style="--i:3">-</span>
-            <span class="glow-letter" style="--i:4">I</span>
-            <span class="glow-letter" style="--i:5">T</span>
-            <span class="glow-letter-space"></span>
-            <span class="glow-letter letter-g" style="--i:6">G</span>
-            <span class="glow-letter letter-2" style="--i:7">2</span>
-        </div>
-        <div class="suzuki-loading-subtitle">Document Integration Tools &bull; CEISA 4.0</div>
-    </div>
-    
-    <!-- Shimmer progress bar -->
-    <div class="suzuki-progress-container">
-        <div class="suzuki-progress-bar" id="suzukiProgressBar"></div>
-        <div class="suzuki-progress-shimmer"></div>
-        <div class="suzuki-progress-glow"></div>
-    </div>
-    <div class="suzuki-loading-status" id="suzukiLoadingStatus">Inisialisasi sistem...</div>
 </div>
 
 <div class="app-wrapper">
@@ -100,6 +73,12 @@
             </a>
         </div>
 
+        @{
+            var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "STAFF_EXIM";
+            var isAdminRole = roleClaim.Contains("ADMIN", StringComparison.OrdinalIgnoreCase);
+            var isManagerRole = roleClaim.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || roleClaim.Contains("VIEWER", StringComparison.OrdinalIgnoreCase);
+            var isStaffRole = !isAdminRole && !isManagerRole;
+        }
         <nav class="sidebar-nav">
             <!-- Dashboard -->
             <div class="nav-item">
@@ -117,24 +96,30 @@
                     <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </a>
                 <div class="nav-collapse" id="navCeisa">
-                    <a class="nav-link" asp-controller="Ceisa" asp-action="SendPib">Kirim PIB ke CEISA</a>
-                    <a class="nav-link" asp-controller="Ceisa" asp-action="SendPeb">Kirim PEB ke CEISA</a>
+                    @if (!isManagerRole)
+                    {
+                        <a class="nav-link" asp-controller="Ceisa" asp-action="SendPib">Kirim PIB ke CEISA</a>
+                        <a class="nav-link" asp-controller="Ceisa" asp-action="SendPeb">Kirim PEB ke CEISA</a>
+                    }
                     <a class="nav-link" asp-controller="Ceisa" asp-action="GetBc11">Tarik BC 1.1</a>
                 </div>
             </div>
 
             <!-- 2. GET SILO -->
-            <div class="nav-item">
-                <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navGetSilo">
-                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <span>GET SILO</span>
-                    <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </a>
-                <div class="nav-collapse" id="navGetSilo">
-                    <a class="nav-link" asp-controller="Silo" asp-action="Pib">Tarik SILO PIB (Impor)</a>
-                    <a class="nav-link" asp-controller="Silo" asp-action="Peb">Tarik SILO PEB (Ekspor)</a>
+            @if (!isManagerRole)
+            {
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navGetSilo">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>GET SILO</span>
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navGetSilo">
+                        <a class="nav-link" asp-controller="Silo" asp-action="Pib">Tarik SILO PIB (Impor)</a>
+                        <a class="nav-link" asp-controller="Silo" asp-action="Peb">Tarik SILO PEB (Ekspor)</a>
+                    </div>
                 </div>
-            </div>
+            }
 
             <!-- 3. VIEW SILO -->
             <div class="nav-item">
@@ -153,9 +138,15 @@
                 </a>
                 <div class="nav-collapse" id="navPib">
                     <a class="nav-link" asp-controller="Pib" asp-action="Index">Daftar PIB</a>
-                    <a class="nav-link" asp-controller="Pib" asp-action="Create">Buat PIB Baru</a>
+                    @if (!isManagerRole)
+                    {
+                        <a class="nav-link" asp-controller="Pib" asp-action="Create">Buat PIB Baru</a>
+                    }
                     <a class="nav-link" asp-controller="Pib" asp-action="Response">Respons PIB (SPPB/SPTNP)</a>
-                    <a class="nav-link" asp-controller="Pib" asp-action="Upload">Upload Excel PIB</a>
+                    @if (!isManagerRole)
+                    {
+                        <a class="nav-link" asp-controller="Pib" asp-action="Upload">Upload Excel PIB</a>
+                    }
                 </div>
             </div>
 
@@ -168,19 +159,28 @@
                 </a>
                 <div class="nav-collapse" id="navPeb">
                     <a class="nav-link" asp-controller="Peb" asp-action="Index">Daftar PEB</a>
-                    <a class="nav-link" asp-controller="Peb" asp-action="Create">Buat PEB Baru</a>
+                    @if (!isManagerRole)
+                    {
+                        <a class="nav-link" asp-controller="Peb" asp-action="Create">Buat PEB Baru</a>
+                    }
                     <a class="nav-link" asp-controller="Peb" asp-action="Response">Respons PEB (NPE)</a>
-                    <a class="nav-link" asp-controller="Peb" asp-action="Upload">Upload Excel PEB</a>
+                    @if (!isManagerRole)
+                    {
+                        <a class="nav-link" asp-controller="Peb" asp-action="Upload">Upload Excel PEB</a>
+                    }
                 </div>
             </div>
 
             <!-- 6. Send to SILO -->
-            <div class="nav-item">
-                <a class="nav-link" asp-controller="Silo" asp-action="ExportToSilo">
-                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    <span>Send to SILO</span>
-                </a>
-            </div>
+            @if (!isManagerRole)
+            {
+                <div class="nav-item">
+                    <a class="nav-link" asp-controller="Silo" asp-action="ExportToSilo">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        <span>Send to SILO</span>
+                    </a>
+                </div>
+            }
 
             <!-- 7. REPORT -->
             <div class="nav-item">
@@ -217,18 +217,21 @@
                 </div>
             </div>
 
-            <!-- 9. CONFIGURATION -->
-            <div class="nav-item">
-                <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navConfig">
-                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>CONFIGURATION</span>
-                    <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </a>
-                <div class="nav-collapse" id="navConfig">
-                    <a class="nav-link" asp-controller="Setting" asp-action="Index">Pengaturan Sistem</a>
-                    <a class="nav-link" asp-controller="User" asp-action="Index">Kelola Pengguna</a>
+            <!-- 9. CONFIGURATION (Admin Dokumen Only) -->
+            @if (isAdminRole)
+            {
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-link" href="javascript:void(0)" data-toggle="sidebar-dropdown" data-target="#navConfig">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>CONFIGURATION</span>
+                        <svg class="nav-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </a>
+                    <div class="nav-collapse" id="navConfig">
+                        <a class="nav-link" asp-controller="Setting" asp-action="Index">Pengaturan Sistem</a>
+                        <a class="nav-link" asp-controller="User" asp-action="Index">Kelola Pengguna</a>
+                    </div>
                 </div>
-            </div>
+            }
 
             <!-- 10. UTILITY -->
             <div class="nav-item">
@@ -239,7 +242,10 @@
                 </a>
                 <div class="nav-collapse" id="navUtility">
                     <a class="nav-link" asp-controller="Setting" asp-action="AuditLog">Audit Log Aktivitas</a>
-                    <a class="nav-link" asp-controller="Setting" asp-action="Backup">Backup &amp; Restore DB</a>
+                    @if (isAdminRole)
+                    {
+                        <a class="nav-link" asp-controller="Setting" asp-action="Backup">Backup &amp; Restore DB</a>
+                    }
                     <a class="nav-link" asp-controller="Account" asp-action="ChangePassword">Ubah Password</a>
                 </div>
             </div>

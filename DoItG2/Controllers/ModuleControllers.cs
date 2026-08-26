@@ -30,6 +30,7 @@ public class PibController : Controller
     private readonly IPdfReportService _pdf;
     private readonly ICeisaIntegrationService _ceisa;
     private readonly IAuditService _audit;
+    private readonly IDocumentLockService _lockService;
     private readonly ILogger<PibController> _logger;
 
     public PibController(
@@ -40,6 +41,7 @@ public class PibController : Controller
         IPdfReportService pdf,
         ICeisaIntegrationService ceisa,
         IAuditService audit,
+        IDocumentLockService lockService,
         ILogger<PibController> logger)
     {
         _db = db;
@@ -49,6 +51,7 @@ public class PibController : Controller
         _pdf = pdf;
         _ceisa = ceisa;
         _audit = audit;
+        _lockService = lockService;
         _logger = logger;
     }
 
@@ -108,6 +111,13 @@ public class PibController : Controller
 
     public IActionResult Create()
     {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Akun Manajer Operasional hanya memiliki hak akses pantau/laporan dan tidak dapat membuat dokumen baru.";
+            return RedirectToAction(nameof(Index));
+        }
+
         ViewData["Title"] = "Buat PIB Baru (BC 2.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
         return View();
@@ -118,12 +128,33 @@ public class PibController : Controller
     {
         try
         {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Akun Manajer Operasional tidak memiliki izin membuat dokumen baru.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var entity = User.FindFirst("Entity")?.Value ?? "SIM";
             var isSis = entity == "SIS";
 
             if (string.IsNullOrWhiteSpace(model.Car))
             {
                 model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+            }
+            else
+            {
+                model.Car = model.Car.Trim();
+            }
+
+            // Anti-Duplikasi Nomor Pengajuan (CAR)
+            var (isDuplicate, dupMsg) = await _lockService.CheckCarDuplicateAsync(model.Car, "PIB");
+            if (isDuplicate)
+            {
+                TempData["Error"] = dupMsg;
+                ViewData["Title"] = "Buat PIB Baru (BC 2.0)";
+                ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
+                return View(model);
             }
 
             model.Entity = entity;
@@ -178,25 +209,18 @@ public class PibController : Controller
             model.Bruto = form["Bruto"].FirstOrDefault() ?? "16200";
             model.KdJaminan = form["KdJaminan"].FirstOrDefault() ?? "1";
             model.JmlCont = form["JmlCont"].FirstOrDefault() ?? "1";
-            model.JmlBrg = form["BrgHs[]"].Count.ToString();
+            model.Status = "DRAFT";
             model.ApprovalStatus = "DRAFT";
 
-            var taxCalc = await _tax.CalculatePibTaxPreviewAsync(model.KdVal, fob, asuransi, freight, 5.0m, 11.0m, 2.5m);
-            model.TotalBm = taxCalc.BeaMasukIdr;
-            model.TotalPpn = taxCalc.PpnIdr;
-            model.TotalPph = taxCalc.PphIdr;
-            model.TotalPungutan = taxCalc.TotalBayar;
-            model.NilaiPabean = taxCalc.NilaiPabean;
-
             var sqlHeader = @"INSERT INTO PIB_DOIT_FINAL_HEADER 
-                (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, STATUS_IMP, ID_PPJK, NM_PPJK, AL_PPJK, KD_KANTOR, JNS_PIB, JNS_IMP, JNS_BAYAR, KD_SKEP_FAS,
-                 NEG_PEMASOK, NM_PEMASOK, AL_PEMASOK, CARA_ANGKUT, NM_ANGKUT, BENDERA_VOY, NO_VOY_FLIGHT, TGL_TIBA, PEL_MUAT, PEL_BONGKAR, PEL_TRANSIT, GUDANG, NO_BC11, TGL_BC11, NO_POS_BC11,
-                 KD_VAL, NDPBM, FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO, KD_JAMINAN, JML_CONT, JML_BRG, CREATION_DATE, FL_VALID, STATUS, APPROVAL_STATUS,
-                 TOTAL_BM, TOTAL_PPN, TOTAL_PPH, TOTAL_PUNGUTAN, NILAI_PABEAN, ENTITY)
-                VALUES (@Car, @AsalData, @IdImp, @NmImo, @AlImp, @StatusImp, @IdPpjk, @NmPpjk, @AlPpjk, @KdKantor, @JnsPib, @JnsImp, @JnsBayar, @KdSkepFas,
-                 @NegPemasok, @NmPemasok, @AlPemasok, @CaraAngkut, @NmAngkut, @BenderaVoy, @NoVoyFlight, @TglTiba, @PelMuat, @PelBongkar, @PelTransit, @Gudang, @NoBc11, @TglBc11, @NoPosBc11,
-                 @KdVal, @Ndpbm, @Fob, @Asuransi, @Freight, @Cif, @Netto, @Bruto, @KdJaminan, @JmlCont, @JmlBrg, GETDATE(), 'N', 'DRAFT', 'DRAFT',
-                 @TotalBm, @TotalPpn, @TotalPph, @TotalPungutan, @NilaiPabean, @Entity)";
+                (CAR, KD_KANTOR, JNS_PIB, JNS_IMP, JNS_BAYAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, STATUS_IMP,
+                 ID_PPJK, NM_PPJK, AL_PPJK, NM_PEMASOK, AL_PEMASOK, NEG_PEMASOK, CARA_ANGKUT, NM_ANGKUT, BENDERA_VOY,
+                 NO_VOY_FLIGHT, TGL_TIBA, PEL_MUAT, PEL_TRANSIT, PEL_BONGKAR, GUDANG, NO_BC11, TGL_BC11, NO_POS_BC11,
+                 KD_VAL, NDPBM, FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO, KD_JAMINAN, JML_CONT, APPROVAL_STATUS, CREATION_DATE, ENTITY)
+                VALUES (@Car, @KdKantor, @JnsPib, @JnsImp, @JnsBayar, @AsalData, @IdImp, @NmImo, @AlImp, @StatusImp,
+                 @IdPpjk, @NmPpjk, @AlPpjk, @NmPemasok, @AlPemasok, @NegPemasok, @CaraAngkut, @NmAngkut, @BenderaVoy,
+                 @NoVoyFlight, @TglTiba, @PelMuat, @PelTransit, @PelBongkar, @Gudang, @NoBc11, @TglBc11, @NoPosBc11,
+                 @KdVal, @Ndpbm, @Fob, @Asuransi, @Freight, @Cif, @Netto, @Bruto, @KdJaminan, @JmlCont, 'DRAFT', GETDATE(), @Entity)";
             
             await _db.ExecuteAsync(sqlHeader, model);
 
@@ -204,19 +228,17 @@ public class PibController : Controller
             var brgDesc = form["BrgDesc[]"];
             var brgQty = form["BrgQty[]"];
             var brgSat = form["BrgSat[]"];
-            var brgNeg = form["BrgNeg[]"];
             var brgVal = form["BrgVal[]"];
+            var brgNeg = form["BrgNeg[]"];
 
             for (int i = 0; i < brgHs.Count; i++)
             {
                 if (!string.IsNullOrWhiteSpace(brgHs[i]))
                 {
-                    decimal qty = 0, val = 0;
-                    if (brgQty.Count > i) decimal.TryParse(brgQty[i]?.Replace(",", ""), out qty);
-                    if (brgVal.Count > i) decimal.TryParse(brgVal[i]?.Replace(",", ""), out val);
-
-                    var desc = brgDesc.Count > i ? brgDesc[i] : "";
-                    var unitType = brgSat.Count > i ? brgSat[i] : "PCE";
+                    decimal.TryParse(brgQty[i], out decimal qty);
+                    decimal.TryParse(brgVal[i], out decimal val);
+                    var desc = brgDesc.Count > i ? brgDesc[i] : "Item Suzuki";
+                    var unitType = brgSat.Count > i ? brgSat[i] : "KGM";
                     var negara = brgNeg.Count > i ? brgNeg[i] : (model.NegPemasok ?? "JP");
 
                     await _db.ExecuteAsync(
@@ -261,6 +283,7 @@ public class PibController : Controller
                 }
             }
 
+            await _lockService.ReleaseLockAsync(model.Car, User.Identity?.Name ?? "");
             await _audit.LogAsync(User.Identity?.Name ?? "system", "CREATE_PIB", "PIB", model.Car, $"Membuat dokumen PIB BC 2.0 (Nilai CIF: {model.Cif} {model.KdVal})");
 
             TempData["Success"] = $"Dokumen PIB (BC 2.0) dengan nomor CAR {model.Car} berhasil dibuat!";
@@ -282,6 +305,17 @@ public class PibController : Controller
         
         try
         {
+            var username = User.Identity?.Name ?? "unknown";
+            var fullName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? username;
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+
+            // Acquire or Check Document Lock
+            var lockStatus = await _lockService.AcquireLockAsync(id, "PIB", username, fullName, entity);
+            ViewBag.IsLockedByOther = lockStatus.isLocked;
+            ViewBag.LockedByName = lockStatus.lockedByName;
+            ViewBag.LockedByUser = lockStatus.lockedByUser;
+            ViewBag.LockedAt = lockStatus.lockedAt?.ToString("dd-MM-yyyy HH:mm");
+
             var header = await _db.QueryFirstOrDefaultAsync<PibHeaderModel>(
                 @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_IMO AS NmImo, AL_IMP AS AlImp, 
                   NM_PEMASOK AS NmPemasok, AL_PEMASOK AS AlPemasok, NEG_PEMASOK AS NegPemasok,
@@ -299,8 +333,8 @@ public class PibController : Controller
                        WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
                        ELSE 'DRAFT'
                   END AS Status 
-                  FROM PIB_DOIT_FINAL_HEADER WHERE CAR = @Car",
-                new { Car = id });
+                  FROM PIB_DOIT_FINAL_HEADER WHERE RTRIM(LTRIM(CAR)) = @Car",
+                new { Car = id.Trim() });
                 
             if (header == null) return NotFound();
             
@@ -308,30 +342,30 @@ public class PibController : Controller
                 @"SELECT SERIAL AS Serial, HS_NO AS HsNo, GOOD_DESC1 AS GoodDesc1, 
                    QUANTITY AS Quantity, UNIT_TYPE AS UnitType, UNIT_VAL AS UnitVal, CIF_PER_UNIT AS CifPerUnit,
                    ORIGIN_COUNTRY AS OriginCountry, KD_FAS AS KdFas
-                   FROM PIB_DOIT_FINAL_DETAIL WHERE CAR = @Car ORDER BY SERIAL",
-                new { Car = id });
+                   FROM PIB_DOIT_FINAL_DETAIL WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY SERIAL",
+                new { Car = id.Trim() });
             header.Details = details.ToList();
             
             var docs = await _db.QueryAsync<PibDocumentModel>(
                 @"SELECT SERIAL AS Serial, DOKKD AS DokKd, DOKNO AS DokNo, DOKTG AS DokTg 
-                  FROM PIB_DOIT_FINAL_DOCUMENT WHERE CAR = @Car ORDER BY SERIAL",
-                new { Car = id });
+                  FROM PIB_DOIT_FINAL_DOCUMENT WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY SERIAL",
+                new { Car = id.Trim() });
             header.Documents = docs.ToList();
 
             var containers = await _db.QueryAsync<PibContainerModel>(
                 @"SELECT NO_CONT AS NoCont, UKR_CONT AS UkurCont, JNS_MUAT AS JenisMuat, JNS_CONT AS JenisCont 
-                  FROM PIB_DOIT_FINAL_CONTAINER WHERE CAR = @Car",
-                new { Car = id });
+                  FROM PIB_DOIT_FINAL_CONTAINER WHERE RTRIM(LTRIM(CAR)) = @Car",
+                new { Car = id.Trim() });
             header.Containers = containers.ToList();
 
             var responses = await _db.QueryAsync<PibResponModel>(
                 @"SELECT RESKD AS ResKd, RESTG AS ResTg, DOKRESNO AS DokResNo, DOKRESTG AS DokResTg, 
                          KPBC AS Kpbc, PIBNO AS PibNo, PIBTG AS PibTg, DESKRIPSI AS Deskripsi
-                  FROM PIB_DOIT_FINAL_RESPON WHERE CAR = @Car ORDER BY RESTG DESC",
-                new { Car = id });
+                  FROM PIB_DOIT_FINAL_RESPON WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY RESTG DESC",
+                new { Car = id.Trim() });
             header.Responses = responses.ToList();
 
-            var approvalHistory = await _workflow.GetApprovalHistoryAsync(id);
+            var approvalHistory = await _workflow.GetApprovalHistoryAsync(id.Trim());
             header.ApprovalLogs = approvalHistory.ToList();
             
             return View(header);
@@ -597,6 +631,7 @@ public class PebController : Controller
     private readonly IPdfReportService _pdf;
     private readonly ICeisaIntegrationService _ceisa;
     private readonly IAuditService _audit;
+    private readonly IDocumentLockService _lockService;
     private readonly ILogger<PebController> _logger;
 
     public PebController(
@@ -606,6 +641,7 @@ public class PebController : Controller
         IPdfReportService pdf,
         ICeisaIntegrationService ceisa,
         IAuditService audit,
+        IDocumentLockService lockService,
         ILogger<PebController> logger)
     {
         _db = db;
@@ -614,6 +650,7 @@ public class PebController : Controller
         _pdf = pdf;
         _ceisa = ceisa;
         _audit = audit;
+        _lockService = lockService;
         _logger = logger;
     }
 
@@ -672,6 +709,13 @@ public class PebController : Controller
 
     public IActionResult Create()
     {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Akun Manajer Operasional hanya memiliki hak akses pantau/laporan dan tidak dapat membuat dokumen baru.";
+            return RedirectToAction(nameof(Index));
+        }
+
         ViewData["Title"] = "Buat PEB Baru (BC 3.0)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
         return View();
@@ -682,12 +726,33 @@ public class PebController : Controller
     {
         try
         {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Akun Manajer Operasional tidak memiliki izin membuat dokumen baru.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var entity = User.FindFirst("Entity")?.Value ?? "SIM";
             var isSis = entity == "SIS";
 
             if (string.IsNullOrWhiteSpace(model.Car))
             {
                 model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
+            }
+            else
+            {
+                model.Car = model.Car.Trim();
+            }
+
+            // Anti-Duplikasi Nomor Pengajuan (CAR)
+            var (isDuplicate, dupMsg) = await _lockService.CheckCarDuplicateAsync(model.Car, "PEB");
+            if (isDuplicate)
+            {
+                TempData["Error"] = dupMsg;
+                ViewData["Title"] = "Buat PEB Baru (BC 3.0)";
+                ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Buat Baru";
+                return View(model);
             }
 
             model.Entity = entity;
@@ -765,6 +830,7 @@ public class PebController : Controller
                 }
             }
 
+            await _lockService.ReleaseLockAsync(model.Car, User.Identity?.Name ?? "");
             await _audit.LogAsync(User.Identity?.Name ?? "system", "CREATE_PEB", "PEB", model.Car, $"Membuat dokumen PEB BC 3.0 baru (FOB: {model.Fob:N2} {model.KdVal})");
 
             TempData["Success"] = $"Dokumen PEB (BC 3.0) dengan nomor CAR {model.Car} berhasil disimpan.";
@@ -784,10 +850,21 @@ public class PebController : Controller
 
         id = id.Trim();
         ViewData["Title"] = $"Detail PEB — {id}";
-        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Detail";
+        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PEB</a> <span class='breadcrumb-sep'>/</span> Detail";
         
         try
         {
+            var username = User.Identity?.Name ?? "unknown";
+            var fullName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? username;
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+
+            // Acquire or Check Document Lock
+            var lockStatus = await _lockService.AcquireLockAsync(id, "PEB", username, fullName, entity);
+            ViewBag.IsLockedByOther = lockStatus.isLocked;
+            ViewBag.LockedByName = lockStatus.lockedByName;
+            ViewBag.LockedByUser = lockStatus.lockedByUser;
+            ViewBag.LockedAt = lockStatus.lockedAt?.ToString("dd-MM-yyyy HH:mm");
+
             var header = await _db.QueryFirstOrDefaultAsync<PebHeaderModel>(
                 @"SELECT CAR, NAMAEKS AS NamaEks, ALMTEKS AS AlmtEks, NPWPEKS AS NpwpEks,
                   ISNULL(NAMABELI, '') AS NamaBeli, ISNULL(ALMTBELI, '') AS AlmtBeli, ISNULL(NEGBELI, 'JP') AS NegBeli,
@@ -1567,6 +1644,13 @@ public class CeisaController : Controller
     {
         try
         {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Akses ditolak: Akun Manajer Operasional tidak memiliki wewenang pengiriman dokumen ke CEISA.";
+                return RedirectToAction(nameof(SendPib));
+            }
+
             var username = User.Identity?.Name ?? "operator";
             var result = await _ceisa.TransmitPibAsync(car, username, isSandbox: true);
             
@@ -1592,6 +1676,13 @@ public class CeisaController : Controller
     {
         try
         {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            if (role.Contains("MANAJER_OPS", StringComparison.OrdinalIgnoreCase) || role.Contains("VIEWER", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Akses ditolak: Akun Manajer Operasional tidak memiliki wewenang pengiriman dokumen ke CEISA.";
+                return RedirectToAction(nameof(SendPeb));
+            }
+
             var username = User.Identity?.Name ?? "operator";
             var result = await _ceisa.TransmitPebAsync(car, username, isSandbox: true);
             
@@ -3003,6 +3094,13 @@ public class UserController : Controller
 
     public async Task<IActionResult> Index()
     {
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (!role.Contains("ADMIN", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Akses ditolak. Menu Manajemen Pengguna hanya dapat diakses oleh Admin Dokumen.";
+            return RedirectToAction("Index", "Dashboard");
+        }
+
         ViewData["Title"] = "Manajemen Pengguna";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> Pengguna";
         
@@ -3022,6 +3120,13 @@ public class UserController : Controller
     [HttpPost]
     public async Task<IActionResult> Create(string username, string fullname, string email, string role)
     {
+        var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (!currentRole.Contains("ADMIN", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Akses ditolak. Hanya Admin Dokumen yang dapat menambahkan pengguna baru.";
+            return RedirectToAction("Index", "Dashboard");
+        }
+
         try
         {
             // Default working hash of Admin@123
@@ -3049,6 +3154,13 @@ public class UserController : Controller
     [HttpPost]
     public async Task<IActionResult> Deactivate(int id)
     {
+        var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (!currentRole.Contains("ADMIN", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Akses ditolak. Hanya Admin Dokumen yang dapat menonaktifkan pengguna.";
+            return RedirectToAction("Index", "Dashboard");
+        }
+
         try
         {
             await _db.ExecuteAsync("UPDATE doit_user SET is_active = 0 WHERE id = @Id", new { Id = id });

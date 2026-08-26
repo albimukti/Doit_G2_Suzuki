@@ -105,7 +105,7 @@
         </button>
     </div>
 
-    <form method="post" id="pibForm" autocomplete="off">
+    <form method="post" id="pibForm" autocomplete="off" novalidate onsubmit="return DoIt.validatePibBeforeSubmit(event)">
 
         <!-- TAB 1: Header Dokumen -->
         <div class="pib-panel active" id="pibPanel1">
@@ -118,6 +118,7 @@
                     <label class="form-label">Nomor Aju (CAR)<span class="required">*</span></label>
                     <input type="text" name="Car" id="pib_Car" class="form-control req-field" placeholder="000020-000000-20251123-000005" required maxlength="30" />
                     <span class="form-text">26 digit nomor pengajuan CEISA.</span>
+                    <div id="pib_car_feedback" style="margin-top: 4px; font-size: 12px; display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Pelabuhan Tujuan<span class="required">*</span></label>
@@ -1089,8 +1090,12 @@
         if (currentTab > 1) DoIt.switchPibTab(currentTab - 1);
     };
 
+    var pibTabNames = ['Header', 'Entitas', 'Dokumen', 'Pengangkut', 'Kemasan & Peti', 'Transaksi', 'Detail Barang', 'Pungutan', 'Pernyataan'];
+
     // Dynamic Tab & Field Validation System (Green = complete, Red = ada field kosong)
-    DoIt.validateAllPibTabs = function() {
+    DoIt.validateAllPibTabs = function(forceHighlight) {
+        var invalidTabs = [];
+
         for (var i = 1; i <= totalTabs; i++) {
             var panel = document.getElementById('pibPanel' + i);
             var tabBtn = document.querySelector('.pib-tab[data-tab="' + i + '"]');
@@ -1107,23 +1112,83 @@
                 } else {
                     isComplete = false;
                     input.classList.remove('field-valid');
-                    // Hanya warnai field merah jika sudah disentuh
-                    if (input.dataset.touched === 'true') {
+                    // Warnai field merah jika dipaksa atau sudah disentuh
+                    if (forceHighlight || input.dataset.touched === 'true') {
                         input.classList.add('field-invalid');
                     }
                 }
             });
 
+            // Pemeriksaan khusus baris dinamis per tab
+            if (i === 3) {
+                var docInputs = panel.querySelectorAll('[name="DocNo[]"]');
+                var hasDoc = Array.from(docInputs).some(function(inp) { return (inp.value || '').trim() !== ''; });
+                if (!hasDoc) isComplete = false;
+            } else if (i === 7) {
+                var hsInputs = panel.querySelectorAll('[name="BrgHs[]"]');
+                var hasItem = Array.from(hsInputs).some(function(inp) { return (inp.value || '').trim() !== ''; });
+                if (!hasItem) isComplete = false;
+            }
+
             tabBtn.classList.remove('tab-success', 'tab-danger');
-            if (reqFields.length === 0) {
-                // Tab tanpa field wajib: tidak diberi warna
+            if (reqFields.length === 0 && i !== 3 && i !== 7) {
+                // Tab tanpa field wajib
             } else if (isComplete) {
                 tabBtn.classList.add('tab-success');
             } else {
-                // Selalu merah jika ada field wajib yang belum terisi
                 tabBtn.classList.add('tab-danger');
+                invalidTabs.push({
+                    index: i,
+                    name: 'Tab ' + i + ' (' + (pibTabNames[i - 1] || '') + ')',
+                    panel: panel
+                });
             }
         }
+
+        return invalidTabs;
+    };
+
+    // Validasi Peringatan Saat Menekan Tombol Simpan PIB
+    DoIt.validatePibBeforeSubmit = function(e) {
+        var invalidTabs = DoIt.validateAllPibTabs(true);
+        if (invalidTabs && invalidTabs.length > 0) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+            var firstInvalid = invalidTabs[0];
+            var invalidNames = invalidTabs.map(function(t) { return t.name; }).join('\n• ');
+
+            // Otomatis pindah ke tab pertama yang belum lengkap
+            DoIt.switchPibTab(firstInvalid.index);
+
+            // Fokus ke field pertama yang masih kosong
+            var firstEmptyInput = firstInvalid.panel.querySelector('.field-invalid, [required]:invalid, .req-field:not(.field-valid), [name="DocNo[]"], [name="BrgHs[]"]');
+            if (firstEmptyInput) {
+                setTimeout(function() {
+                    firstEmptyInput.focus();
+                }, 150);
+            }
+
+            // Tampilkan notifikasi peringatan
+            if (typeof DoIt.toast === 'function') {
+                DoIt.toast('⚠️ Dokumen PIB belum lengkap! Masih ada ' + invalidTabs.length + ' tab bertanda merah.', 'error');
+            }
+
+            if (typeof DoIt.confirmModal === 'function' || typeof DoIt.alert === 'function') {
+                DoIt.alert(
+                    'Dokumen PIB (BC 2.0) belum dapat disimpan karena terdapat ' + invalidTabs.length + ' tab yang belum terisi lengkap (berwarna merah):\n\n• ' + invalidNames + '\n\nSilakan lengkapi semua tab bertanda merah terlebih dahulu.',
+                    '⚠️ Peringatan: Dokumen Belum Lengkap'
+                );
+            } else {
+                alert('⚠️ PERINGATAN: DOKUMEN PIB BELUM LENGKAP!\n\nDokumen tidak dapat disimpan karena masih ada ' + invalidTabs.length + ' tab yang belum terisi (berwarna merah):\n\n• ' + invalidNames + '\n\nHarap lengkapi semua tab bertanda merah terlebih dahulu sebelum menyimpan dokumen.');
+            }
+
+            return false;
+        }
+
+        if (typeof DoIt.showLoading === 'function') {
+            DoIt.showLoading('Menyimpan dokumen PIB (BC 2.0)...');
+        }
+        return true;
     };
 
     DoIt.copyPibImportir = function(target) {
@@ -1369,6 +1434,40 @@
                 DoIt.validateAllPibTabs();
             });
         });
+
+        // Real-time Check Duplicate CAR
+        var carInput = document.getElementById('pib_Car');
+        var carFeedback = document.getElementById('pib_car_feedback');
+        if (carInput && carFeedback) {
+            carInput.addEventListener('blur', async function() {
+                var carVal = this.value.trim();
+                if (!carVal) {
+                    carFeedback.style.display = 'none';
+                    return;
+                }
+                try {
+                    var res = await fetch('/api/doc-lock/check-car-duplicate?car=' + encodeURIComponent(carVal) + '&docType=PIB');
+                    var data = await res.json();
+                    if (data.isDuplicate) {
+                        carFeedback.style.display = 'block';
+                        carFeedback.style.color = '#dc2626';
+                        carFeedback.style.fontWeight = '600';
+                        carFeedback.innerHTML = '⚠️ ' + data.message;
+                        carInput.style.borderColor = '#dc2626';
+                        carInput.setCustomValidity(data.message);
+                    } else {
+                        carFeedback.style.display = 'block';
+                        carFeedback.style.color = '#16a34a';
+                        carFeedback.style.fontWeight = '600';
+                        carFeedback.innerHTML = '✓ Nomor Aju (CAR) tersedia';
+                        carInput.style.borderColor = '#16a34a';
+                        carInput.setCustomValidity('');
+                    }
+                } catch (err) {
+                    console.error('Error checking CAR duplicate:', err);
+                }
+            });
+        }
 
         DoIt.validateAllPibTabs();
     });
