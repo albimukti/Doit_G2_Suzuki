@@ -780,6 +780,9 @@ public class PebController : Controller
 
     public async Task<IActionResult> Detail(string id)
     {
+        if (string.IsNullOrWhiteSpace(id)) return RedirectToAction(nameof(Index));
+
+        id = id.Trim();
         ViewData["Title"] = $"Detail PEB — {id}";
         ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> Detail";
         
@@ -787,11 +790,11 @@ public class PebController : Controller
         {
             var header = await _db.QueryFirstOrDefaultAsync<PebHeaderModel>(
                 @"SELECT CAR, NAMAEKS AS NamaEks, ALMTEKS AS AlmtEks, NPWPEKS AS NpwpEks,
-                  NAMABELI AS NamaBeli, ALMTBELI AS AlmtBeli, NEGBELI AS NegBeli,
-                  TGEKS AS TgEks, NETTO AS Netto, BRUTO AS Bruto, FOB AS Fob,
-                  NOPEN AS Nopen, TGL_NOPEN AS TglNopen, KDKTR AS KdKtr,
-                  CARRIER AS Carrier, VOY AS Voy, PELMUAT AS PelMuat, PELBONGKAR AS PelBongkar,
-                  NOINV AS NoInv, KDVAL AS KdVal,
+                  ISNULL(NAMABELI, '') AS NamaBeli, ISNULL(ALMTBELI, '') AS AlmtBeli, ISNULL(NEGBELI, 'JP') AS NegBeli,
+                  TGEKS AS TgEks, ISNULL(NETTO, 0) AS Netto, ISNULL(BRUTO, 0) AS Bruto, ISNULL(FOB, 0) AS Fob,
+                  ISNULL(NOPEN, '') AS Nopen, TGL_NOPEN AS TglNopen, ISNULL(KDKTR, '010100') AS KdKtr,
+                  ISNULL(CARRIER, '') AS Carrier, ISNULL(VOY, '') AS Voy, ISNULL(PELMUAT, '') AS PelMuat, ISNULL(PELBONGKAR, '') AS PelBongkar,
+                  ISNULL(NOINV, '') AS NoInv, ISNULL(KDVAL, 'USD') AS KdVal,
                   ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus, REVIEW_NOTES AS ReviewNotes,
                   SUBMITTED_BY AS SubmittedBy, SUBMITTED_DATE AS SubmittedDate,
                   APPROVED_BY AS ApprovedBy, APPROVED_DATE AS ApprovedDate,
@@ -801,44 +804,94 @@ public class PebController : Controller
                        WHEN STATUS = 1 THEN 'PENDING'
                        ELSE 'DRAFT'
                   END AS Status 
-                  FROM PEB_DOIT_FINAL_HEADER WHERE CAR = @Car",
+                  FROM PEB_DOIT_FINAL_HEADER WHERE RTRIM(LTRIM(CAR)) = @Car",
                 new { Car = id });
                 
-            if (header == null) return NotFound();
+            if (header == null)
+            {
+                TempData["Error"] = $"Dokumen PEB dengan Nomor CAR '{id}' tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
             
-            var details = await _db.QueryAsync<PebDetailModel>(
-                @"SELECT SERIBRG AS Seri, HS AS HsNo, URBRG AS UrBrg, 
-                   JMLSAT AS JmlSat, KDSAT AS KdSat, NETTODET AS NettoDet, FOBDET AS FobDet 
-                   FROM PEB_DOIT_FINAL_DETAIL WHERE CAR = @Car ORDER BY SERIBRG",
-                new { Car = id });
-            header.Details = details.ToList();
+            try
+            {
+                var details = await _db.QueryAsync<PebDetailModel>(
+                    @"SELECT SERIBRG AS Seri, 
+                             CAST(ISNULL(HS, '') AS VARCHAR(50)) AS HsNo, 
+                             ISNULL(URBRG, ISNULL(URBRG1, '')) AS UrBrg, 
+                             ISNULL(JMLSAT, ISNULL(JMSATUAN, 0)) AS JmlSat, 
+                             ISNULL(KDSAT, ISNULL(JNSATUAN, 'PCE')) AS KdSat, 
+                             ISNULL(NETTODET, ISNULL(NETDET, 0)) AS NettoDet, 
+                             ISNULL(FOBDET, ISNULL(FOBPERBRG, 0)) AS FobDet 
+                       FROM PEB_DOIT_FINAL_DETAIL WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY SERIBRG",
+                    new { Car = id });
+                header.Details = details.ToList();
+            }
+            catch (Exception exDetail)
+            {
+                _logger.LogWarning(exDetail, "Could not fetch detail items for PEB: {Car}", id);
+                header.Details = new List<PebDetailModel>();
+            }
             
-            var docs = await _db.QueryAsync<PebDocumentModel>(
-                @"SELECT SERI AS Seri, KDDOK AS KdDok, NODOK AS NoDok, TGDOK AS TgDok 
-                  FROM PEB_DOIT_FINAL_DOCUMENT WHERE CAR = @Car ORDER BY SERI",
-                new { Car = id });
-            header.Documents = docs.ToList();
+            try
+            {
+                var docs = await _db.QueryAsync<PebDocumentModel>(
+                    @"SELECT SERI AS Seri, KDDOK AS KdDok, NODOK AS NoDok, TGDOK AS TgDok 
+                      FROM PEB_DOIT_FINAL_DOCUMENT WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY SERI",
+                    new { Car = id });
+                header.Documents = docs.ToList();
+            }
+            catch (Exception exDoc)
+            {
+                _logger.LogWarning(exDoc, "Could not fetch documents for PEB: {Car}", id);
+                header.Documents = new List<PebDocumentModel>();
+            }
 
-            var containers = await _db.QueryAsync<PebContainerModel>(
-                @"SELECT NOCONT AS NoCont, UKURCONT AS UkurCont, TIPECONT AS TipeCont 
-                  FROM PEB_DOIT_FINAL_CONTAINER WHERE CAR = @Car",
-                new { Car = id });
-            header.Containers = containers.ToList();
+            try
+            {
+                var containers = await _db.QueryAsync<PebContainerModel>(
+                    @"SELECT NOCONT AS NoCont, UKURCONT AS UkurCont, TIPECONT AS TipeCont 
+                      FROM PEB_DOIT_FINAL_CONTAINER WHERE RTRIM(LTRIM(CAR)) = @Car",
+                    new { Car = id });
+                header.Containers = containers.ToList();
+            }
+            catch (Exception exCont)
+            {
+                _logger.LogWarning(exCont, "Could not fetch containers for PEB: {Car}", id);
+                header.Containers = new List<PebContainerModel>();
+            }
 
-            var responses = await _db.QueryAsync<PebResponModel>(
-                @"SELECT RESKD AS ResKd, RESTG AS ResTg, NOPEN AS NoPen, TGPEN AS TgPen, DESKRIPSI AS Deskripsi
-                  FROM PEB_DOIT_FINAL_RESPON WHERE CAR = @Car ORDER BY RESTG DESC",
-                new { Car = id });
-            header.Responses = responses.ToList();
+            try
+            {
+                var responses = await _db.QueryAsync<PebResponModel>(
+                    @"SELECT RESKD AS ResKd, RESTG AS ResTg, NOPEN AS NoPen, TGPEN AS TgPen, DESKRIPSI AS Deskripsi
+                      FROM PEB_DOIT_FINAL_RESPON WHERE RTRIM(LTRIM(CAR)) = @Car ORDER BY RESTG DESC",
+                    new { Car = id });
+                header.Responses = responses.ToList();
+            }
+            catch (Exception exResp)
+            {
+                _logger.LogWarning(exResp, "Could not fetch responses for PEB: {Car}", id);
+                header.Responses = new List<PebResponModel>();
+            }
 
-            var approvalHistory = await _workflow.GetApprovalHistoryAsync(id);
-            header.ApprovalLogs = approvalHistory.ToList();
+            try
+            {
+                var approvalHistory = await _workflow.GetApprovalHistoryAsync(id);
+                header.ApprovalLogs = approvalHistory?.ToList() ?? new List<ApprovalLogModel>();
+            }
+            catch (Exception exAppr)
+            {
+                _logger.LogWarning(exAppr, "Could not fetch approval history for PEB: {Car}", id);
+                header.ApprovalLogs = new List<ApprovalLogModel>();
+            }
             
             return View(header);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching PEB detail: {Car}", id);
+            TempData["Error"] = $"Terjadi kesalahan saat memuat detail PEB {id}: {ex.Message}";
             return RedirectToAction(nameof(Index));
         }
     }

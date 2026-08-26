@@ -195,6 +195,12 @@ public class DatabaseContext
                             ALTER TABLE PEB_DOIT_FINAL_HEADER ADD ENTITY VARCHAR(10) DEFAULT 'SIM';
                             EXEC('UPDATE PEB_DOIT_FINAL_HEADER SET ENTITY = CASE WHEN NAMAEKS LIKE ''%SALES%'' OR NPWPEKS LIKE ''%011297389%'' OR NPWPEKS LIKE ''%01.129.738%'' THEN ''SIS'' ELSE ''SIM'' END WHERE ENTITY IS NULL');
                         END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'NAMABELI')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD NAMABELI VARCHAR(100) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'ALMTBELI')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD ALMTBELI VARCHAR(200) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'NEGBELI')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD NEGBELI VARCHAR(100) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'NOPEN')
                             ALTER TABLE PEB_DOIT_FINAL_HEADER ADD NOPEN VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'TGL_NOPEN')
@@ -215,6 +221,60 @@ public class DatabaseContext
                             ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVED_BY VARCHAR(50) NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'APPROVED_DATE')
                             ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVED_DATE DATETIME NULL;
+                    END
+
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_DETAIL')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_DETAIL') AND name = 'URBRG')
+                            ALTER TABLE PEB_DOIT_FINAL_DETAIL ADD URBRG VARCHAR(500) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_DETAIL') AND name = 'JMLSAT')
+                            ALTER TABLE PEB_DOIT_FINAL_DETAIL ADD JMLSAT DECIMAL(18,4) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_DETAIL') AND name = 'KDSAT')
+                            ALTER TABLE PEB_DOIT_FINAL_DETAIL ADD KDSAT VARCHAR(20) DEFAULT 'PCE';
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_DETAIL') AND name = 'NETTODET')
+                            ALTER TABLE PEB_DOIT_FINAL_DETAIL ADD NETTODET DECIMAL(18,4) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_DETAIL') AND name = 'FOBDET')
+                            ALTER TABLE PEB_DOIT_FINAL_DETAIL ADD FOBDET DECIMAL(18,4) DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_CONTAINER')
+                    BEGIN
+                        CREATE TABLE PEB_DOIT_FINAL_CONTAINER (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            CAR VARCHAR(100) NOT NULL,
+                            NOCONT VARCHAR(50),
+                            UKURCONT VARCHAR(20),
+                            TIPECONT VARCHAR(20)
+                        );
+                        CREATE INDEX IX_peb_cont_car ON PEB_DOIT_FINAL_CONTAINER (CAR);
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_DOCUMENT')
+                    BEGIN
+                        CREATE TABLE PEB_DOIT_FINAL_DOCUMENT (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            CAR VARCHAR(100) NOT NULL,
+                            SERI INT,
+                            KDDOK VARCHAR(50),
+                            NODOK VARCHAR(100),
+                            TGDOK DATE
+                        );
+                        CREATE INDEX IX_peb_doc_car ON PEB_DOIT_FINAL_DOCUMENT (CAR);
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_RESPON')
+                    BEGIN
+                        CREATE TABLE PEB_DOIT_FINAL_RESPON (
+                            ID INT IDENTITY(1,1) PRIMARY KEY,
+                            CAR VARCHAR(100) NOT NULL,
+                            RESKD VARCHAR(10),
+                            RESTG DATETIME,
+                            NOPEN VARCHAR(50),
+                            TGPEN DATETIME,
+                            DESKRIPSI VARCHAR(500),
+                            DIBACA BIT DEFAULT 0
+                        );
+                        CREATE INDEX IX_peb_respon_car ON PEB_DOIT_FINAL_RESPON (CAR);
                     END";
                 using (var alterCmd = new SqlCommand(alterColumnsSql, dbConn))
                 {

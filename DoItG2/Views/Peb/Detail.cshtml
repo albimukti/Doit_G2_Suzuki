@@ -281,7 +281,7 @@
 
 <!-- Modal Approval Review -->
 <div class="modal-overlay" id="approvalModal">
-    <div class="modal-content" style="max-width: 480px;">
+    <div class="modal-box" style="max-width: 480px;">
         <div class="modal-header">
             <h3 class="modal-title" id="approvalModalTitle">Persetujuan Dokumen PEB</h3>
             <button type="button" class="modal-close" onclick="DoIt.closeModal('approvalModal')">&times;</button>
@@ -289,7 +289,7 @@
         <form id="approvalForm" method="post">
             <input type="hidden" name="car" value="@Model.Car" />
             <div class="modal-body" style="padding: 20px;">
-                <p id="approvalModalDesc" style="font-size: 13px; color: #475569; margin-top: 0;"></p>
+                <p id="approvalModalDesc" style="font-size: 13px; color: var(--text-secondary); margin-top: 0;"></p>
                 <div class="form-group">
                     <label class="form-label">Catatan / Keterangan</label>
                     <textarea name="notes" id="approvalNotes" class="form-control" rows="3" placeholder="Masukkan catatan atau instruksi..."></textarea>
@@ -305,7 +305,7 @@
 
 <!-- Modal Validasi -->
 <div class="modal-overlay" id="validationModal">
-    <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-box" style="max-width: 600px;">
         <div class="modal-header">
             <h3 class="modal-title">Hasil Validasi Dokumen PEB (BC 3.0)</h3>
             <button type="button" class="modal-close" onclick="DoIt.closeModal('validationModal')">&times;</button>
