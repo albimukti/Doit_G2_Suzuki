@@ -14,6 +14,7 @@
     <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <script>
         (function() {
@@ -21,174 +22,315 @@
         })();
     </script>
     <style>
-        .login-page {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Montserrat", sans-serif;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100%;
+            background: #0f172a;
+        }
+
+        .login-wrapper {
             position: relative;
             min-height: 100vh;
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.5)), url('/images/container-bg.jpg');
+            background-color: #0f172a;
+            background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.55)), url('@Url.Content("~/images/container-bg.jpg")');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            padding: 24px;
-            overflow: hidden;
+            background-attachment: fixed;
+            padding: 24px 16px;
         }
 
-        /* Center card panel */
-        .login-panel {
+        /* Container form requested */
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: #f8f9fd;
+            background: linear-gradient(
+                0deg,
+                rgb(255, 255, 255) 0%,
+                rgb(244, 247, 251) 100%
+            );
+            border-radius: 40px;
+            padding: 32px 30px 24px 30px;
+            border: 5px solid rgb(255, 255, 255);
+            box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 30px 30px -20px;
+            margin: auto;
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: var(--border-radius-lg);
+        }
+
+        /* Logo badge at top */
+        .logo-wrapper {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .logo-card {
+            width: 64px;
+            height: 64px;
+            background: #ffffff;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            padding: 8px;
+        }
+
+        .logo-card img {
             width: 100%;
-            max-width: 450px;
-            padding: 36px 32px;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
-            transition: var(--transition);
+            height: 100%;
+            object-fit: contain;
         }
 
-        .login-logo-container {
-            align-self: center;
-            margin-bottom: 20px;
+        .heading {
+            text-align: center;
+            font-weight: 800;
+            font-size: 24px;
+            color: #0f172a;
+            letter-spacing: -0.5px;
         }
 
-        .login-form-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-align: center; color: #0f172a; }
-        .login-form-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; text-align: center; }
+        .sub-heading {
+            text-align: center;
+            font-size: 12.5px;
+            color: #64748b;
+            margin-top: 4px;
+            margin-bottom: 22px;
+            font-weight: 500;
+        }
 
-        /* SIM (Red) vs SIS (Green) buttons */
-        .entity-toggle-btn {
-            padding: 12px 14px;
-            border-radius: var(--border-radius-sm);
-            border: 1.5px solid var(--border-color);
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
+        /* Entity Section */
+        .entity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .field-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-key {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10.5px;
+            font-weight: 700;
+        }
+
+        .badge-key-sim {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .badge-key-sis {
+            background: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+        }
+
+        .entity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .entity-box {
+            padding: 12px 10px;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s ease;
         }
-        .entity-toggle-btn.btn-sim:hover {
-            border-color: #dc2626;
-            background: rgba(220, 38, 38, 0.04);
+
+        .entity-box .title {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
         }
-        .entity-toggle-btn.btn-sis:hover {
-            border-color: #059669;
-            background: rgba(5, 150, 105, 0.04);
+
+        .entity-box .subtitle {
+            font-size: 10.5px;
+            color: #64748b;
+            margin-top: 2px;
         }
-        .entity-toggle-btn.btn-sim.active {
-            border-color: #dc2626;
-            background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(185, 28, 28, 0.08));
+
+        .entity-box.sim-box {
             color: #b91c1c;
-            font-weight: 700;
-            box-shadow: 0 2px 10px rgba(220, 38, 38, 0.18);
         }
-        .entity-toggle-btn.btn-sis.active {
+
+        .entity-box.sim-box.active {
+            border-color: #dc2626;
+            background: #fef2f2;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);
+        }
+
+        .entity-box.sis-box {
+            color: #1e293b;
+        }
+
+        .entity-box.sis-box.active {
             border-color: #059669;
-            background: linear-gradient(135deg, rgba(5, 150, 105, 0.12), rgba(4, 120, 87, 0.08));
+            background: #ecfdf5;
             color: #047857;
-            font-weight: 700;
-            box-shadow: 0 2px 10px rgba(5, 150, 105, 0.18);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12);
         }
 
-        .badge-entity-sim {
-            background: rgba(220, 38, 38, 0.12);
-            color: #dc2626;
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10.5px;
-        }
-        .badge-entity-sis {
-            background: rgba(5, 150, 105, 0.12);
-            color: #059669;
-            border: 1px solid rgba(5, 150, 105, 0.3);
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10.5px;
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 14px;
         }
 
-        .form-control-login {
+        .input-wrapper {
+            position: relative;
+            margin-top: 6px;
+        }
+
+        .form .input {
             width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            color: var(--text-primary);
-            font-size: 14px;
+            background: white;
+            border: 1.5px solid #dbeafe;
+            padding: 12px 16px;
+            border-radius: 14px;
+            box-shadow: #cff0ff 0px 8px 10px -5px;
+            font-size: 13.5px;
+            color: #1e293b;
             font-family: inherit;
-            transition: var(--transition);
+            transition: all 0.2s ease;
+        }
+
+        .form .input::-moz-placeholder {
+            color: rgb(170, 170, 170);
+            font-size: 13px;
+        }
+
+        .form .input::placeholder {
+            color: rgb(170, 170, 170);
+            font-size: 13px;
+        }
+
+        .form .input:focus {
             outline: none;
-        }
-        .form-control-login:focus {
             border-color: #2563eb;
-            background: rgba(59,130,246,0.05);
-            box-shadow: 0 0 0 3px var(--accent-primary-glow);
+            box-shadow: #bce7fd 0px 10px 14px -4px;
         }
-        .form-control-login::placeholder { color: var(--text-muted); }
 
-        .login-btn {
-            width: 100%;
-            padding: 13px;
-            color: white;
+        .password-toggle-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
             border: none;
-            border-radius: var(--border-radius-sm);
-            font-size: 14px;
-            font-weight: 600;
+            color: #64748b;
             cursor: pointer;
-            transition: var(--transition);
-            font-family: inherit;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .login-btn.theme-sim {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-            box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
-        }
-        .login-btn.theme-sim:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
-        }
-        .login-btn.theme-sis {
-            background: linear-gradient(135deg, #059669, #047857);
-            box-shadow: 0 4px 16px rgba(5, 150, 105, 0.35);
-        }
-        .login-btn.theme-sis:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45);
-        }
-        .login-btn:active { transform: translateY(0); }
 
-        .login-footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: var(--text-muted);
+        .password-toggle-btn:hover {
+            color: #0f172a;
+        }
+
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 18px;
+            font-size: 12.5px;
+            color: #475569;
+            cursor: pointer;
+        }
+
+        .remember-row input {
+            accent-color: #dc2626;
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        /* Submit Button */
+        .form .login-button {
+            display: block;
+            width: 100%;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c8102e 0%, #b91c1c 100%);
+            color: white;
+            padding-block: 13px;
+            margin-top: 16px;
+            margin-bottom: 20px;
+            border-radius: 14px;
+            box-shadow: rgba(200, 16, 46, 0.4) 0px 12px 18px -6px;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.3px;
             text-align: center;
         }
 
-        .password-field { position: relative; }
-        .password-toggle {
-            position: absolute;
-            right: 12px; top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            transition: var(--transition);
+        .form .login-button.theme-sis {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: rgba(5, 150, 105, 0.4) 0px 12px 18px -6px;
         }
-        .password-toggle:hover { color: var(--text-secondary); }
 
-        @@media (max-width: 480px) {
-            .login-panel { padding: 28px 18px; }
-            .login-logo-container { margin-bottom: 14px; }
-            .login-form-title { font-size: 20px; }
-            .login-form-sub { margin-bottom: 20px; }
+        .form .login-button:hover {
+            transform: scale(1.02);
+            box-shadow: rgba(200, 16, 46, 0.5) 0px 16px 22px -6px;
+        }
+
+        .form .login-button.theme-sis:hover {
+            box-shadow: rgba(5, 150, 105, 0.5) 0px 16px 22px -6px;
+        }
+
+        .form .login-button:active {
+            transform: scale(0.97);
+        }
+
+        .footer-copyright {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .error-banner {
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
         }
     </style>
 </head>
@@ -217,65 +359,67 @@
     </div>
 </div>
 
-<div class="login-page">
-    <!-- Login Form -->
-    <div class="login-panel">
-        <div class="login-logo-container">
-            <img src="~/images/suzuki-logo-wide.png" alt="Suzuki Logo" class="login-logo-img" asp-append-version="true" />
+<div class="login-wrapper">
+    <div class="container">
+        <!-- Suzuki Square Logo Badge -->
+        <div class="logo-wrapper">
+            <div class="logo-card">
+                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" asp-append-version="true" />
+            </div>
         </div>
 
-        <h2 class="login-form-title">Selamat Datang</h2>
-        <p class="login-form-sub">Silakan pilih entitas dan masuk ke akun Anda</p>
+        <div class="heading">Selamat Datang</div>
+        <div class="sub-heading">Silakan pilih entitas dan masuk ke akun Anda</div>
 
         @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
         {
             var errMsg = ViewData.ModelState[""]!.Errors.Count > 0
                 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage
                 : "Username atau password salah.";
-            <div class="alert alert-danger" style="margin-bottom:20px">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>@errMsg</span>
+            <div class="error-banner">
+                @errMsg
             </div>
         }
 
-        <form asp-controller="Account" asp-action="Login" method="post" id="loginForm">
+        <form class="form" asp-controller="Account" asp-action="Login" method="post" id="loginForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="ReturnUrl" value="@Model?.ReturnUrl" />
             <input type="hidden" name="Entity" id="selectedEntity" value="@defaultEntity" />
 
-            <!-- Entity Selector: SIM (Red) vs SIS (Green) -->
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span>Entitas Perusahaan</span>
-                    <span id="entityKeyBadge" class="@(defaultEntity == "SIS" ? "badge-entity-sis" : "badge-entity-sim")">
-                        @(defaultEntity == "SIS" ? "Key: 84 (SIS)" : "Key: 81 (SIM)")
-                    </span>
-                </label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button type="button" class="entity-toggle-btn btn-sim @(defaultEntity == "SIM" ? "active" : "")" id="btnEntitySIM" onclick="selectEntity('SIM')">
-                        <div style="font-size: 14px; font-weight: 800; letter-spacing: 0.5px;">SIM</div>
-                        <div style="font-size: 11px; opacity: 0.85; margin-top: 2px;">PT Suzuki Indomobil Motor</div>
-                    </button>
-                    <button type="button" class="entity-toggle-btn btn-sis @(defaultEntity == "SIS" ? "active" : "")" id="btnEntitySIS" onclick="selectEntity('SIS')">
-                        <div style="font-size: 14px; font-weight: 800; letter-spacing: 0.5px;">SIS</div>
-                        <div style="font-size: 11px; opacity: 0.85; margin-top: 2px;">PT Suzuki Indomobil Sales</div>
-                    </button>
+            <!-- Entitas Perusahaan Header & Toggle Buttons -->
+            <div class="entity-header">
+                <span class="field-label">ENTITAS PERUSAHAAN</span>
+                <span id="entityKeyBadge" class="badge-key @(defaultEntity == "SIS" ? "badge-key-sis" : "badge-key-sim")">
+                    @(defaultEntity == "SIS" ? "KEY: 84 (SIS)" : "KEY: 81 (SIM)")
+                </span>
+            </div>
+
+            <div class="entity-grid">
+                <div class="entity-box sim-box @(defaultEntity == "SIM" ? "active" : "")" id="btnSIM" onclick="selectEntity('SIM')">
+                    <div class="title">SIM</div>
+                    <div class="subtitle">PT Suzuki Indomobil Motor</div>
+                </div>
+                <div class="entity-box sis-box @(defaultEntity == "SIS" ? "active" : "")" id="btnSIS" onclick="selectEntity('SIS')">
+                    <div class="title">SIS</div>
+                    <div class="subtitle">PT Suzuki Indomobil Sales</div>
                 </div>
             </div>
 
+            <!-- Username Input -->
             <div class="form-group">
-                <label class="form-label" for="UserName">Username</label>
-                <input type="text" id="UserName" name="UserName" class="form-control-login"
-                       placeholder="Masukkan username..." autocomplete="username" autofocus required />
+                <label class="field-label" for="UserName">USERNAME</label>
+                <div class="input-wrapper">
+                    <input id="UserName" name="UserName" type="text" class="input" placeholder="Masukkan username..." autocomplete="username" autofocus required />
+                </div>
             </div>
 
+            <!-- Password Input -->
             <div class="form-group">
-                <label class="form-label" for="Password">Password</label>
-                <div class="password-field">
-                    <input type="password" id="Password" name="Password" class="form-control-login"
-                           placeholder="Masukkan password..." autocomplete="current-password" required />
-                    <button type="button" class="password-toggle" onclick="togglePassword()">
-                        <svg id="eyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <label class="field-label" for="Password">PASSWORD</label>
+                <div class="input-wrapper">
+                    <input id="Password" name="Password" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required />
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword()" title="Tampilkan Password">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
@@ -283,19 +427,19 @@
                 </div>
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary)">
-                    <input type="checkbox" name="RememberMe" style="accent-color:var(--accent-primary)" />
-                    Ingat saya
-                </label>
-            </div>
+            <!-- Remember Me Checkbox -->
+            <label class="remember-row">
+                <input type="checkbox" name="RememberMe" id="RememberMe" />
+                <span>Ingat saya</span>
+            </label>
 
-            <button type="submit" class="login-btn @(defaultEntity == "SIS" ? "theme-sis" : "theme-sim")" id="loginBtn">
-                Masuk ke Sistem (<span id="btnEntityText">@defaultEntity</span>)
+            <!-- Submit Button -->
+            <button type="submit" class="login-button @(defaultEntity == "SIS" ? "theme-sis" : "")" id="loginBtn">
+                Masuk ke Sistem (<span id="btnEntityLabel">@defaultEntity</span>)
             </button>
         </form>
 
-        <div class="login-footer">
+        <div class="footer-copyright">
             &copy; 2026 PT. Suzuki Indomobil &mdash; DO-IT G2 v2.0.0
         </div>
     </div>
@@ -304,30 +448,26 @@
 <script>
 function selectEntity(entity) {
     document.getElementById('selectedEntity').value = entity;
-    const btnSim = document.getElementById('btnEntitySIM');
-    const btnSis = document.getElementById('btnEntitySIS');
+    const btnSim = document.getElementById('btnSIM');
+    const btnSis = document.getElementById('btnSIS');
     const badge = document.getElementById('entityKeyBadge');
     const btnSubmit = document.getElementById('loginBtn');
-    const btnText = document.getElementById('btnEntityText');
+    const btnLabel = document.getElementById('btnEntityLabel');
 
     if (entity === 'SIS') {
         btnSis.classList.add('active');
         btnSim.classList.remove('active');
-        badge.innerText = 'Key: 84 (SIS)';
-        badge.className = 'badge-entity-sis';
-        if (btnSubmit) {
-            btnSubmit.className = 'login-btn theme-sis';
-        }
-        if (btnText) btnText.innerText = 'SIS';
+        badge.innerText = 'KEY: 84 (SIS)';
+        badge.className = 'badge-key badge-key-sis';
+        if (btnSubmit) btnSubmit.className = 'login-button theme-sis';
+        if (btnLabel) btnLabel.innerText = 'SIS';
     } else {
         btnSim.classList.add('active');
         btnSis.classList.remove('active');
-        badge.innerText = 'Key: 81 (SIM)';
-        badge.className = 'badge-entity-sim';
-        if (btnSubmit) {
-            btnSubmit.className = 'login-btn theme-sim';
-        }
-        if (btnText) btnText.innerText = 'SIM';
+        badge.innerText = 'KEY: 81 (SIM)';
+        badge.className = 'badge-key badge-key-sim';
+        if (btnSubmit) btnSubmit.className = 'login-button';
+        if (btnLabel) btnLabel.innerText = 'SIM';
     }
 }
 
@@ -338,18 +478,16 @@ function togglePassword() {
 
 document.getElementById('loginForm')?.addEventListener('submit', function() {
     const overlay = document.getElementById('suzukiLoadingOverlay');
-    const bar = document.getElementById('suzukiProgressBar');
     const txt = document.getElementById('suzukiLoadingStatus');
     const entity = document.getElementById('selectedEntity')?.value || 'SIM';
     
     if (overlay) {
         overlay.classList.remove('fade-out');
-        if (bar) bar.style.width = '75%';
         if (txt) txt.textContent = `Autentikasi Pengguna & Membuka Akses ${entity}...`;
     }
     const btn = document.getElementById('loginBtn');
     if (btn) {
-        btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;flex-shrink:0"></div> Memeriksa...';
+        btn.innerHTML = 'Memeriksa Akses...';
         btn.disabled = true;
     }
 });
