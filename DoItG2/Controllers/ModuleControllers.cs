@@ -59,19 +59,23 @@ public class PibController : Controller
         
         try
         {
-            var sql = @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, 
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var sql = @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_IMO AS NmImo, NM_PEMASOK AS NmPemasok, 
                        TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg,
                        NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, KD_VAL AS KdVal, CIF AS Cif,
                        TOTAL_PUNGUTAN AS TotalPungutan, NILAI_PABEAN AS NilaiPabean,
+                       ISNULL(ENTITY, 'SIM') AS Entity,
                        ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
                        CASE 
                             WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
                             WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
                             ELSE 'DRAFT'
                        END AS Status 
-                       FROM PIB_DOIT_FINAL_HEADER WHERE 1=1";
+                       FROM PIB_DOIT_FINAL_HEADER 
+                       WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))";
                        
             var parameters = new DynamicParameters();
+            parameters.Add("Entity", entity);
             
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -114,11 +118,15 @@ public class PibController : Controller
     {
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var isSis = entity == "SIS";
+
             if (string.IsNullOrWhiteSpace(model.Car))
             {
                 model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
             }
 
+            model.Entity = entity;
             model.KdKantor = form["KdKantor"].FirstOrDefault() ?? "010100";
             model.JnsPib = form["JnsPib"].FirstOrDefault() ?? "1";
             model.JnsImp = form["JnsImp"].FirstOrDefault() ?? "1";
@@ -126,9 +134,9 @@ public class PibController : Controller
             model.AsalData = form["AsalData"].FirstOrDefault() ?? "M";
             model.KdSkepFas = form["KdSkepFas"].FirstOrDefault() ?? "";
             
-            model.IdImp = !string.IsNullOrWhiteSpace(form["IdImp"]) ? form["IdImp"].FirstOrDefault()! : "011297371411000";
-            model.NmImo = !string.IsNullOrWhiteSpace(form["NmImo"]) ? form["NmImo"].FirstOrDefault()! : "PT. SUZUKI INDOMOBIL MOTOR";
-            model.AlImp = !string.IsNullOrWhiteSpace(form["AlImp"]) ? form["AlImp"].FirstOrDefault()! : "JL. RAYA PENGGILINGAN KM 19";
+            model.IdImp = !string.IsNullOrWhiteSpace(form["IdImp"]) ? form["IdImp"].FirstOrDefault()! : (isSis ? "011297389411000" : "011297371411000");
+            model.NmImo = !string.IsNullOrWhiteSpace(form["NmImo"]) ? form["NmImo"].FirstOrDefault()! : (isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR");
+            model.AlImp = !string.IsNullOrWhiteSpace(form["AlImp"]) ? form["AlImp"].FirstOrDefault()! : (isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8" : "JL. RAYA PENGGILINGAN KM 19");
             model.StatusImp = form["StatusImp"].FirstOrDefault() ?? "ATA";
             model.IdPpjk = form["IdPpjk"].FirstOrDefault() ?? "";
             model.NmPpjk = form["NmPpjk"].FirstOrDefault() ?? "";
@@ -184,11 +192,11 @@ public class PibController : Controller
                 (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, STATUS_IMP, ID_PPJK, NM_PPJK, AL_PPJK, KD_KANTOR, JNS_PIB, JNS_IMP, JNS_BAYAR, KD_SKEP_FAS,
                  NEG_PEMASOK, NM_PEMASOK, AL_PEMASOK, CARA_ANGKUT, NM_ANGKUT, BENDERA_VOY, NO_VOY_FLIGHT, TGL_TIBA, PEL_MUAT, PEL_BONGKAR, PEL_TRANSIT, GUDANG, NO_BC11, TGL_BC11, NO_POS_BC11,
                  KD_VAL, NDPBM, FOB, ASURANSI, FREIGHT, CIF, NETTO, BRUTO, KD_JAMINAN, JML_CONT, JML_BRG, CREATION_DATE, FL_VALID, STATUS, APPROVAL_STATUS,
-                 TOTAL_BM, TOTAL_PPN, TOTAL_PPH, TOTAL_PUNGUTAN, NILAI_PABEAN)
+                 TOTAL_BM, TOTAL_PPN, TOTAL_PPH, TOTAL_PUNGUTAN, NILAI_PABEAN, ENTITY)
                 VALUES (@Car, @AsalData, @IdImp, @NmImo, @AlImp, @StatusImp, @IdPpjk, @NmPpjk, @AlPpjk, @KdKantor, @JnsPib, @JnsImp, @JnsBayar, @KdSkepFas,
                  @NegPemasok, @NmPemasok, @AlPemasok, @CaraAngkut, @NmAngkut, @BenderaVoy, @NoVoyFlight, @TglTiba, @PelMuat, @PelBongkar, @PelTransit, @Gudang, @NoBc11, @TglBc11, @NoPosBc11,
                  @KdVal, @Ndpbm, @Fob, @Asuransi, @Freight, @Cif, @Netto, @Bruto, @KdJaminan, @JmlCont, @JmlBrg, GETDATE(), 'N', 'DRAFT', 'DRAFT',
-                 @TotalBm, @TotalPpn, @TotalPph, @TotalPungutan, @NilaiPabean)";
+                 @TotalBm, @TotalPpn, @TotalPph, @TotalPungutan, @NilaiPabean, @Entity)";
             
             await _db.ExecuteAsync(sqlHeader, model);
 
@@ -492,13 +500,18 @@ public class PibController : Controller
 
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var isSis = entity == "SIS";
+            var idImp = isSis ? "011297389411000" : "011297371411000";
+            var nmImo = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+
             if (string.IsNullOrWhiteSpace(car))
             {
                 car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
                 await _db.ExecuteAsync(
-                    @"INSERT INTO PIB_DOIT_FINAL_HEADER (CAR, ID_IMP, NM_IMO, ASAL_DATA, KD_VAL, STATUS, APPROVAL_STATUS, CREATION_DATE)
-                      VALUES (@Car, '011297371411000', 'PT. SUZUKI INDOMOBIL MOTOR', 'E', 'USD', 'DRAFT', 'DRAFT', GETDATE())",
-                    new { Car = car });
+                    @"INSERT INTO PIB_DOIT_FINAL_HEADER (CAR, ID_IMP, NM_IMO, ASAL_DATA, KD_VAL, STATUS, APPROVAL_STATUS, CREATION_DATE, ENTITY)
+                      VALUES (@Car, @IdImp, @NmImo, 'E', 'USD', 'DRAFT', 'DRAFT', GETDATE(), @Entity)",
+                    new { Car = car, IdImp = idImp, NmImo = nmImo, Entity = entity });
             }
 
             using var stream = excelFile.OpenReadStream();
@@ -611,8 +624,10 @@ public class PebController : Controller
         
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
             var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, BRUTO, FOB,
                        NOPEN AS Nopen, TGL_NOPEN AS TglNopen, KDVAL AS KdVal,
+                       ISNULL(ENTITY, 'SIM') AS Entity,
                        ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
                        CASE 
                             WHEN STATUS >= 3 THEN 'APPROVED'
@@ -620,9 +635,11 @@ public class PebController : Controller
                             WHEN STATUS = 1 THEN 'PENDING'
                             ELSE 'DRAFT'
                        END AS Status 
-                       FROM PEB_DOIT_FINAL_HEADER WHERE 1=1";
+                       FROM PEB_DOIT_FINAL_HEADER 
+                       WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))";
                        
             var parameters = new DynamicParameters();
+            parameters.Add("Entity", entity);
             
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -665,10 +682,18 @@ public class PebController : Controller
     {
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var isSis = entity == "SIS";
+
             if (string.IsNullOrWhiteSpace(model.Car))
             {
                 model.Car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
             }
+
+            model.Entity = entity;
+            model.NamaEks = form["NamaEks"].FirstOrDefault() ?? (isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR");
+            model.AlmtEks = form["AlmtEks"].FirstOrDefault() ?? (isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8, JAKARTA TIMUR" : "JL. RAYA PENGGILINGAN KM 19, CAKUNG, JAKARTA TIMUR");
+            model.NpwpEks = form["NpwpEks"].FirstOrDefault() ?? (isSis ? "011297389411000" : "011297371411000");
 
             model.KdKtr = form["KdKtr"].FirstOrDefault() ?? "010100";
             model.NamaBeli = form["NamaBeli"].FirstOrDefault() ?? model.NamaBeli;
@@ -692,9 +717,9 @@ public class PebController : Controller
 
             var sqlHeader = @"INSERT INTO PEB_DOIT_FINAL_HEADER 
                 (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NAMABELI, ALMTBELI, NEGBELI, TGEKS, NETTO, BRUTO, FOB, 
-                 KDKTR, CARRIER, VOY, PELMUAT, PELBONGKAR, NOINV, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE)
+                 KDKTR, CARRIER, VOY, PELMUAT, PELBONGKAR, NOINV, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE, ENTITY)
                 VALUES (@Car, @NamaEks, @AlmtEks, @NpwpEks, @NamaBeli, @AlmtBeli, @NegBeli, GETDATE(), @Netto, @Bruto, @Fob,
-                 @KdKtr, @Carrier, @Voy, @PelMuat, @PelBongkar, @NoInv, @KdVal, 0, 'DRAFT', GETDATE())";
+                 @KdKtr, @Carrier, @Voy, @PelMuat, @PelBongkar, @NoInv, @KdVal, 0, 'DRAFT', GETDATE(), @Entity)";
 
             await _db.ExecuteAsync(sqlHeader, model);
 
@@ -960,13 +985,19 @@ public class PebController : Controller
 
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var isSis = entity == "SIS";
+            var namaEks = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+            var almtEks = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8" : "JL. RAYA PENGGILINGAN KM 19";
+            var npwpEks = isSis ? "011297389411000" : "011297371411000";
+
             if (string.IsNullOrWhiteSpace(car))
             {
                 car = "010100" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100000, 999999);
                 await _db.ExecuteAsync(
-                    @"INSERT INTO PEB_DOIT_FINAL_HEADER (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NAMABELI, NEGBELI, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE)
-                      VALUES (@Car, 'PT. SUZUKI INDOMOBIL MOTOR', 'JL. RAYA PENGGILINGAN KM 19', '011297371411000', 'SUZUKI MOTOR CORPORATION JAPAN', 'JP', 'USD', 0, 'DRAFT', GETDATE())",
-                    new { Car = car });
+                    @"INSERT INTO PEB_DOIT_FINAL_HEADER (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NAMABELI, NEGBELI, KDVAL, STATUS, APPROVAL_STATUS, CREATED_DATE, ENTITY)
+                      VALUES (@Car, @NamaEks, @AlmtEks, @NpwpEks, 'SUZUKI MOTOR CORPORATION JAPAN', 'JP', 'USD', 0, 'DRAFT', GETDATE(), @Entity)",
+                    new { Car = car, NamaEks = namaEks, AlmtEks = almtEks, NpwpEks = npwpEks, Entity = entity });
             }
 
             using var stream = excelFile.OpenReadStream();
@@ -1106,18 +1137,28 @@ public class SiloController : Controller
                             throw new Exception($"Invoice {searchInvoice} tidak ditemukan di database SILO Oracle.");
                         }
                         
+                        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+                        var isSis = entity == "SIS";
+                        var idImp = isSis ? "011297389411000" : "011297371411000";
+                        var nmImo = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+                        var alImp = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8" : "JL. RAYA PENGGILINGAN KM 19";
+
                         var random = new Random();
                         var carNo = $"00000000615220261025{random.Next(100000, 999999)}";
                         var first = records[0];
                         
                         await _db.ExecuteAsync(
                             @"INSERT INTO PIB_DOIT_FINAL_HEADER 
-                              (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, NM_PEMASOK, AL_PEMASOK, TGL_TIBA, JML_BRG, CREATION_DATE, FL_VALID)
-                              VALUES (@Car, 'S', '011297371411000', 'PT. SUZUKI INDOMOBIL MOTOR', 'JL. RAYA PENGGILINGAN KM 19', 'SUZUKI MOTOR CORPORATION', 'SHIZUOKA, JAPAN', @TgTiba, @JmlBrg, GETDATE(), 'N')",
+                              (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, NM_PEMASOK, AL_PEMASOK, TGL_TIBA, JML_BRG, CREATION_DATE, FL_VALID, ENTITY)
+                              VALUES (@Car, 'S', @IdImp, @NmImo, @AlImp, 'SUZUKI MOTOR CORPORATION', 'SHIZUOKA, JAPAN', @TgTiba, @JmlBrg, GETDATE(), 'N', @Entity)",
                             new { 
                                 Car = carNo, 
+                                IdImp = idImp,
+                                NmImo = nmImo,
+                                AlImp = alImp,
                                 TgTiba = first.TgTiba?.ToString() ?? DateTime.Now.ToString("yyyyMMdd"),
-                                JmlBrg = records.Count.ToString()
+                                JmlBrg = records.Count.ToString(),
+                                Entity = entity
                             });
                             
                         int serial = 1;
@@ -1142,11 +1183,11 @@ public class SiloController : Controller
                             new { 
                                 User = User.Identity?.Name ?? "system", 
                                 Car = carNo, 
-                                Desc = $"Tarik data SILO Oracle berhasil untuk Invoice {searchInvoice} ({records.Count} items)", 
+                                Desc = $"Tarik data SILO Oracle ({entity}) berhasil untuk Invoice {searchInvoice} ({records.Count} items)", 
                                 Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
                             });
 
-                        TempData["Success"] = $"Sinkronisasi berhasil! Dokumen PIB dengan CAR {carNo} di-import dari Oracle SILO.";
+                        TempData["Success"] = $"Sinkronisasi ({entity}) berhasil! Dokumen PIB dengan CAR {carNo} di-import dari Oracle SILO.";
                         return RedirectToAction("Index", "Pib");
                     }
                 }
@@ -1158,13 +1199,22 @@ public class SiloController : Controller
 
             // Simulate Oracle SILO database query and mapping (Mock/Fallback implementation)
             {
+                var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+                var isSis = entity == "SIS";
+                var idImp = isSis ? "011297389411000" : "011297371411000";
+                var nmImo = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+                var alImp = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8" : "JL. RAYA PENGGILINGAN KM 19";
+
                 var random = new Random();
                 var carNo = $"00000000615220261025{random.Next(100000, 999999)}";
                 
                 var header = new PibHeaderModel
                 {
                     Car = carNo,
-                    IdImp = "011297371411000",
+                    Entity = entity,
+                    IdImp = idImp,
+                    NmImo = nmImo,
+                    AlImp = alImp,
                     NmPemasok = "SUZUKI MOTOR CORPORATION",
                     AlPemasok = "300 TAKATSUKA-CHO, MINAMI-KU, HAMAMATSU-SHI, SHIZUOKA",
                     TglTiba = DateTime.Now.AddDays(2).ToString("yyyyMMdd"),
@@ -1174,8 +1224,8 @@ public class SiloController : Controller
 
                 await _db.ExecuteAsync(
                     @"INSERT INTO PIB_DOIT_FINAL_HEADER 
-                      (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, NM_PEMASOK, AL_PEMASOK, TGL_TIBA, JML_BRG, CREATION_DATE, FL_VALID)
-                      VALUES (@Car, 'S', @IdImp, 'PT. SUZUKI INDOMOBIL MOTOR', 'JL. RAYA PENGGILINGAN KM 19', @NmPemasok, @AlPemasok, @TglTiba, @JmlBrg, GETDATE(), 'N')",
+                      (CAR, ASAL_DATA, ID_IMP, NM_IMO, AL_IMP, NM_PEMASOK, AL_PEMASOK, TGL_TIBA, JML_BRG, CREATION_DATE, FL_VALID, ENTITY)
+                      VALUES (@Car, 'S', @IdImp, @NmImo, @AlImp, @NmPemasok, @AlPemasok, @TglTiba, @JmlBrg, GETDATE(), 'N', @Entity)",
                     header);
 
                 await _db.ExecuteAsync(
@@ -1189,11 +1239,11 @@ public class SiloController : Controller
                     new { 
                         User = User.Identity?.Name ?? "system", 
                         Car = carNo, 
-                        Desc = $"Sinkronisasi data SILO berhasil (Simulasi) untuk Invoice {searchInvoice}", 
+                        Desc = $"Sinkronisasi data SILO ({entity}) berhasil (Simulasi) untuk Invoice {searchInvoice}", 
                         Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
                     });
 
-                TempData["Success"] = $"Sinkronisasi berhasil! Dokumen PIB dengan CAR {carNo} di-import sebagai DRAFT (Simulasi).";
+                TempData["Success"] = $"Sinkronisasi ({entity}) berhasil! Dokumen PIB dengan CAR {carNo} di-import sebagai DRAFT (Simulasi).";
                 return RedirectToAction("Index", "Pib");
             }
         }
@@ -1246,19 +1296,27 @@ public class SiloController : Controller
                             throw new Exception($"Invoice {searchInvoice} tidak ditemukan di database SILO Oracle.");
                         }
                         
+                        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+                        var isSis = entity == "SIS";
+                        var namaEks = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+                        var almtEks = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8" : "JL. RAYA PENGGILINGAN KM 19";
+                        var npwpEks = isSis ? "011297389411000" : "011297371411000";
+
                         var random = new Random();
                         var carNo = $"00003001062620260714{random.Next(100000, 999999)}";
                         var first = records[0];
                         
                         await _db.ExecuteAsync(
                             @"INSERT INTO PEB_DOIT_FINAL_HEADER 
-                               (CAR, NAMAEKS, ALMTEKS, NEGBELI, TGEKS, NETTO, BRUTO, FOB, CREATED_DATE, STATUS)
-                               VALUES (@Car, @NamaBeli, @AlmtBeli, @NegBeli, GETDATE(), 1000, 1100, 50000, GETDATE(), 1)",
+                               (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NEGBELI, TGEKS, NETTO, BRUTO, FOB, CREATED_DATE, STATUS, ENTITY)
+                               VALUES (@Car, @NamaEks, @AlmtEks, @NpwpEks, @NegBeli, GETDATE(), 1000, 1100, 50000, GETDATE(), 1, @Entity)",
                             new {
                                 Car = carNo,
-                                NamaBeli = first.PenerimaNama?.ToString() ?? "BOUSTEAD SDN BERHAD",
-                                AlmtBeli = first.PenerimaAlamat?.ToString() ?? "KUALA LUMPUR",
-                                NegBeli = first.PenerimaNegara?.ToString() ?? "MY"
+                                NamaEks = namaEks,
+                                AlmtEks = almtEks,
+                                NpwpEks = npwpEks,
+                                NegBeli = first.PenerimaNegara?.ToString() ?? "MY",
+                                Entity = entity
                             });
                             
                         await _db.ExecuteAsync(
@@ -1267,11 +1325,11 @@ public class SiloController : Controller
                             new { 
                                 User = User.Identity?.Name ?? "system", 
                                 Car = carNo, 
-                                Desc = $"Tarik data SILO PEB Oracle berhasil untuk Invoice {searchInvoice}", 
+                                Desc = $"Tarik data SILO PEB Oracle ({entity}) berhasil untuk Invoice {searchInvoice}", 
                                 Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
                             });
 
-                        TempData["Success"] = $"Sinkronisasi berhasil! Dokumen PEB dengan CAR {carNo} di-import dari Oracle SILO.";
+                        TempData["Success"] = $"Sinkronisasi ({entity}) berhasil! Dokumen PEB dengan CAR {carNo} di-import dari Oracle SILO.";
                         return RedirectToAction("Index", "Peb");
                     }
                 }
@@ -1283,12 +1341,22 @@ public class SiloController : Controller
 
             // Simulate Oracle SILO database query and mapping (Mock/Fallback implementation)
             {
+                var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+                var isSis = entity == "SIS";
+                var namaEks = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+                var almtEks = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8, JAKARTA TIMUR" : "JL. RAYA PENGGILINGAN KM 19, CAKUNG, JAKARTA TIMUR";
+                var npwpEks = isSis ? "011297389411000" : "011297371411000";
+
                 var random = new Random();
                 var carNo = $"00003001062620260714{random.Next(100000, 999999)}";
                 
                 var header = new PebHeaderModel
                 {
                     Car = carNo,
+                    Entity = entity,
+                    NamaEks = namaEks,
+                    AlmtEks = almtEks,
+                    NpwpEks = npwpEks,
                     NamaBeli = "BOUSTEAD SDN BERHAD",
                     AlmtBeli = "KUALA LUMPUR, MALAYSIA",
                     NegBeli = "MY",
@@ -1300,8 +1368,8 @@ public class SiloController : Controller
 
                 await _db.ExecuteAsync(
                     @"INSERT INTO PEB_DOIT_FINAL_HEADER 
-                       (CAR, NAMAEKS, ALMTEKS, NEGBELI, TGEKS, NETTO, BRUTO, FOB, CREATED_DATE, STATUS)
-                       VALUES (@Car, @NamaBeli, @AlmtBeli, @NegBeli, @TgEks, @Netto, @Bruto, @Fob, GETDATE(), 1)",
+                       (CAR, NAMAEKS, ALMTEKS, NPWPEKS, NEGBELI, TGEKS, NETTO, BRUTO, FOB, CREATED_DATE, STATUS, ENTITY)
+                       VALUES (@Car, @NamaEks, @AlmtEks, @NpwpEks, @NegBeli, @TgEks, @Netto, @Bruto, @Fob, GETDATE(), 1, @Entity)",
                     header);
 
                 await _db.ExecuteAsync(
@@ -1310,11 +1378,11 @@ public class SiloController : Controller
                     new { 
                         User = User.Identity?.Name ?? "system", 
                         Car = carNo, 
-                        Desc = $"Sinkronisasi data SILO PEB berhasil (Simulasi) untuk Invoice {searchInvoice}", 
+                        Desc = $"Sinkronisasi data SILO PEB ({entity}) berhasil (Simulasi) untuk Invoice {searchInvoice}", 
                         Ip = HttpContext.Connection.RemoteIpAddress?.ToString() 
                     });
 
-                TempData["Success"] = $"Sinkronisasi berhasil! Dokumen PEB dengan CAR {carNo} di-import sebagai DRAFT (Simulasi).";
+                TempData["Success"] = $"Sinkronisasi ({entity}) berhasil! Dokumen PEB dengan CAR {carNo} di-import sebagai DRAFT (Simulasi).";
                 return RedirectToAction("Index", "Peb");
             }
         }
@@ -1358,6 +1426,20 @@ public class SiloController : Controller
         }
         return RedirectToAction(nameof(ExportToSilo));
     }
+
+    public async Task<IActionResult> ViewSilo()
+    {
+        ViewData["Title"] = "Monitoring & Staging Log SILO";
+        ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> SILO <span class='breadcrumb-sep'>/</span> View Data";
+
+        var logs = await _db.QueryAsync<dynamic>(
+            @"SELECT TOP 50 id, user_name, action, module, document_id, description, ip_address, created_at 
+              FROM doit_audit_log 
+              WHERE module = 'SILO' OR action LIKE '%SILO%'
+              ORDER BY created_at DESC");
+
+        return View(logs.ToList());
+    }
 }
 
 [Authorize]
@@ -1388,8 +1470,10 @@ public class CeisaController : Controller
         ViewData["Title"] = "Kirim PIB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PIB";
         
-        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, 
+        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_IMO AS NmImo, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, 
                            ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           ISNULL(ENTITY, 'SIM') AS Entity,
                            KD_VAL AS KdVal, CIF AS Cif,
                            CASE 
                                WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
@@ -1397,8 +1481,9 @@ public class CeisaController : Controller
                                ELSE 'DRAFT'
                            END AS Status 
                     FROM PIB_DOIT_FINAL_HEADER 
+                    WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))
                     ORDER BY CREATION_DATE DESC";
-        var drafts = await _db.QueryAsync<PibHeaderModel>(sql);
+        var drafts = await _db.QueryAsync<PibHeaderModel>(sql, new { Entity = entity });
         return View(drafts.ToList());
     }
 
@@ -1407,8 +1492,10 @@ public class CeisaController : Controller
         ViewData["Title"] = "Kirim PEB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PEB";
         
+        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
         var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, BRUTO, FOB,
                            ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           ISNULL(ENTITY, 'SIM') AS Entity,
                            NOPEN AS Nopen,
                            CASE 
                                WHEN STATUS >= 3 THEN 'APPROVED'
@@ -1416,8 +1503,9 @@ public class CeisaController : Controller
                                ELSE 'DRAFT'
                            END AS Status 
                      FROM PEB_DOIT_FINAL_HEADER 
+                     WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))
                      ORDER BY CREATED_DATE DESC";
-        var drafts = await _db.QueryAsync<PebHeaderModel>(sql);
+        var drafts = await _db.QueryAsync<PebHeaderModel>(sql, new { Entity = entity });
         return View(drafts.ToList());
     }
 
@@ -2416,17 +2504,21 @@ public class ReportController : Controller
         ViewData["Title"] = "Laporan Realisasi Impor (PIB)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> Laporan <span class='breadcrumb-sep'>/</span> PIB";
 
-        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, 
+        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_IMO AS NmImo, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, 
                            JML_BRG AS JmlBrg, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg, 
                            NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, FOB, CIF, NETTO, BRUTO,
+                           ISNULL(ENTITY, 'SIM') AS Entity,
                            CASE 
                                 WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
                                 WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
                                 ELSE 'DRAFT'
                            END AS Status 
-                    FROM PIB_DOIT_FINAL_HEADER WHERE 1=1";
+                    FROM PIB_DOIT_FINAL_HEADER 
+                    WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))";
 
         var parameters = new DynamicParameters();
+        parameters.Add("Entity", entity);
         if (!string.IsNullOrWhiteSpace(search))
         {
             sql += " AND (CAR LIKE @Search OR NM_PEMASOK LIKE @Search OR NM_IMO LIKE @Search OR ID_IMP LIKE @Search OR NO_PEN_PIB LIKE @Search OR NO_SPPB LIKE @Search)";
@@ -2456,7 +2548,8 @@ public class ReportController : Controller
     {
         try
         {
-            var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, 
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+            var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_IMO AS NmImo, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, 
                                JML_BRG AS JmlBrg, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg, 
                                NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, FOB, CIF, NETTO, BRUTO,
                                CASE 
@@ -2464,9 +2557,11 @@ public class ReportController : Controller
                                     WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'Nopen Terdaftar'
                                     ELSE 'Draft PIB'
                                END AS Status 
-                        FROM PIB_DOIT_FINAL_HEADER WHERE 1=1";
+                        FROM PIB_DOIT_FINAL_HEADER 
+                        WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))";
 
             var parameters = new DynamicParameters();
+            parameters.Add("Entity", entity);
             if (!string.IsNullOrWhiteSpace(search))
             {
                 sql += " AND (CAR LIKE @Search OR NM_PEMASOK LIKE @Search OR NM_IMO LIKE @Search OR ID_IMP LIKE @Search OR NO_PEN_PIB LIKE @Search OR NO_SPPB LIKE @Search)";
@@ -2578,11 +2673,15 @@ public class ReportController : Controller
         ViewData["Title"] = "Laporan Realisasi Ekspor (PEB)";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> Laporan <span class='breadcrumb-sep'>/</span> PEB";
 
+        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
         var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, ALMTEKS AS AlmtBeli, NEGBELI AS NegBeli, 
-                           TGEKS AS TgEks, NETTO, BRUTO, FOB, STATUS 
-                    FROM PEB_DOIT_FINAL_HEADER WHERE 1=1";
+                           TGEKS AS TgEks, NETTO, BRUTO, FOB, STATUS,
+                           ISNULL(ENTITY, 'SIM') AS Entity
+                    FROM PEB_DOIT_FINAL_HEADER 
+                    WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))";
 
         var parameters = new DynamicParameters();
+        parameters.Add("Entity", entity);
         if (!string.IsNullOrWhiteSpace(search))
         {
             sql += " AND (CAR LIKE @Search OR NAMAEKS LIKE @Search OR NPWPEKS LIKE @Search OR NEGBELI LIKE @Search)";
@@ -2612,11 +2711,14 @@ public class ReportController : Controller
     {
         try
         {
+            var entity = User.FindFirst("Entity")?.Value ?? "SIM";
             var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, ALMTEKS AS AlmtBeli, NEGBELI AS NegBeli, 
                                TGEKS AS TgEks, NETTO, BRUTO, FOB, STATUS 
-                        FROM PEB_DOIT_FINAL_HEADER WHERE 1=1";
+                        FROM PEB_DOIT_FINAL_HEADER 
+                        WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))";
 
             var parameters = new DynamicParameters();
+            parameters.Add("Entity", entity);
             if (!string.IsNullOrWhiteSpace(search))
             {
                 sql += " AND (CAR LIKE @Search OR NAMAEKS LIKE @Search OR NPWPEKS LIKE @Search OR NEGBELI LIKE @Search)";

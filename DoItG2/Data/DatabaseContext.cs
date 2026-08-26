@@ -181,10 +181,28 @@ public class DatabaseContext
                             ALTER TABLE PIB_DOIT_FINAL_HEADER ADD TOTAL_PUNGUTAN DECIMAL(18,2) DEFAULT 0;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'NILAI_PABEAN')
                             ALTER TABLE PIB_DOIT_FINAL_HEADER ADD NILAI_PABEAN DECIMAL(18,2) DEFAULT 0;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER') AND name = 'ENTITY')
+                        BEGIN
+                            ALTER TABLE PIB_DOIT_FINAL_HEADER ADD ENTITY VARCHAR(10) DEFAULT 'SIM';
+                            EXEC('UPDATE PIB_DOIT_FINAL_HEADER SET ENTITY = CASE WHEN NM_IMO LIKE ''%SALES%'' OR ID_IMP LIKE ''%011297389%'' OR ID_IMP LIKE ''%01.129.738%'' THEN ''SIS'' ELSE ''SIM'' END WHERE ENTITY IS NULL');
+                        END
                     END
 
                     IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_HEADER')
                     BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'ENTITY')
+                        BEGIN
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD ENTITY VARCHAR(10) DEFAULT 'SIM';
+                            EXEC('UPDATE PEB_DOIT_FINAL_HEADER SET ENTITY = CASE WHEN NAMAEKS LIKE ''%SALES%'' OR NPWPEKS LIKE ''%011297389%'' OR NPWPEKS LIKE ''%01.129.738%'' THEN ''SIS'' ELSE ''SIM'' END WHERE ENTITY IS NULL');
+                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'NOPEN')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD NOPEN VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'TGL_NOPEN')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD TGL_NOPEN DATETIME NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'NONPE')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD NONPE VARCHAR(50) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'TGL_NPE')
+                            ALTER TABLE PEB_DOIT_FINAL_HEADER ADD TGL_NPE DATETIME NULL;
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'APPROVAL_STATUS')
                             ALTER TABLE PEB_DOIT_FINAL_HEADER ADD APPROVAL_STATUS VARCHAR(50) DEFAULT 'DRAFT';
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER') AND name = 'REVIEW_NOTES')

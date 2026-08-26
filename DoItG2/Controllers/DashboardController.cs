@@ -23,7 +23,8 @@ public class DashboardController : Controller
     {
         var username = User.Identity?.Name ?? "";
         var userType = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "STAFF";
-        var stats = await _dashboard.GetStatsAsync(username, userType);
+        var entity = User.FindFirst("Entity")?.Value ?? "SIM";
+        var stats = await _dashboard.GetStatsAsync(username, userType, entity);
         return View(stats);
     }
 

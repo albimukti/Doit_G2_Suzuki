@@ -113,11 +113,16 @@ public class TaxCalculationService : ITaxCalculationService
         if (header == null)
             return new TaxCalculationResult { Car = car };
 
-        string kdVal = header.KD_VAL?.ToString() ?? "USD";
-        decimal.TryParse(header.FOB?.ToString(), out decimal fob);
-        decimal.TryParse(header.ASURANSI?.ToString(), out decimal asuransi);
-        decimal.TryParse(header.FREIGHT?.ToString(), out decimal freight);
-        decimal.TryParse(header.CIF?.ToString(), out decimal cif);
+        string kdVal = ((object?)header.KD_VAL)?.ToString() ?? "USD";
+        string? fobStr = ((object?)header.FOB)?.ToString();
+        string? asuransiStr = ((object?)header.ASURANSI)?.ToString();
+        string? freightStr = ((object?)header.FREIGHT)?.ToString();
+        string? cifStr = ((object?)header.CIF)?.ToString();
+
+        decimal.TryParse(fobStr, out decimal fob);
+        decimal.TryParse(asuransiStr, out decimal asuransi);
+        decimal.TryParse(freightStr, out decimal freight);
+        decimal.TryParse(cifStr, out decimal cif);
 
         if (cif <= 0 && fob > 0)
             cif = fob + asuransi + freight;

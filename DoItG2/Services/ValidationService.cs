@@ -102,12 +102,19 @@ public class ValidationService : IValidationService
 
             if (values != null)
             {
-                decimal.TryParse(values.FOB?.ToString(), out decimal fob);
-                decimal.TryParse(values.ASURANSI?.ToString(), out decimal asuransi);
-                decimal.TryParse(values.FREIGHT?.ToString(), out decimal freight);
-                decimal.TryParse(values.CIF?.ToString(), out decimal cif);
-                decimal.TryParse(values.NETTO?.ToString(), out decimal netto);
-                decimal.TryParse(values.BRUTO?.ToString(), out decimal bruto);
+                string? fobStr = ((object?)values.FOB)?.ToString();
+                string? asuransiStr = ((object?)values.ASURANSI)?.ToString();
+                string? freightStr = ((object?)values.FREIGHT)?.ToString();
+                string? cifStr = ((object?)values.CIF)?.ToString();
+                string? nettoStr = ((object?)values.NETTO)?.ToString();
+                string? brutoStr = ((object?)values.BRUTO)?.ToString();
+
+                decimal.TryParse(fobStr, out decimal fob);
+                decimal.TryParse(asuransiStr, out decimal asuransi);
+                decimal.TryParse(freightStr, out decimal freight);
+                decimal.TryParse(cifStr, out decimal cif);
+                decimal.TryParse(nettoStr, out decimal netto);
+                decimal.TryParse(brutoStr, out decimal bruto);
 
                 if (fob > 0 && cif > 0 && Math.Abs((fob + asuransi + freight) - cif) > 1.0m)
                 {

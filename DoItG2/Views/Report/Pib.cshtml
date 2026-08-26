@@ -13,7 +13,8 @@
     decimal totalCif = 0;
     foreach (var item in Model)
     {
-        if (decimal.TryParse(item.Cif, out var val)) totalCif += val;
+        string? cifStr = item.Cif;
+        if (decimal.TryParse(cifStr, out var val)) totalCif += val;
     }
 }
 
@@ -141,7 +142,11 @@
                                 </span>
                             </td>
                             <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-secondary); font-size: 13.5px;">
-                                Rp @(decimal.TryParse(item.Cif, out var cif) ? cif.ToString("N2") : "0.00")
+                                @{
+                                    string? itemCif = item.Cif;
+                                    var displayCif = decimal.TryParse(itemCif, out var cif) ? cif.ToString("N2") : (itemCif ?? "0.00");
+                                }
+                                Rp @displayCif
                             </td>
                             <td style="text-align: center;">
                                 @if (item.Status == "SPPB" || item.Status == "APPROVED")

@@ -2,6 +2,11 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Buat PEB (BC 3.0) Baru — CEISA 4.0";
+    var activeEntity = User.FindFirst("Entity")?.Value ?? "SIM";
+    var isSis = activeEntity == "SIS";
+    var defaultNpwpEks = isSis ? "011297389411000" : "011297371411000";
+    var defaultNamaEks = isSis ? "PT. SUZUKI INDOMOBIL SALES" : "PT. SUZUKI INDOMOBIL MOTOR";
+    var defaultAlmtEks = isSis ? "WISMA INDOMOBIL I, JL. MT HARYONO KAV. 8, JAKARTA TIMUR" : "JL. RAYA PENGGILINGAN KM 19, CAKUNG, JAKARTA TIMUR";
 }
 
 <div class="card" style="max-width: 1150px; margin: 0 auto;">
@@ -42,33 +47,61 @@
     </div>
 
     <!-- Tab Navigation CEISA 4.0 (9 Tab) -->
-    <div class="peb-tabs" id="pebTabs">
-        <button type="button" class="peb-tab active" data-tab="1" onclick="DoIt.switchPebTab(1)">
-            <span class="tab-num">1</span> <span class="tab-label">Header</span> <span class="tab-icon"></span>
+    <!-- Tab Navigation CEISA 4.0 (9 Tab) -->
+    <div class="peb-tabs menu" id="pebTabs">
+        <button type="button" class="peb-tab link active" data-tab="1" onclick="DoIt.switchPebTab(1)" title="Tab 1: Header">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </span>
+            <span class="tab-label link-title">1. Header</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="2" onclick="DoIt.switchPebTab(2)">
-            <span class="tab-num">2</span> <span class="tab-label">Entitas</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="2" onclick="DoIt.switchPebTab(2)" title="Tab 2: Entitas">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </span>
+            <span class="tab-label link-title">2. Entitas</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="3" onclick="DoIt.switchPebTab(3)">
-            <span class="tab-num">3</span> <span class="tab-label">Dokumen</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="3" onclick="DoIt.switchPebTab(3)" title="Tab 3: Dokumen">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </span>
+            <span class="tab-label link-title">3. Dokumen</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="4" onclick="DoIt.switchPebTab(4)">
-            <span class="tab-num">4</span> <span class="tab-label">Pengangkut</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="4" onclick="DoIt.switchPebTab(4)" title="Tab 4: Pengangkut">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+            </span>
+            <span class="tab-label link-title">4. Angkut</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="5" onclick="DoIt.switchPebTab(5)">
-            <span class="tab-num">5</span> <span class="tab-label">Kemasan &amp; Peti</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="5" onclick="DoIt.switchPebTab(5)" title="Tab 5: Kemasan & Peti">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </span>
+            <span class="tab-label link-title">5. Kemasan</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="6" onclick="DoIt.switchPebTab(6)">
-            <span class="tab-num">6</span> <span class="tab-label">Transaksi</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="6" onclick="DoIt.switchPebTab(6)" title="Tab 6: Transaksi">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
+            <span class="tab-label link-title">6. Transaksi</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="7" onclick="DoIt.switchPebTab(7)">
-            <span class="tab-num">7</span> <span class="tab-label">Detail Barang</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="7" onclick="DoIt.switchPebTab(7)" title="Tab 7: Detail Barang">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            </span>
+            <span class="tab-label link-title">7. Barang</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="8" onclick="DoIt.switchPebTab(8)">
-            <span class="tab-num">8</span> <span class="tab-label">Pungutan</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="8" onclick="DoIt.switchPebTab(8)" title="Tab 8: Pungutan">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </span>
+            <span class="tab-label link-title">8. Pungutan</span>
         </button>
-        <button type="button" class="peb-tab" data-tab="9" onclick="DoIt.switchPebTab(9)">
-            <span class="tab-num">9</span> <span class="tab-label">Pernyataan</span> <span class="tab-icon"></span>
+        <button type="button" class="peb-tab link" data-tab="9" onclick="DoIt.switchPebTab(9)" title="Tab 9: Pernyataan">
+            <span class="tab-icon link-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
+            <span class="tab-label link-title">9. Pernyataan</span>
         </button>
     </div>
 
@@ -154,7 +187,7 @@
 
             <!-- Eksportir -->
             <div class="entity-section">
-                <h4 class="section-subtitle">Eksportir</h4>
+                <h4 class="section-subtitle">Eksportir (@activeEntity)</h4>
                 <div style="display: grid; grid-template-columns: 180px 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Jenis Identitas</label>
@@ -165,26 +198,26 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NPWP Eksportir<span class="required">*</span></label>
-                        <input type="text" name="NpwpEks" id="peb_NpwpEks" class="form-control req-field" value="" placeholder="00174392740460000" maxlength="16" required />
+                        <input type="text" name="NpwpEks" id="peb_NpwpEks" class="form-control req-field" value="@defaultNpwpEks" placeholder="011297371411000" maxlength="16" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">NITKU Eksportir</label>
-                        <input type="text" name="NitkuEks" id="peb_NitkuEks" class="form-control" value="" placeholder="0017439274046000000000" maxlength="22" />
+                        <input type="text" name="NitkuEks" id="peb_NitkuEks" class="form-control" value="@(defaultNpwpEks + "000000")" placeholder="0112973714110000000000" maxlength="22" />
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Nama Eksportir<span class="required">*</span></label>
-                        <input type="text" name="NamaEks" id="peb_NamaEks" class="form-control req-field" value="" placeholder="ELECTRONIC DATA INTERCHANGE INDONESIA" required />
+                        <input type="text" name="NamaEks" id="peb_NamaEks" class="form-control req-field" value="@defaultNamaEks" placeholder="PT. SUZUKI INDOMOBIL" required />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status Eksportir</label>
-                        <input type="text" name="StatusEks" id="peb_StatusEks" class="form-control" value="" placeholder="BUMN" />
+                        <input type="text" name="StatusEks" id="peb_StatusEks" class="form-control" value="SWASTA" placeholder="SWASTA" />
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Alamat Eksportir<span class="required">*</span></label>
-                    <textarea name="AlmtEks" id="peb_AlmtEks" class="form-control req-field" rows="2" placeholder="WISMA SMR LANTAI 3 UNIT 02, JL YOS SUDARSO KAV. 89" required></textarea>
+                    <textarea name="AlmtEks" id="peb_AlmtEks" class="form-control req-field" rows="2" placeholder="ALAMAT SUZUKI" required>@defaultAlmtEks</textarea>
                 </div>
             </div>
 
@@ -604,89 +637,169 @@
 
 @section Styles {
 <style>
-    .peb-tabs {
+    /* Uiverse.io Menu Expandable Tab System - Clean Flexbox without Collision */
+    .peb-tabs.menu {
+        padding: 0.5rem;
+        background-color: var(--bg-card, #ffffff);
+        position: relative;
         display: flex;
-        gap: 4px;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 8px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.075);
+        border: 1px solid var(--border-color, #e2e8f0);
+        margin: 0 0 24px 0;
         overflow-x: auto;
-        padding: 0 24px;
-        margin: 0 -24px 24px;
-        border-bottom: 2px solid var(--border-color);
         scrollbar-width: thin;
     }
-    .peb-tab {
-        display: flex;
+
+    .peb-tab.link {
+        display: inline-flex;
+        justify-content: center;
         align-items: center;
-        gap: 6px;
-        padding: 10px 14px;
-        border: none;
-        background: none;
-        color: var(--text-secondary);
-        font-size: 12.5px;
-        font-weight: 600;
+        gap: 0;
+        width: 58px;
+        min-width: 58px;
+        height: 46px;
+        padding: 0 10px;
+        border-radius: 10px;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        transform-origin: center left;
+        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), gap 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease;
+        text-decoration: none;
+        color: var(--text-secondary, #64748b);
+        border: 1px solid transparent;
+        background: transparent;
         cursor: pointer;
-        white-space: nowrap;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s ease;
-        margin-bottom: -2px;
-        border-radius: 6px 6px 0 0;
-    }
-    .peb-tab:hover {
-        color: var(--text-primary);
-        background: var(--bg-secondary);
-    }
-    .peb-tab.active {
-        color: var(--primary);
-        border-bottom-color: var(--primary);
+        flex-shrink: 0;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
     }
 
-    /* Tab Success (Lengkap - Hijau) */
-    .peb-tab.tab-success {
-        color: #15803d !important;
-        border-bottom-color: #16a34a !important;
-        background: rgba(22, 163, 74, 0.1) !important;
-    }
-    .peb-tab.tab-success .tab-num {
-        background: #16a34a !important;
-        color: #ffffff !important;
-    }
-    .peb-tab.tab-success .tab-icon::after {
-        content: ' ✓';
-        font-weight: 900;
-        color: #16a34a;
-    }
-
-    /* Tab Danger (Belum Lengkap / Kosong - Merah) */
-    .peb-tab.tab-danger {
-        color: #dc2626 !important;
-        border-bottom-color: #dc2626 !important;
-        background: rgba(220, 38, 38, 0.1) !important;
-    }
-    .peb-tab.tab-danger .tab-num {
-        background: #dc2626 !important;
-        color: #ffffff !important;
-    }
-    .peb-tab.tab-danger .tab-icon::after {
-        content: ' ✕';
-        font-weight: 900;
-        color: #dc2626;
+    .peb-tab.link::before {
+        position: absolute;
+        z-index: -1;
+        content: "";
+        display: block;
+        border-radius: 10px;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        transform: translateX(100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center right;
+        background-color: var(--bg-hover, #f1f5f9);
     }
 
-    .tab-num {
+    .peb-tab .tab-icon.link-icon {
+        width: 24px;
+        height: 24px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
+        position: static;
+        margin: 0;
+        transition: transform 0.2s ease, color 0.2s ease;
+        color: inherit;
+    }
+
+    .peb-tab .tab-icon.link-icon svg {
         width: 22px;
         height: 22px;
-        border-radius: 50%;
-        background: var(--bg-tertiary);
-        color: var(--text-secondary);
-        font-size: 11px;
-        font-weight: 700;
-        transition: all 0.2s ease;
+        stroke-width: 2;
     }
-    .peb-tab.active .tab-num {
-        background: var(--primary);
-        color: white;
+
+    .peb-tab .tab-label.link-title {
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        transform: translateX(6px);
+        transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 13px;
+        font-weight: 700;
+        text-indent: 0;
+        margin: 0;
+        padding: 0;
+        display: inline-block;
+    }
+
+    /* Hover & Focus state: Expand Tab smoothly without overlapping icon */
+    .peb-tab.link:hover,
+    .peb-tab.link:focus {
+        outline: 0;
+        width: auto;
+        min-width: 140px;
+        padding: 0 16px;
+        gap: 8px;
+        color: var(--text-primary, #0f172a);
+    }
+
+    .peb-tab.link:hover::before,
+    .peb-tab.link:focus::before {
+        transform: translateX(0);
+    }
+
+    .peb-tab.link:hover .tab-label.link-title,
+    .peb-tab.link:focus .tab-label.link-title {
+        max-width: 130px;
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Active State: Always Expanded with Vibrant Primary Accent */
+    .peb-tab.link.active {
+        width: auto;
+        min-width: 145px;
+        padding: 0 16px;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--accent-primary, #2563eb), #1d4ed8) !important;
+        color: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    }
+
+    .peb-tab.link.active::before {
+        transform: translateX(0);
+        background-color: transparent !important;
+    }
+
+    .peb-tab.link.active .tab-label.link-title {
+        max-width: 130px;
+        opacity: 1;
+        transform: translateX(0);
+        color: #ffffff !important;
+    }
+
+    .peb-tab.link.active .tab-icon.link-icon {
+        color: #ffffff !important;
+    }
+
+    /* Tab Status Validation Colors */
+    .peb-tab.tab-success {
+        border-bottom: 3px solid #16a34a !important;
+    }
+    .peb-tab.tab-success .tab-icon.link-icon {
+        color: #16a34a;
+    }
+    .peb-tab.active.tab-success .tab-icon.link-icon {
+        color: #ffffff !important;
+    }
+
+    .peb-tab.tab-danger {
+        border-bottom: 3px solid #dc2626 !important;
+    }
+    .peb-tab.tab-danger .tab-icon.link-icon {
+        color: #dc2626;
+    }
+    .peb-tab.active.tab-danger .tab-icon.link-icon {
+        color: #ffffff !important;
     }
     .peb-panel {
         display: none;

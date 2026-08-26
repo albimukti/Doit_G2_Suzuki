@@ -7,6 +7,7 @@ namespace DoItG2.Models.PEB;
 public class PebHeaderModel
 {
     public string Car { get; set; } = string.Empty;              // Nomor AJU (primary key)
+    public string Entity { get; set; } = "SIM";                  // SIM / SIS
     public string NamaBeli { get; set; } = string.Empty;         // Buyer name
     public string AlmtBeli { get; set; } = string.Empty;         // Buyer address
     public string NegBeli { get; set; } = string.Empty;           // Buyer country code

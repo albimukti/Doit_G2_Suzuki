@@ -6,6 +6,7 @@ public class PibHeaderModel
 {
     public string Car { get; set; } = string.Empty;     // Nomor AJU (primary key)
     public string Status { get; set; } = string.Empty;  // Status dokumen
+    public string Entity { get; set; } = "SIM";          // SIM / SIS
     public string PibNo { get; set; } = string.Empty;
     public string? PibTg { get; set; }
     public string? SppbNo { get; set; }

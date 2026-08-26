@@ -36,7 +36,15 @@
                 </div>
                 <div>
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-                        <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent-primary); background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); padding: 4px 12px; border-radius: 20px;">PT. Suzuki Indomobil Motor</span>
+                        @{
+                            var activeEntity = User.FindFirst("Entity")?.Value ?? "SIM";
+                            var isSis = activeEntity == "SIS";
+                            var entityBadgeColor = isSis ? "#059669" : "#dc2626";
+                            var entityBadgeBg = isSis ? "rgba(5,150,105,0.12)" : "rgba(220,38,38,0.12)";
+                            var entityBadgeBorder = isSis ? "rgba(5,150,105,0.25)" : "rgba(220,38,38,0.25)";
+                            var entityFullName = isSis ? "PT. Suzuki Indomobil Sales (SIS)" : "PT. Suzuki Indomobil Motor (SIM)";
+                        }
+                        <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: @entityBadgeColor; background: @entityBadgeBg; border: 1px solid @entityBadgeBorder; padding: 4px 12px; border-radius: 20px;">@entityFullName</span>
                         <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px;">
                             <span class="status-dot active" style="width: 6px; height: 6px;"></span> CEISA 4.0 Live Engine
                         </span>
@@ -188,7 +196,7 @@
         </div>
     </div>
 
-    <!-- ===== 3. PUSAT AKSES CEPAT (8 ACTION SHORTCUTS GRID) ===== -->
+    <!-- ===== 3. PUSAT AKSES CEPAT (10 MODUL OPERASIONAL) ===== -->
     <div class="glass-card card-shine amber" style="padding: 24px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -197,98 +205,120 @@
                 </div>
                 <div>
                     <div style="font-size: 15.5px; font-weight: 800; color: var(--text-primary);">Pusat Akses Cepat &amp; Modul Operasional</div>
-                    <div style="font-size: 11.5px; color: var(--text-muted);">Pintasan langsung pembuatan dokumen, sinkronisasi CEISA, &amp; integrasi SILO ERP</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Pintasan modul utama sesuai urutan standar DO-IT G2 Suzuki</div>
                 </div>
             </div>
-            <span class="badge badge-pending" style="padding: 5px 12px; font-size: 11px; font-weight: 700;">8 Modul Utilitas</span>
+            <span class="badge badge-pending" style="padding: 5px 12px; font-size: 11px; font-weight: 700;">10 Modul Standar</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 14px;">
-            <!-- 1. Buat PIB -->
-            <a asp-controller="Pib" asp-action="Create" class="action-card anim-delay-1" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(99,102,241,0.14); color: var(--accent-secondary); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+            <!-- 1. CEISA 4.0 -->
+            <a asp-controller="Ceisa" asp-action="SendPib" class="action-card anim-delay-1" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(16,185,129,0.14); color: var(--accent-success); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Buat PIB</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Dokumen Impor</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">CEISA 4.0</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Kirim Bea Cukai</div>
                 </div>
             </a>
 
-            <!-- 2. Buat PEB -->
-            <a asp-controller="Peb" asp-action="Create" class="action-card anim-delay-2" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(59,130,246,0.14); color: var(--accent-primary); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <!-- 2. GET SILO -->
+            <a asp-controller="Silo" asp-action="Pib" class="action-card anim-delay-2" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(245,158,11,0.14); color: var(--accent-warning); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Buat PEB</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Dokumen Ekspor</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">GET SILO</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Tarik Oracle ERP</div>
                 </div>
             </a>
 
-            <!-- 3. Kirim CEISA -->
-            <a asp-controller="Ceisa" asp-action="SendPib" class="action-card anim-delay-3" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(16,185,129,0.14); color: var(--accent-success); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <!-- 3. VIEW SILO -->
+            <a asp-controller="Silo" asp-action="ViewSilo" class="action-card anim-delay-3" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(6,182,212,0.14); color: var(--accent-info); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Kirim CEISA</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">API Transmisi BC</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">VIEW SILO</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Log &amp; Staging</div>
                 </div>
             </a>
 
-            <!-- 4. Upload SILO -->
-            <a asp-controller="Silo" asp-action="Pib" class="action-card anim-delay-4" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(245,158,11,0.14); color: var(--accent-warning); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <!-- 4. PIB -->
+            <a asp-controller="Pib" asp-action="Index" class="action-card anim-delay-4" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(99,102,241,0.14); color: var(--accent-secondary); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Upload SILO</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Sinkron Oracle ERP</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">PIB</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Dokumen Impor</div>
                 </div>
             </a>
 
-            <!-- 5. Tarik BC 1.1 -->
-            <a asp-controller="Ceisa" asp-action="GetBc11" class="action-card anim-delay-5" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(6,182,212,0.14); color: var(--accent-info); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <!-- 5. PEB -->
+            <a asp-controller="Peb" asp-action="Index" class="action-card anim-delay-5" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(59,130,246,0.14); color: var(--accent-primary); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m3 0h3m0 0v3m0-3l-6 6"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Tarik BC 1.1</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Manifest CEISA</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">PEB</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Dokumen Ekspor</div>
                 </div>
             </a>
 
-            <!-- 6. Respons BC -->
-            <a asp-controller="Pib" asp-action="Response" class="action-card anim-delay-6" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(168,85,247,0.14); color: var(--accent-purple); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <!-- 6. Send to SILO -->
+            <a asp-controller="Silo" asp-action="ExportToSilo" class="action-card anim-delay-6" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(16,185,129,0.14); color: var(--accent-success); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Respons BC</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Cek SPPB / SPTNP</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">Send to SILO</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Kirim ke ERP</div>
                 </div>
             </a>
 
-            <!-- 7. Laporan KITE -->
-            <a asp-controller="Report" asp-action="Kite" class="action-card anim-delay-7" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(236,72,153,0.14); color: #ec4899; width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <!-- 7. REPORT -->
+            <a asp-controller="Report" asp-action="Pib" class="action-card anim-delay-7" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(236,72,153,0.14); color: #ec4899; width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Laporan KITE</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Fasilitas Impor</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">REPORT</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Laporan &amp; KITE</div>
                 </div>
             </a>
 
-            <!-- 8. Audit Log -->
-            <a asp-controller="Setting" asp-action="AuditLog" class="action-card anim-delay-8" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; text-decoration: none;">
-                <div class="action-icon" style="background: rgba(107,114,128,0.14); color: var(--text-secondary); width: 42px; height: 42px; border-radius: 12px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <!-- 8. MASTER -->
+            <a asp-controller="Master" asp-action="KursPajak" class="action-card anim-delay-8" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(168,85,247,0.14); color: var(--accent-purple); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s-8-1.79-8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
                 </div>
                 <div>
-                    <div class="action-title" style="font-size: 13px; font-weight: 700;">Audit Log</div>
-                    <div class="action-desc" style="font-size: 10.5px; margin-top: 2px;">Monitoring Sistem</div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">MASTER</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Data &amp; Kurs Pajak</div>
+                </div>
+            </a>
+
+            <!-- 9. CONFIGURATION -->
+            <a asp-controller="Setting" asp-action="Index" class="action-card anim-delay-9" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(59,130,246,0.14); color: var(--accent-primary); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">CONFIGURATION</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Pengaturan &amp; Akses</div>
+                </div>
+            </a>
+
+            <!-- 10. UTILITY -->
+            <a asp-controller="Setting" asp-action="AuditLog" class="action-card anim-delay-10" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 12px; text-decoration: none;">
+                <div class="action-icon" style="background: rgba(107,114,128,0.14); color: var(--text-secondary); width: 38px; height: 38px; border-radius: 10px;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+                </div>
+                <div>
+                    <div class="action-title" style="font-size: 12.5px; font-weight: 700;">UTILITY</div>
+                    <div class="action-desc" style="font-size: 10px; margin-top: 2px;">Audit Log &amp; Backup</div>
                 </div>
             </a>
         </div>

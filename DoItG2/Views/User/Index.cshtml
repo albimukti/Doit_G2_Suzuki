@@ -74,9 +74,9 @@
                         @foreach (var user in Model)
                         {
                             var roleDisplay = user.UserType switch {
-                                "ADMIN_DOKUMEN" or "ADMIN" => ("Admin Dokumen", "rgba(239,68,68,0.12)", "#dc2626", "🛡️", "Pengelolaan arsip digital"),
-                                "MANAJER_OPS" or "SUPERVISOR" or "MANAGER" => ("Manajer Operasional", "rgba(59,130,246,0.12)", "#2563eb", "⭐", "Monitoring & keputusan strategis"),
-                                _ => ("Staf Ekspor-Impor", "rgba(16,185,129,0.12)", "#059669", "👤", "Operator input/pengiriman")
+                                "ADMIN_DOKUMEN" or "ADMIN" => ("Admin Dokumen", "rgba(239,68,68,0.12)", "#dc2626", "Pengelolaan arsip digital"),
+                                "MANAJER_OPS" or "SUPERVISOR" or "MANAGER" => ("Manajer Operasional", "rgba(59,130,246,0.12)", "#2563eb", "Monitoring & keputusan strategis"),
+                                _ => ("Staf Ekspor-Impor", "rgba(16,185,129,0.12)", "#059669", "Operator input/pengiriman")
                             };
                             <tr>
                                 <td>
@@ -91,11 +91,10 @@
                                 <td style="font-size: 12px; color: var(--text-secondary);">@(string.IsNullOrEmpty(user.Email) ? "—" : user.Email)</td>
                                 <td>
                                     <div>
-                                        <span style="font-size: 11px; font-weight: 700; background: @roleDisplay.Item2; color: @roleDisplay.Item3; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                            <span>@roleDisplay.Item4</span>
+                                        <span style="font-size: 11px; font-weight: 700; background: @roleDisplay.Item2; color: @roleDisplay.Item3; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center;">
                                             @roleDisplay.Item1
                                         </span>
-                                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">@roleDisplay.Item5</div>
+                                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">@roleDisplay.Item4</div>
                                     </div>
                                 </td>
                                 <td>
@@ -159,9 +158,9 @@
             <div class="form-group">
                 <label class="form-label">Role Pengguna <span class="required">*</span></label>
                 <select name="role" class="form-control" required style="font-size: 13px;">
-                    <option value="STAFF_EXIM">👤 Staf ekspor-impor (operator input/pengiriman)</option>
-                    <option value="ADMIN_DOKUMEN">🛡️ Admin dokumen (pengelolaan arsip digital)</option>
-                    <option value="MANAJER_OPS">⭐ Manajer operasional (monitoring &amp; keputusan strategis)</option>
+                    <option value="STAFF_EXIM">Staf ekspor-impor (operator input/pengiriman)</option>
+                    <option value="ADMIN_DOKUMEN">Admin dokumen (pengelolaan arsip digital)</option>
+                    <option value="MANAJER_OPS">Manajer operasional (monitoring &amp; keputusan strategis)</option>
                 </select>
             </div>
 

@@ -1,0 +1,82 @@
+@model List<dynamic>
+@{
+    ViewData["Title"] = "VIEW SILO — Monitoring Log & Data Staging";
+}
+
+<div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Top Header Card -->
+    <div class="glass-card card-shine" style="padding: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(59,130,246,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-primary); flex-shrink: 0;">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0;">VIEW SILO &bull; Log &amp; Data Staging</h2>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0;">Monitoring riwayat penarikan (GET SILO) dan pengiriman (Send to SILO) integrasi Oracle ERP Suzuki</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a asp-controller="Silo" asp-action="Pib" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    GET SILO PIB
+                </a>
+                <a asp-controller="Silo" asp-action="ExportToSilo" class="btn btn-primary btn-sm" style="display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    Send to SILO
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table of Log -->
+    <div class="glass-card" style="padding: 24px;">
+        <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">Riwayat Transaksi Sinkronisasi SILO</div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Waktu</th>
+                        <th style="width: 130px;">Aktivitas</th>
+                        <th style="width: 110px;">Pengguna</th>
+                        <th style="width: 180px;">No. Dokumen / CAR</th>
+                        <th>Keterangan Sinkronisasi</th>
+                        <th style="width: 100px; text-align: center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model == null || Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                                Belum ada log transaksi sinkronisasi SILO.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var log in Model)
+                        {
+                            <tr>
+                                <td style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-muted);">
+                                    @(((DateTime)log.created_at).ToString("dd/MM/yyyy HH:mm:ss"))
+                                </td>
+                                <td>
+                                    <span class="code-badge" style="font-size: 11px;">@log.action</span>
+                                </td>
+                                <td style="font-weight: 600; color: var(--text-primary); font-size: 12px;">@log.user_name</td>
+                                <td style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--accent-primary);">
+                                    @(log.document_id ?? "—")
+                                </td>
+                                <td style="font-size: 12px; color: var(--text-secondary);">@log.description</td>
+                                <td style="text-align: center;">
+                                    <span class="badge badge-approved">SUKSES</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
