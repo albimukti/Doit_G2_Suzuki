@@ -312,29 +312,11 @@
                     var topBadgeBg = topIsSis ? "rgba(5, 150, 105, 0.12)" : "rgba(220, 38, 38, 0.12)";
                     var topBadgeColor = topIsSis ? "#059669" : "#dc2626";
                     var topBadgeBorder = topIsSis ? "rgba(5, 150, 105, 0.3)" : "rgba(220, 38, 38, 0.3)";
-                    var canSimClaim = User.FindFirst("CanAccessSim")?.Value == "True";
-                    var canSisClaim = User.FindFirst("CanAccessSis")?.Value == "True";
-                    var isDualUser = canSimClaim && canSisClaim;
                 }
                 <div style="display: flex; align-items: center; gap: 8px; background: @topBadgeBg; border: 1px solid @topBadgeBorder; border-radius: 20px; padding: 4px 12px; font-size: 11px;" title="@topEntityName (Key: @topEntityKey)">
                     <span style="font-size: 10.5px; font-weight: 800; color: @topBadgeColor;">@topEntity</span>
                     <span style="color: var(--text-muted); font-size: 10px;">|</span>
                     <span style="font-weight: 600; color: var(--text-primary);">@topEntityName</span>
-                    @if (isDualUser)
-                    {
-                        <form asp-controller="Account" asp-action="SwitchEntity" method="post" style="display: inline; margin-left: 4px;">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="targetEntity" value="@(topIsSis ? "SIM" : "SIS")" />
-                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                            <button type="submit" style="padding: 2px 8px; font-size: 10px; font-weight: 700; border-radius: 10px; background: @(topIsSis ? "#dc2626" : "#059669"); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);" title="Beralih ke entitas @(topIsSis ? "SIM" : "SIS")">
-                                ⇄ Ke @(topIsSis ? "SIM" : "SIS")
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span style="font-size: 9.5px; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 6px;">🔒 @topEntity Only</span>
-                    }
                 </div>
 
                 <div class="system-status-pill" title="Status Koneksi Integrasi System">
