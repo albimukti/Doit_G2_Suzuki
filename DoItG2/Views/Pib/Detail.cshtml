@@ -8,6 +8,95 @@
     var isTransmitted = Model.ApprovalStatus == "TRANSMITTED" || !string.IsNullOrEmpty(Model.SppbNo);
 }
 
+<style>
+    .doc-stepper-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .doc-step-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+    .doc-step-item.step-done {
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+    .doc-step-item.step-done-final {
+        background: #ecfdf5;
+        border-color: #10b981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+    .doc-step-item.step-active {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    .doc-step-item.step-rejected {
+        background: #fef2f2;
+        border-color: #fca5a5;
+    }
+    .doc-step-item.step-pending {
+        opacity: 0.65;
+    }
+    .step-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        flex-shrink: 0;
+        background: #cbd5e1;
+        color: #475569;
+    }
+    .step-done .step-badge {
+        background: #16a34a;
+        color: #ffffff;
+    }
+    .step-done-final .step-badge {
+        background: #059669;
+        color: #ffffff;
+    }
+    .step-active .step-badge {
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    .step-rejected .step-badge {
+        background: #dc2626;
+        color: #ffffff;
+    }
+    .step-title {
+        font-weight: 700;
+        font-size: 13px;
+        color: #0f172a;
+    }
+    .step-desc {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 1px;
+    }
+    .workflow-guidance-box {
+        border-radius: 12px;
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+</style>
+
 <div style="display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto;">
     @if (ViewBag.IsLockedByOther == true)
     {
@@ -32,34 +121,166 @@
         </div>
     }
 
-    <!-- Top Action Bar -->
-    <div class="card" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: #ffffff; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <img src="~/images/suzuki-logo-square.png" alt="Suzuki Logo" style="width: 100%; height: 100%; object-fit: contain;" asp-append-version="true" />
+    <!-- 4-Stage Visual Workflow Stepper Card -->
+    <div class="card" style="padding: 18px 22px; border: 1px solid var(--border-color, #e2e8f0); background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">
+                Tahapan Alur Persetujuan &amp; Transmisi PIB
             </div>
-            <div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <h2 style="font-size: 19px; font-weight: 700; color: var(--text-primary); margin:0;">PIB (BC 2.0) — @Model.Car</h2>
+            <div style="font-size: 12px; color: var(--text-muted);">
+                CAR: <strong style="font-family: 'JetBrains Mono', monospace; color: #1e40af;">@Model.Car</strong>
+            </div>
+        </div>
+
+        <!-- 4 Step Items Grid -->
+        <div class="doc-stepper-grid">
+            <!-- Step 1: Draft -->
+            <div class="doc-step-item @(isDraft || Model.ApprovalStatus == "REJECTED" ? "step-active" : "step-done")">
+                <div class="step-badge">
+                    @(isDraft || Model.ApprovalStatus == "REJECTED" ? "1" : "✓")
+                </div>
+                <div class="step-content">
+                    <div class="step-title">1. Perekaman Draft</div>
+                    <div class="step-desc">Input data barang &amp; pabean</div>
+                </div>
+            </div>
+
+            <!-- Step 2: Approval -->
+            <div class="doc-step-item @(isPending ? "step-active" : (isApproved || isTransmitted ? "step-done" : (Model.ApprovalStatus == "REJECTED" ? "step-rejected" : "step-pending")))">
+                <div class="step-badge">
+                    @(isApproved || isTransmitted ? "✓" : (Model.ApprovalStatus == "REJECTED" ? "✕" : "2"))
+                </div>
+                <div class="step-content">
+                    <div class="step-title">2. Review Supervisor</div>
+                    <div class="step-desc">
+                        @(Model.ApprovalStatus == "REJECTED" ? "Perlu perbaikan data" : (isApproved || isTransmitted ? $"Disetujui ({Model.ApprovedBy ?? "Supervisor"})" : "Verifikasi & approval"))
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: CEISA Transmission -->
+            <div class="doc-step-item @(isApproved && !isTransmitted ? "step-active" : (isTransmitted ? "step-done" : "step-pending"))">
+                <div class="step-badge">
+                    @(isTransmitted ? "✓" : "3")
+                </div>
+                <div class="step-content">
+                    <div class="step-title">3. Transmisi CEISA</div>
+                    <div class="step-desc">Kirim data ke REST API BC</div>
+                </div>
+            </div>
+
+            <!-- Step 4: Customs Response -->
+            <div class="doc-step-item @(isTransmitted ? "step-done-final" : "step-pending")">
+                <div class="step-badge">
+                    @(isTransmitted ? "✓" : "4")
+                </div>
+                <div class="step-content">
+                    <div class="step-title">4. Respon SPPB</div>
+                    <div class="step-desc">
+                        @(string.IsNullOrEmpty(Model.SppbNo) ? "Izin pengeluaran barang" : $"No. SPPB: {Model.SppbNo}")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Action Guidance Box -->
+        <div class="workflow-guidance-box" style="@(isTransmitted ? "background: #f0fdf4; border: 1px solid #bbf7d0;" : (isApproved ? "background: #eff6ff; border: 1px solid #bfdbfe;" : (isPending ? "background: #fffbeb; border: 1px solid #fde68a;" : (Model.ApprovalStatus == "REJECTED" ? "background: #fef2f2; border: 1px solid #fecaca;" : "background: #f8fafc; border: 1px solid #e2e8f0;"))))">
+            <div style="max-width: 780px;">
+                <div style="font-weight: 700; font-size: 13px; color: #0f172a;">
+                    @(isTransmitted ? "Dokumen Selesai Ditransmisikan ke CEISA 4.0" :
+                      (isApproved ? "Dokumen Disetujui Secara Internal — Siap Dikirim ke Bea Cukai" :
+                      (isPending ? "Dokumen Sedang Menunggu Persetujuan Supervisor / Manajer" :
+                      (Model.ApprovalStatus == "REJECTED" ? "Dokumen Dikembalikan untuk Revisi / Perbaikan Data" :
+                      "Tahap Perekaman Dokumen Draft PIB"))))
+                </div>
+                <div style="font-size: 12px; color: #475569; margin-top: 3px; line-height: 1.4;">
                     @if (isTransmitted)
                     {
-                        <span class="badge badge-success">SPPB / TRANSMITTED</span>
+                        <span>Dokumen telah resmi diterima CEISA 4.0 Bea Cukai dengan Nomor Pendaftaran <strong>@Model.PibNo</strong> dan status <strong>SPPB (@(string.IsNullOrEmpty(Model.SppbNo) ? "TERBIT" : Model.SppbNo))</strong>.</span>
                     }
                     else if (isApproved)
                     {
-                        <span class="badge badge-primary">APPROVED (SIAP TRANSMISI)</span>
+                        <span>Dokumen telah diperiksa dan disetujui. Silakan klik tombol <strong>'Kirim ke CEISA 4.0'</strong> untuk mengirim data ke gateway Bea Cukai.</span>
                     }
                     else if (isPending)
                     {
-                        <span class="badge badge-warning">MENUNGGU APPROVAL</span>
+                        <span>Diajukan oleh <strong>@(string.IsNullOrEmpty(Model.SubmittedBy) ? "Operator" : Model.SubmittedBy)</strong>. Supervisor dapat memeriksa kalkulasi pabean lalu memilih <strong>Setujui</strong> atau <strong>Minta Revisi</strong>.</span>
                     }
                     else if (Model.ApprovalStatus == "REJECTED")
                     {
-                        <span class="badge badge-danger">PERLU REVISI</span>
+                        <span>Catatan Revisi: <strong>@(string.IsNullOrEmpty(Model.ReviewNotes) ? "Periksa kembali kelengkapan pabean" : Model.ReviewNotes)</strong>. Silakan edit dokumen lalu ajukan kembali.</span>
                     }
                     else
                     {
-                        <span class="badge badge-secondary">DRAFT</span>
+                        <span>Pastikan kelengkapan data barang, dokumen lampiran, dan nilai pabean sudah benar. Klik <strong>'Ajukan Persetujuan'</strong> untuk meneruskan ke Supervisor.</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Primary Guidance Action Button -->
+            <div>
+                @if (isDraft || Model.ApprovalStatus == "REJECTED")
+                {
+                    <button type="button" class="btn btn-warning" onclick="openSubmitModal('@Model.Car')" style="font-weight: 700;">
+                        Ajukan Persetujuan
+                    </button>
+                }
+                else if (isPending)
+                {
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-success" onclick="openApproveModal('@Model.Car')" style="font-weight: 700;">
+                            Setujui Dokumen
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="openRejectModal('@Model.Car')" style="font-weight: 700;">
+                            Minta Revisi
+                        </button>
+                    </div>
+                }
+                else if (isApproved && !isTransmitted)
+                {
+                    <form method="post" action="/Ceisa/TransmitPib" style="display:inline;" onsubmit="DoIt.showLoading('Mentransmisikan dokumen ke CEISA 4.0...')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="car" value="@Model.Car" />
+                        <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                            Kirim ke CEISA 4.0
+                        </button>
+                    </form>
+                }
+                else if (isTransmitted)
+                {
+                    <a href="/Ceisa/Tracking?car=@Model.Car&type=PIB" class="btn btn-secondary" style="font-weight: 600;">
+                        Tracking Status
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Action & Info Bar -->
+    <div class="card" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h2 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin:0;">PIB (BC 2.0) — @Model.Car</h2>
+                    @if (isTransmitted)
+                    {
+                        <span class="badge badge-sent" style="font-weight: 700;">SPPB / TERKIRIM</span>
+                    }
+                    else if (isApproved)
+                    {
+                        <span class="badge badge-success" style="font-weight: 700;">APPROVED (SIAP TRANSMISI)</span>
+                    }
+                    else if (isPending)
+                    {
+                        <span class="badge badge-warning" style="font-weight: 700;">MENUNGGU APPROVAL</span>
+                    }
+                    else if (Model.ApprovalStatus == "REJECTED")
+                    {
+                        <span class="badge badge-danger" style="font-weight: 700;">PERLU REVISI</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-secondary" style="font-weight: 700;">DRAFT PEREKAMAN</span>
                     }
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
@@ -70,98 +291,77 @@
 
         <!-- Action Buttons -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <button type="button" class="btn btn-secondary" onclick="validateDocument('@Model.Car')" style="display: flex; align-items: center; gap: 5px;">
-                <span>🔍</span> Validasi
+            <button type="button" class="btn btn-secondary" onclick="validateDocument('@Model.Car')">
+                Validasi
             </button>
-            <button type="button" class="btn btn-secondary" onclick="recalculateTax('@Model.Car')" style="display: flex; align-items: center; gap: 5px;">
-                <span>💱</span> Hitung Pajak
+            <button type="button" class="btn btn-secondary" onclick="recalculateTax('@Model.Car')">
+                Hitung Pajak
             </button>
-            <a href="/Pib/PrintPdf?id=@Model.Car" target="_blank" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
-                <span>📄</span> PDF
+            <a href="/Pib/PrintPdf?id=@Model.Car" target="_blank" class="btn btn-secondary">
+                PDF
             </a>
-            <a href="/Pib/ExportJson?id=@Model.Car" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
-                <span>⬇️</span> JSON
+            <a href="/Pib/ExportJson?id=@Model.Car" class="btn btn-secondary">
+                JSON
             </a>
-            <a href="/Ceisa/Tracking?car=@Model.Car&type=PIB" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
-                <span>🛰️</span> Tracking
+            <a href="/Ceisa/Tracking?car=@Model.Car&type=PIB" class="btn btn-secondary">
+                Tracking
             </a>
-
-            @if (isDraft || Model.ApprovalStatus == "REJECTED")
-            {
-                <button type="button" class="btn btn-warning" onclick="openSubmitModal('@Model.Car')">
-                    Ajukan Review ➔
-                </button>
-            }
-            @if (isPending)
-            {
-                <button type="button" class="btn btn-success" onclick="openApproveModal('@Model.Car')">
-                    ✓ Setujui Dokumen
-                </button>
-                <button type="button" class="btn btn-danger" onclick="openRejectModal('@Model.Car')">
-                    ✕ Minta Revisi
-                </button>
-            }
-            @if (isApproved && !isTransmitted)
-            {
-                <form method="post" action="/Ceisa/TransmitPib" style="display:inline;" onsubmit="DoIt.showLoading('Mentransmisikan dokumen ke CEISA 4.0...')">
-                    <input type="hidden" name="car" value="@Model.Car" />
-                    <button type="submit" class="btn btn-primary" style="font-weight: 700;">
-                        🚀 Kirim ke CEISA 4.0
-                    </button>
-                </form>
-            }
+            <a href="/Approval" class="btn btn-secondary">
+                Approval Center
+            </a>
         </div>
     </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">✓ @TempData["Success"]</div>
+        <div class="alert alert-success">@TempData["Success"]</div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger">✕ @TempData["Error"]</div>
+        <div class="alert alert-danger">@TempData["Error"]</div>
     }
 
+
     <!-- Tax & Duty Summary Widget -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-        <div class="card" style="padding: 16px; border-left: 4px solid #3b82f6;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+        <div class="card" style="padding: 14px 16px; border-left: 3px solid #3b82f6;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Nilai Pabean (IDR)</div>
             <div style="font-size: 18px; font-weight: 800; color: #1e3a8a; margin-top: 4px;" id="valNilaiPabean">
                 Rp @Model.NilaiPabean.ToString("N0")
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 2px;">NDPBM: Rp @Model.Ndpbm</div>
         </div>
-        <div class="card" style="padding: 16px; border-left: 4px solid #10b981;">
+        <div class="card" style="padding: 14px 16px; border-left: 3px solid #10b981;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Bea Masuk (BM)</div>
             <div style="font-size: 18px; font-weight: 800; color: #059669; margin-top: 4px;" id="valBm">
                 Rp @Model.TotalBm.ToString("N0")
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Fasilitas: KITE Pembebasan</div>
         </div>
-        <div class="card" style="padding: 16px; border-left: 4px solid #f59e0b;">
+        <div class="card" style="padding: 14px 16px; border-left: 3px solid #f59e0b;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">PPN Impor (11%)</div>
             <div style="font-size: 18px; font-weight: 800; color: #d97706; margin-top: 4px;" id="valPpn">
                 Rp @Model.TotalPpn.ToString("N0")
             </div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">PPh 22: Rp @Model.TotalPph.ToString("N0")</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Pajak Pertambahan Nilai</div>
         </div>
-        <div class="card" style="padding: 16px; border-left: 4px solid #6366f1;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Pungutan Bayar</div>
-            <div style="font-size: 18px; font-weight: 800; color: #4338ca; margin-top: 4px;" id="valPungutan">
+        <div class="card" style="padding: 14px 16px; border-left: 3px solid #6366f1;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Tagihan Pungutan</div>
+            <div style="font-size: 18px; font-weight: 800; color: #4338ca; margin-top: 4px;" id="valTotalPungutan">
                 Rp @Model.TotalPungutan.ToString("N0")
             </div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Status: @(Model.Status == "SPPB" ? "Lunas / SPPB" : "Siap Bayar Simponi")</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Termasuk PPH Pasal 22</div>
         </div>
     </div>
 
     <!-- Multi Tab Section -->
     <div class="card" style="padding: 0; overflow: hidden;">
-        <div class="pib-tabs" style="padding: 12px 16px 0; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-sm btn-primary tab-nav active" data-tab="tab-barang" onclick="switchDetailTab('tab-barang', this)">📦 Rincian Barang (@Model.Details.Count)</button>
-            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-entitas" onclick="switchDetailTab('tab-entitas', this)">🏢 Entitas &amp; Pengangkut</button>
-            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-dokumen" onclick="switchDetailTab('tab-dokumen', this)">📑 Dokumen &amp; Kemasan (@Model.Documents.Count)</button>
-            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-respon" onclick="switchDetailTab('tab-respon', this)">🔔 Respons CEISA (@Model.Responses.Count)</button>
-            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-approval" onclick="switchDetailTab('tab-approval', this)">👥 Riwayat Approval (@Model.ApprovalLogs.Count)</button>
+        <div class="pib-tabs" style="padding: 10px 16px 0; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm btn-primary tab-nav active" data-tab="tab-barang" onclick="switchDetailTab('tab-barang', this)">Rincian Barang (@Model.Details.Count)</button>
+            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-entitas" onclick="switchDetailTab('tab-entitas', this)">Entitas &amp; Pengangkut</button>
+            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-dokumen" onclick="switchDetailTab('tab-dokumen', this)">Dokumen &amp; Kemasan (@Model.Documents.Count)</button>
+            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-respon" onclick="switchDetailTab('tab-respon', this)">Respons CEISA (@Model.Responses.Count)</button>
+            <button type="button" class="btn btn-sm btn-secondary tab-nav" data-tab="tab-approval" onclick="switchDetailTab('tab-approval', this)">Riwayat Approval (@Model.ApprovalLogs.Count)</button>
         </div>
 
         <div style="padding: 24px;">

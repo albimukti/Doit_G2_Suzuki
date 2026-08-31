@@ -6,58 +6,53 @@
 
 <div class="card" style="max-width: 1300px; margin: 0 auto;">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 44px; height: 44px; border-radius: 12px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 22px;">
-                🛫
-            </div>
-            <div>
-                <h2 class="card-title" style="margin: 0; font-size: 18px;">Pemberitahuan Ekspor Barang (PEB - BC 3.0)</h2>
-                <div class="card-subtitle">Pengelolaan dokumen ekspor kendaraan &amp; spare part, approval internal, dan transmisi NPE CEISA 4.0</div>
-            </div>
+        <div>
+            <h2 class="card-title" style="margin: 0; font-size: 18px; font-weight: 700;">Pemberitahuan Ekspor Barang (PEB - BC 3.0)</h2>
+            <div class="card-subtitle">Pengelolaan dokumen ekspor kendaraan &amp; spare part, approval internal, dan transmisi NPE CEISA 4.0</div>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a class="btn btn-secondary" href="/Peb/DownloadTemplate" style="display: flex; align-items: center; gap: 5px;">
-                <span>📥</span> Download Template Excel
+            <a class="btn btn-secondary" href="/Peb/DownloadTemplate">
+                Download Template
             </a>
-            <a class="btn btn-secondary" href="/Peb/Upload" style="display: flex; align-items: center; gap: 5px;">
-                <span>📤</span> Upload Excel
+            <a class="btn btn-secondary" href="/Peb/Upload">
+                Upload Excel
             </a>
-            <a class="btn btn-primary" href="/Peb/Create" style="display: flex; align-items: center; gap: 5px;">
-                <span>+</span> Buat PEB Baru
+            <a class="btn btn-primary" href="/Peb/Create">
+                + Buat PEB Baru
             </a>
         </div>
     </div>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success" style="margin: 16px 24px 0;">✓ @TempData["Success"]</div>
+        <div class="alert alert-success" style="margin: 16px 24px 0;">@TempData["Success"]</div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger" style="margin: 16px 24px 0;">✕ @TempData["Error"]</div>
+        <div class="alert alert-danger" style="margin: 16px 24px 0;">@TempData["Error"]</div>
     }
 
-    <div style="padding: 24px;">
+    <div style="padding: 20px 24px;">
         <!-- Filter Bar -->
         <form method="get" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 250px;">
                 <input type="text" name="search" class="form-control" placeholder="Cari Nomor CAR, Pembeli, Negara, No NPE..." value="@Context.Request.Query["search"]" />
             </div>
-            <div style="width: 170px;">
+            <div style="width: 220px;">
                 <select name="approvalStatus" class="form-control">
-                    <option value="">Semua Approval</option>
-                    <option value="DRAFT" selected="@(Context.Request.Query["approvalStatus"] == "DRAFT")">DRAFT</option>
-                    <option value="PENDING_APPROVAL" selected="@(Context.Request.Query["approvalStatus"] == "PENDING_APPROVAL")">PENDING APPROVAL</option>
-                    <option value="APPROVED" selected="@(Context.Request.Query["approvalStatus"] == "APPROVED")">APPROVED</option>
-                    <option value="REJECTED" selected="@(Context.Request.Query["approvalStatus"] == "REJECTED")">REJECTED</option>
-                    <option value="TRANSMITTED" selected="@(Context.Request.Query["approvalStatus"] == "TRANSMITTED")">TRANSMITTED</option>
+                    <option value="">Semua Tahapan Alur</option>
+                    <option value="DRAFT" selected="@(Context.Request.Query["approvalStatus"] == "DRAFT")">1. Draft Perekaman</option>
+                    <option value="PENDING_APPROVAL" selected="@(Context.Request.Query["approvalStatus"] == "PENDING_APPROVAL")">2. Menunggu Approval</option>
+                    <option value="APPROVED" selected="@(Context.Request.Query["approvalStatus"] == "APPROVED")">3. Disetujui (Siap Kirim)</option>
+                    <option value="REJECTED" selected="@(Context.Request.Query["approvalStatus"] == "REJECTED")">4. Perlu Revisi</option>
+                    <option value="TRANSMITTED" selected="@(Context.Request.Query["approvalStatus"] == "TRANSMITTED")">5. Terkirim ke CEISA</option>
                 </select>
             </div>
             <div style="width: 160px;">
                 <select name="status" class="form-control">
-                    <option value="">Semua CEISA</option>
-                    <option value="DRAFT" selected="@(Context.Request.Query["status"] == "DRAFT")">DRAFT CEISA</option>
-                    <option value="APPROVED" selected="@(Context.Request.Query["status"] == "APPROVED")">NPE TERBIT</option>
+                    <option value="">Semua Respon BC</option>
+                    <option value="DRAFT" selected="@(Context.Request.Query["status"] == "DRAFT")">Belum Transmisi</option>
+                    <option value="APPROVED" selected="@(Context.Request.Query["status"] == "APPROVED")">NPE Terbit</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-secondary">Filter</button>
@@ -78,7 +73,7 @@
                         <th style="text-align: right;">FOB (@(Model.FirstOrDefault()?.KdVal ?? "USD"))</th>
                         <th style="text-align: right;">Netto (Kg)</th>
                         <th>Nomor NPE</th>
-                        <th style="text-align: center;">Approval</th>
+                        <th style="text-align: center;">Tahap Approval</th>
                         <th style="text-align: center;">Status CEISA</th>
                         <th style="text-align: center; width: 170px;">Aksi</th>
                     </tr>
@@ -96,16 +91,16 @@
                     {
                         <tr>
                             <td>
-                                <a href="/Peb/Detail?id=@item.Car" style="font-family: monospace; font-weight: 700; color: #1e3a8a; text-decoration: none;">
+                                <a href="/Peb/Detail?id=@item.Car" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e40af; text-decoration: none;">
                                     @item.Car
                                 </a>
                             </td>
                             <td style="font-weight: 600;">@item.NamaBeli</td>
-                            <td><span class="badge badge-info">@item.NegBeli</span></td>
-                            <td style="text-align: right; font-family: monospace; font-size: 13px; font-weight: 700; color: #0f172a;">
+                            <td><span class="badge badge-info" style="font-size: 10px; padding: 1px 6px;">@item.NegBeli</span></td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #0f172a;">
                                 $@item.Fob.ToString("N2")
                             </td>
-                            <td style="text-align: right; font-family: monospace; font-size: 13px;">
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                                 @item.Netto.ToString("N2")
                             </td>
                             <td style="font-size: 12px;">
@@ -121,23 +116,23 @@
                             <td style="text-align: center;">
                                 @if (item.ApprovalStatus == "APPROVED")
                                 {
-                                    <span class="badge badge-success">APPROVED</span>
+                                    <span class="badge badge-success" style="font-weight: 700;">DISETUJUI</span>
                                 }
-                                else if (item.ApprovalStatus == "PENDING_APPROVAL")
+                                else if (item.ApprovalStatus == "PENDING_APPROVAL" || item.ApprovalStatus == "PENDING")
                                 {
-                                    <span class="badge badge-warning">PENDING</span>
+                                    <span class="badge badge-warning" style="font-weight: 700;">MENUNGGU</span>
                                 }
-                                else if (item.ApprovalStatus == "REJECTED")
+                                else if (item.ApprovalStatus == "REJECTED" || item.ApprovalStatus == "FAILED")
                                 {
-                                    <span class="badge badge-danger">REVISI</span>
+                                    <span class="badge badge-danger" style="font-weight: 700;">REVISI</span>
                                 }
-                                else if (item.ApprovalStatus == "TRANSMITTED")
+                                else if (item.ApprovalStatus == "TRANSMITTED" || item.Status == "APPROVED" || !string.IsNullOrEmpty(item.Nopen))
                                 {
-                                    <span class="badge badge-primary">TRANSMITTED</span>
+                                    <span class="badge badge-sent" style="font-weight: 700;">TERKIRIM</span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-secondary">DRAFT</span>
+                                    <span class="badge badge-secondary" style="font-weight: 700;">DRAFT</span>
                                 }
                             </td>
                             <td style="text-align: center;">
@@ -154,16 +149,16 @@
                                     <span class="badge badge-draft">DRAFT</span>
                                 }
                             </td>
-                            <td style="text-align: center;">
-                                <div style="display: flex; justify-content: center; gap: 4px;">
-                                    <a href="/Peb/Detail?id=@item.Car" class="btn btn-sm btn-primary" title="Lihat Detail & Review">
+                            <td style="text-align: center; white-space: nowrap;">
+                                <div style="display: inline-flex; justify-content: center; gap: 5px; flex-wrap: nowrap;">
+                                    <a href="/Peb/Detail?id=@item.Car" class="btn btn-sm btn-primary" style="padding: 4px 9px; font-size: 11px; font-weight: 600;" title="Lihat Detail & Review">
                                         Detail
                                     </a>
-                                    <a href="/Peb/PrintPdf?id=@item.Car" target="_blank" class="btn btn-sm btn-secondary" title="Cetak Dokumen PDF BC 3.0">
+                                    <a href="/Peb/PrintPdf?id=@item.Car" target="_blank" class="btn btn-sm btn-secondary" style="padding: 4px 9px; font-size: 11px;" title="Cetak Dokumen PDF BC 3.0">
                                         PDF
                                     </a>
-                                    <a href="/Ceisa/Tracking?car=@item.Car&type=PEB" class="btn btn-sm btn-secondary" title="Tracking CEISA 4.0">
-                                        🛰️
+                                    <a href="/Ceisa/Tracking?car=@item.Car&type=PEB" class="btn btn-sm btn-secondary" style="padding: 4px 9px; font-size: 11px;" title="Tracking CEISA 4.0">
+                                        Track
                                     </a>
                                 </div>
                             </td>

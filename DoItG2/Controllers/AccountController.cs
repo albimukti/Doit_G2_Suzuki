@@ -32,14 +32,30 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
-        if (!ModelState.IsValid) return View(model);
+        if (string.IsNullOrWhiteSpace(model.UserName) || string.IsNullOrWhiteSpace(model.Password))
+        {
+            if (string.IsNullOrWhiteSpace(model.UserName))
+                ModelState.AddModelError(nameof(model.UserName), "Silakan masukkan username Anda.");
+            if (string.IsNullOrWhiteSpace(model.Password))
+                ModelState.AddModelError(nameof(model.Password), "Silakan masukkan password Anda.");
+            return View(model);
+        }
 
         var user = await _auth.ValidateUserAsync(model.UserName, model.Password);
         if (user == null)
         {
-            ModelState.AddModelError("", "Username atau password salah.");
+            var existingUser = await _auth.GetUserByUsernameAsync(model.UserName);
+            if (existingUser != null && !existingUser.IsActive)
+            {
+                ModelState.AddModelError("", "Akun Anda berstatus non-aktif. Silakan hubungi Administrator Sistem.");
+                await _audit.LogAsync(model.UserName, "LOGIN_INACTIVE", "AUTH",
+                    description: "Login gagal: Akun berstatus non-aktif", ipAddress: GetClientIp(), isError: true);
+                return View(model);
+            }
+
+            ModelState.AddModelError("", "Kombinasi Username atau Password yang Anda masukkan tidak sesuai. Silakan periksa kembali.");
             await _audit.LogAsync(model.UserName, "LOGIN_FAILED", "AUTH",
-                description: "Login gagal", ipAddress: GetClientIp(), isError: true);
+                description: "Login gagal: Kredensial tidak valid", ipAddress: GetClientIp(), isError: true);
             return View(model);
         }
 

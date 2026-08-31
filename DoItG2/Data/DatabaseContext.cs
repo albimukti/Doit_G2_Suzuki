@@ -275,6 +275,29 @@ public class DatabaseContext
                             DIBACA BIT DEFAULT 0
                         );
                         CREATE INDEX IX_peb_respon_car ON PEB_DOIT_FINAL_RESPON (CAR);
+                    END
+
+                    -- Performance Optimization Indexes
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PIB_DOIT_FINAL_HEADER')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PIB_CAR' AND object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER'))
+                            CREATE NONCLUSTERED INDEX IX_PIB_CAR ON PIB_DOIT_FINAL_HEADER (CAR);
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PIB_ENTITY_STATUS' AND object_id = OBJECT_ID('PIB_DOIT_FINAL_HEADER'))
+                            CREATE NONCLUSTERED INDEX IX_PIB_ENTITY_STATUS ON PIB_DOIT_FINAL_HEADER (ENTITY, APPROVAL_STATUS, CREATION_DATE DESC);
+                    END
+
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PEB_DOIT_FINAL_HEADER')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PEB_CAR' AND object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER'))
+                            CREATE NONCLUSTERED INDEX IX_PEB_CAR ON PEB_DOIT_FINAL_HEADER (CAR);
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PEB_ENTITY_STATUS' AND object_id = OBJECT_ID('PEB_DOIT_FINAL_HEADER'))
+                            CREATE NONCLUSTERED INDEX IX_PEB_ENTITY_STATUS ON PEB_DOIT_FINAL_HEADER (ENTITY, APPROVAL_STATUS, CREATED_DATE DESC);
+                    END
+
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'DOIT_APPROVAL_LOG')
+                    BEGIN
+                        IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DOIT_APPROVAL_LOG_CAR' AND object_id = OBJECT_ID('DOIT_APPROVAL_LOG'))
+                            CREATE NONCLUSTERED INDEX IX_DOIT_APPROVAL_LOG_CAR ON DOIT_APPROVAL_LOG (CAR, ACTION_DATE DESC);
                     END";
                 using (var alterCmd = new SqlCommand(alterColumnsSql, dbConn))
                 {

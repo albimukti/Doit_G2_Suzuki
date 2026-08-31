@@ -2,6 +2,25 @@
 @{
     Layout = null;
     var defaultEntity = string.IsNullOrEmpty(Model?.Entity) ? "SIM" : Model.Entity;
+
+    var errorList = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(msg => !string.IsNullOrWhiteSpace(msg))
+        .Distinct()
+        .ToList();
+
+    if (TempData["Error"] != null && !string.IsNullOrWhiteSpace(TempData["Error"]?.ToString()))
+    {
+        var tempErr = TempData["Error"]!.ToString()!;
+        if (!errorList.Contains(tempErr))
+        {
+            errorList.Add(tempErr);
+        }
+    }
+
+    var hasErrors = errorList.Any();
+    var serializedErrors = System.Text.Json.JsonSerializer.Serialize(errorList);
 }
 <!DOCTYPE html>
 <html lang="id">
@@ -111,7 +130,7 @@
             font-size: 12.5px;
             color: #64748b;
             margin-top: 4px;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
             font-weight: 500;
         }
 
@@ -239,6 +258,14 @@
             box-shadow: #bce7fd 0px 10px 14px -4px;
         }
 
+        /* Input Error State */
+        .form .input.input-error {
+            border-color: #ef4444 !important;
+            background-color: #fffafb !important;
+            box-shadow: 0 0 0 3.5px rgba(239, 68, 68, 0.2) !important;
+            animation: errorShake 0.4s ease-in-out;
+        }
+
         .password-toggle-btn {
             position: absolute;
             right: 14px;
@@ -256,6 +283,22 @@
 
         .password-toggle-btn:hover {
             color: #0f172a;
+        }
+
+        /* Caps Lock Warning Alert Badge */
+        .caps-lock-badge {
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            color: #b45309;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            animation: fadeInDown 0.2s ease;
         }
 
         .remember-row {
@@ -325,17 +368,269 @@
             background: #fef2f2;
             border: 1.5px solid #fecaca;
             color: #dc2626;
-            padding: 10px 14px;
-            border-radius: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+            line-height: 1.4;
+        }
+
+        /* ----------------------------------------------------
+           HIGH-END POPUP MODAL STYLES (DO-IT G2 SECURITY POPUP)
+           ---------------------------------------------------- */
+        .login-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s;
+            padding: 16px;
+        }
+
+        .login-popup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .login-popup-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 28px 24px 22px 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            position: relative;
+            transform: scale(0.9) translateY(20px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             text-align: center;
+            overflow: hidden;
+        }
+
+        .login-popup-overlay.active .login-popup-card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            animation: modalShake 0.45s ease-in-out;
+        }
+
+        /* Glowing Top Accent Bar */
+        .login-popup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #dc2626 0%, #f43f5e 50%, #dc2626 100%);
+        }
+
+        .login-popup-close-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .login-popup-close-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            transform: rotate(90deg);
+        }
+
+        /* Animated Icon Badge */
+        .popup-icon-badge {
+            width: 68px;
+            height: 68px;
+            margin: 4px auto 16px;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #f87171;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #dc2626;
+            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.35);
+            position: relative;
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+
+        .popup-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
+        }
+
+        .popup-badge-category {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fee2e2;
+            color: #b91c1c;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .popup-error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #991b1b;
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            text-align: left;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        /* Prevention Tips Box */
+        .popup-tips-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 11.5px;
+            color: #475569;
+        }
+
+        .popup-tips-title {
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .popup-tips-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .popup-tips-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.35;
+        }
+
+        .popup-tips-list li span.dot {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        /* Action Buttons */
+        .popup-action-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #c8102e 0%, #b91c1c 100%);
+            color: #ffffff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 20px -5px rgba(200, 16, 46, 0.4);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .popup-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 24px -5px rgba(200, 16, 46, 0.55);
+        }
+
+        .popup-action-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Animations */
+        @@keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.35);
+            }
+            50% {
+                box-shadow: 0 10px 30px rgba(220, 38, 38, 0.6);
+            }
+        }
+
+        @@keyframes modalShake {
+            0%, 100% { transform: scale(1) translateY(0); }
+            15% { transform: scale(1) translateX(-6px); }
+            30% { transform: scale(1) translateX(6px); }
+            45% { transform: scale(1) translateX(-4px); }
+            60% { transform: scale(1) translateX(4px); }
+            75% { transform: scale(1) translateX(-2px); }
+            90% { transform: scale(1) translateX(2px); }
+        }
+
+        @@keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        @@keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
-<!-- UIVERSE.IO LOADING SCREEN OVERLAY (By Praashoo7) -->
+<!-- UIVERSE.IO LOADING SCREEN OVERLAY -->
 <div class="suzuki-loading-overlay fade-out" id="suzukiLoadingOverlay">
     <div class="loading-card">
         <div class="loading">
@@ -359,6 +654,64 @@
     </div>
 </div>
 
+<!-- BEAUTIFULLY DESIGNED SECURITY ERROR POPUP MODAL -->
+<div class="login-popup-overlay" id="loginErrorModal" role="dialog" aria-modal="true" aria-labelledby="modalErrorTitle">
+    <div class="login-popup-card">
+        <button type="button" class="login-popup-close-btn" onclick="closeLoginErrorModal()" title="Tutup">
+            &times;
+        </button>
+
+        <div class="popup-icon-badge">
+            <svg width="34" height="34" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+
+        <div class="popup-badge-category" id="modalErrorCategory">
+            <span>🛡️ Verifikasi Login Gagal</span>
+        </div>
+
+        <h3 class="popup-title" id="modalErrorTitle">Kredensial Tidak Sesuai</h3>
+
+        <div class="popup-error-box" id="modalErrorDescription">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div id="modalErrorMessageText">
+                Kombinasi Username atau Password yang Anda masukkan tidak terdaftar atau salah.
+            </div>
+        </div>
+
+        <!-- Tips Pencegahan Kesalahan -->
+        <div class="popup-tips-box">
+            <div class="popup-tips-title">
+                <span>💡</span> Tips Pencegahan Kesalahan:
+            </div>
+            <ul class="popup-tips-list">
+                <li>
+                    <span class="dot">•</span>
+                    <span><strong>Case-Sensitive:</strong> Pastikan penulisan huruf besar dan kecil pada username &amp; password tepat.</span>
+                </li>
+                <li>
+                    <span class="dot">•</span>
+                    <span><strong>Tombol Entitas:</strong> Pastikan Anda memilih portal <strong>SIM</strong> atau <strong>SIS</strong> yang sesuai dengan hak akses akun Anda.</span>
+                </li>
+                <li>
+                    <span class="dot">•</span>
+                    <span><strong>Caps Lock:</strong> Periksa keyboard untuk memastikan tombol Caps Lock tidak aktif secara tidak sengaja.</span>
+                </li>
+            </ul>
+        </div>
+
+        <button type="button" class="popup-action-btn" onclick="closeLoginErrorModal()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span>Coba Masuk Kembali</span>
+        </button>
+    </div>
+</div>
+
 <div class="login-wrapper">
     <div class="container">
         <!-- Suzuki Square Logo Badge -->
@@ -371,17 +724,22 @@
         <div class="heading">Selamat Datang</div>
         <div class="sub-heading">Silakan pilih entitas dan masuk ke akun Anda</div>
 
-        @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
+        @if (hasErrors)
         {
-            var errMsg = ViewData.ModelState[""]!.Errors.Count > 0
-                ? ViewData.ModelState[""]!.Errors[0].ErrorMessage
-                : "Username atau password salah.";
-            <div class="error-banner">
-                @errMsg
+            <div class="error-banner" id="formInlineErrorBanner">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:2px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div style="flex: 1;">
+                    @foreach (var err in errorList)
+                    {
+                        <div>@err</div>
+                    }
+                </div>
             </div>
         }
 
-        <form class="form" asp-controller="Account" asp-action="Login" method="post" id="loginForm">
+        <form class="form" asp-controller="Account" asp-action="Login" method="post" id="loginForm" novalidate>
             @Html.AntiForgeryToken()
             <input type="hidden" name="ReturnUrl" value="@Model?.ReturnUrl" />
             <input type="hidden" name="Entity" id="selectedEntity" value="@defaultEntity" />
@@ -409,7 +767,7 @@
             <div class="form-group">
                 <label class="field-label" for="UserName">USERNAME</label>
                 <div class="input-wrapper">
-                    <input id="UserName" name="UserName" type="text" class="input" placeholder="Masukkan username..." autocomplete="username" autofocus required />
+                    <input id="UserName" name="UserName" type="text" class="input @(hasErrors ? "input-error" : "")" placeholder="Masukkan username..." autocomplete="username" value="@Model?.UserName" autofocus required />
                 </div>
             </div>
 
@@ -417,19 +775,26 @@
             <div class="form-group">
                 <label class="field-label" for="Password">PASSWORD</label>
                 <div class="input-wrapper">
-                    <input id="Password" name="Password" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required />
-                    <button type="button" class="password-toggle-btn" onclick="togglePassword()" title="Tampilkan Password">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <input id="Password" name="Password" type="password" class="input @(hasErrors ? "input-error" : "")" placeholder="••••••••" autocomplete="current-password" required />
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword()" title="Tampilkan Password" tabindex="-1">
+                        <svg id="passEyeIcon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
                     </button>
                 </div>
+                <!-- Realtime CapsLock Alert Badge -->
+                <div class="caps-lock-badge" id="capsLockBadge" style="display: none;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Peringatan: Tombol Caps Lock Sedang Aktif</span>
+                </div>
             </div>
 
             <!-- Remember Me Checkbox -->
             <label class="remember-row">
-                <input type="checkbox" name="RememberMe" id="RememberMe" />
+                <input type="checkbox" name="RememberMe" id="RememberMe" value="true" @(Model?.RememberMe == true ? "checked" : "") />
                 <span>Ingat saya</span>
             </label>
 
@@ -453,6 +818,8 @@
 </div>
 
 <script>
+const serverErrors = @Html.Raw(serializedErrors);
+
 function selectEntity(entity) {
     document.getElementById('selectedEntity').value = entity;
     const btnSim = document.getElementById('btnSIM');
@@ -480,22 +847,168 @@ function selectEntity(entity) {
 
 function togglePassword() {
     const input = document.getElementById('Password');
-    input.type = input.type === 'password' ? 'text' : 'password';
+    const icon = document.getElementById('passEyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+    } else {
+        input.type = 'password';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+    }
 }
 
-document.getElementById('loginForm')?.addEventListener('submit', function() {
+// Modal Control Functions
+function openLoginErrorModal(title, message, category = '🛡️ Verifikasi Login Gagal') {
+    const modal = document.getElementById('loginErrorModal');
+    const titleEl = document.getElementById('modalErrorTitle');
+    const descEl = document.getElementById('modalErrorMessageText');
+    const catEl = document.getElementById('modalErrorCategory');
+
+    if (titleEl) titleEl.innerText = title;
+    if (descEl) descEl.innerHTML = message;
+    if (catEl) catEl.innerHTML = `<span>${category}</span>`;
+
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeLoginErrorModal() {
+    const modal = document.getElementById('loginErrorModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    const userInput = document.getElementById('UserName');
+    const passInput = document.getElementById('Password');
+
+    if (!userInput.value.trim()) {
+        userInput.focus();
+    } else {
+        passInput.focus();
+        passInput.select();
+    }
+}
+
+// Real-time CapsLock detection
+const passField = document.getElementById('Password');
+const capsBadge = document.getElementById('capsLockBadge');
+
+function checkCapsLock(e) {
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+        capsBadge.style.display = 'flex';
+    } else {
+        capsBadge.style.display = 'none';
+    }
+}
+
+if (passField) {
+    passField.addEventListener('keyup', checkCapsLock);
+    passField.addEventListener('keydown', checkCapsLock);
+    passField.addEventListener('blur', function() {
+        capsBadge.style.display = 'none';
+    });
+}
+
+// Clear error highlighting when typing
+['UserName', 'Password'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+        input.addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+    }
+});
+
+// Client-side validation & submit handling
+document.getElementById('loginForm')?.addEventListener('submit', function(e) {
+    const userInput = document.getElementById('UserName');
+    const passInput = document.getElementById('Password');
     const overlay = document.getElementById('suzukiLoadingOverlay');
     const txt = document.getElementById('suzukiLoadingStatus');
     const entity = document.getElementById('selectedEntity')?.value || 'SIM';
-    
+    const btn = document.getElementById('loginBtn');
+
+    const uVal = (userInput?.value || '').trim();
+    const pVal = (passInput?.value || '').trim();
+
+    // Client-side Validation Checks
+    if (!uVal) {
+        e.preventDefault();
+        e.stopPropagation();
+        userInput.classList.add('input-error');
+        openLoginErrorModal(
+            'Username Wajib Diisi',
+            'Silakan masukkan <strong>Username</strong> akun Anda terlebih dahulu untuk dapat masuk ke sistem DO-IT G2.',
+            '⚠️ Validasi Input'
+        );
+        userInput.focus();
+        return false;
+    }
+
+    if (!pVal) {
+        e.preventDefault();
+        e.stopPropagation();
+        passInput.classList.add('input-error');
+        openLoginErrorModal(
+            'Password Wajib Diisi',
+            'Silakan masukkan <strong>Password</strong> akun Anda untuk melanjutkan proses autentikasi keamanan.',
+            '⚠️ Validasi Input'
+        );
+        passInput.focus();
+        return false;
+    }
+
+    // Input is valid -> show smooth loading state
     if (overlay) {
         overlay.classList.remove('fade-out');
         if (txt) txt.textContent = `Autentikasi Pengguna & Membuka Akses ${entity}...`;
     }
-    const btn = document.getElementById('loginBtn');
     if (btn) {
         btn.innerHTML = 'Memeriksa Akses...';
         btn.disabled = true;
+    }
+});
+
+// Keyboard accessibility & Server Error Auto-Popup
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if server returned errors
+    if (serverErrors && serverErrors.length > 0) {
+        const errorText = serverErrors.map(err => `<div>${err}</div>`).join('');
+        let title = 'Kombinasi Login Salah';
+        let category = '🛡️ Autentikasi Gagal';
+
+        const rawCombined = serverErrors.join(' ').toLowerCase();
+        if (rawCombined.includes('akses ditolak') || rawCombined.includes('hanya memiliki izin')) {
+            title = 'Akses Entitas Ditolak';
+            category = '🚫 Pembatasan Akses';
+        } else if (rawCombined.includes('non-aktif') || rawCombined.includes('nonaktif')) {
+            title = 'Akun Non-Aktif';
+            category = '🔒 Status Akun';
+        }
+
+        openLoginErrorModal(title, errorText, category);
+    }
+
+    // Close modal on Escape or Enter
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('loginErrorModal');
+        if (modal && modal.classList.contains('active')) {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+                e.preventDefault();
+                closeLoginErrorModal();
+            }
+        }
+    });
+
+    // Close modal on clicking outside card
+    const modalOverlay = document.getElementById('loginErrorModal');
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) {
+                closeLoginErrorModal();
+            }
+        });
     }
 });
 </script>

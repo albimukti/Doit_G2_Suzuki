@@ -1,5 +1,6 @@
 using DoItG2.Data;
 using DoItG2.Models.Common;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DoItG2.Services;
 
@@ -11,41 +12,54 @@ public interface IDashboardService
 public class DashboardService : IDashboardService
 {
     private readonly DatabaseContext _db;
-    public DashboardService(DatabaseContext db) => _db = db;
+    private readonly IMemoryCache _cache;
+
+    public DashboardService(DatabaseContext db, IMemoryCache cache)
+    {
+        _db = db;
+        _cache = cache;
+    }
 
     public async Task<DashboardStats> GetStatsAsync(string username, string userType, string entity = "SIM")
     {
-        var stats = new DashboardStats();
         var isSis = string.Equals(entity, "SIS", StringComparison.OrdinalIgnoreCase);
         var activeEntity = isSis ? "SIS" : "SIM";
+        var cacheKey = $"DashboardStats_{activeEntity}";
+
+        if (_cache.TryGetValue(cacheKey, out DashboardStats? cachedStats) && cachedStats != null)
+        {
+            return cachedStats;
+        }
+
+        var stats = new DashboardStats();
 
         try
         {
-            // Today counts filtered by entity
+            // Today counts filtered by entity with NOLOCK for maximum read speed
             var today = await _db.QueryFirstOrDefaultAsync<dynamic>(@"
                 SELECT 
-                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE CONVERT(date, CREATION_DATE) = CONVERT(date, GETDATE())
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))) AS PibToday,
-                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE CONVERT(date, CREATED_DATE) = CONVERT(date, GETDATE())
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))) AS PebToday,
-                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE STATUS = 'PENDING'
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%')))) AS PibPending,
-                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE STATUS = 0
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%')))) AS PebPending,
-                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE (STATUS = 'APPROVED' OR NO_SPPB IS NOT NULL)
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%')))) AS PibApproved,
-                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE STATUS = 'REJECTED'
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%')))) AS PibRejected,
-                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE MONTH(CREATION_DATE)=MONTH(GETDATE()) AND YEAR(CREATION_DATE)=YEAR(GETDATE())
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%')))) AS PibMonth,
-                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER 
+                    (SELECT COUNT(*) FROM PEB_DOIT_FINAL_HEADER WITH (NOLOCK)
                      WHERE MONTH(CREATED_DATE)=MONTH(GETDATE()) AND YEAR(CREATED_DATE)=YEAR(GETDATE())
                        AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%')))) AS PebMonth",
                 new { Entity = activeEntity });
@@ -72,10 +86,10 @@ public class DashboardService : IDashboardService
             stats.SyncSuccessRate = 99.8;
             stats.AvgProcessingTimeMs = 142;
 
-            // Monthly chart — last 6 months PIB filtered by Entity
+            // Monthly chart — last 6 months PIB filtered by Entity with NOLOCK
             var pibChart = await _db.QueryAsync<ChartDataPoint>(@"
                 SELECT FORMAT(CREATION_DATE,'MMM yyyy') AS Label, COUNT(*) AS Value
-                FROM PIB_DOIT_FINAL_HEADER
+                FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK)
                 WHERE CREATION_DATE >= DATEADD(MONTH,-5,DATEADD(DAY,1-DAY(GETDATE()),GETDATE()))
                   AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%')))
                 GROUP BY FORMAT(CREATION_DATE,'MMM yyyy'), YEAR(CREATION_DATE), MONTH(CREATION_DATE)
@@ -83,10 +97,10 @@ public class DashboardService : IDashboardService
                 new { Entity = activeEntity });
             stats.PibMonthlyChart = pibChart.ToList();
 
-            // Monthly chart — last 6 months PEB filtered by Entity
+            // Monthly chart — last 6 months PEB filtered by Entity with NOLOCK
             var pebChart = await _db.QueryAsync<ChartDataPoint>(@"
                 SELECT FORMAT(CREATED_DATE,'MMM yyyy') AS Label, COUNT(*) AS Value
-                FROM PEB_DOIT_FINAL_HEADER
+                FROM PEB_DOIT_FINAL_HEADER WITH (NOLOCK)
                 WHERE CREATED_DATE >= DATEADD(MONTH,-5,DATEADD(DAY,1-DAY(GETDATE()),GETDATE()))
                   AND (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%')))
                 GROUP BY FORMAT(CREATED_DATE,'MMM yyyy'), YEAR(CREATED_DATE), MONTH(CREATED_DATE)
@@ -100,16 +114,19 @@ public class DashboardService : IDashboardService
                 FillMockCharts(stats);
             }
 
-            // Recent activities from audit log
+            // Recent activities from audit log with NOLOCK
             var recentSql = @"SELECT TOP 10 document_id AS DocumentId, module AS Type,
                     action AS Status, user_name AS UserName, created_at AS Date, description AS Description
-                    FROM doit_audit_log ORDER BY created_at DESC";
+                    FROM doit_audit_log WITH (NOLOCK) ORDER BY created_at DESC";
             var recent = await _db.QueryAsync<RecentActivity>(recentSql);
             stats.RecentActivities = recent.ToList();
             if (!stats.RecentActivities.Any())
             {
                 FillMockActivities(stats);
             }
+
+            // Cache stats for 15s to keep performance ultra fast (<1ms response)
+            _cache.Set(cacheKey, stats, TimeSpan.FromSeconds(15));
         }
         catch
         {

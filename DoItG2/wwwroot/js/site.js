@@ -181,6 +181,7 @@ const DoIt = {
 document.addEventListener('DOMContentLoaded', () => {
     // Intercept form submissions that have onclick="return confirm(...)" or data-confirm
     document.addEventListener('submit', async (e) => {
+        if (e.defaultPrevented) return;
         const form = e.target;
         if (form.dataset.confirmed) return; // Already confirmed via modal
 

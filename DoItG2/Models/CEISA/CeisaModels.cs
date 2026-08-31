@@ -80,3 +80,26 @@ public class CeisaBc11ManifestData
     public string NoContainer { get; set; } = string.Empty;
     public string UkuranContainer { get; set; } = string.Empty;
 }
+
+public class CeisaSendPibViewModel
+{
+    public List<DoItG2.Models.PIB.PibHeaderModel> Items { get; set; } = [];
+    public string ActiveTab { get; set; } = "queue"; // queue, ready, failed, pending, history
+    public int QueueCount { get; set; }
+    public int ReadyCount { get; set; }
+    public int FailedCount { get; set; }
+    public int PendingCount { get; set; }
+    public int HistoryCount { get; set; }
+}
+
+public class CeisaSendPebViewModel
+{
+    public List<DoItG2.Models.PEB.PebHeaderModel> Items { get; set; } = [];
+    public string ActiveTab { get; set; } = "queue"; // queue, ready, failed, pending, history
+    public int QueueCount { get; set; }
+    public int ReadyCount { get; set; }
+    public int FailedCount { get; set; }
+    public int PendingCount { get; set; }
+    public int HistoryCount { get; set; }
+}
+

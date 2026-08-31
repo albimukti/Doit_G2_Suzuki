@@ -74,7 +74,7 @@ public class PibController : Controller
                             WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
                             ELSE 'DRAFT'
                        END AS Status 
-                       FROM PIB_DOIT_FINAL_HEADER 
+                       FROM PIB_DOIT_FINAL_HEADER WITH (NOLOCK) 
                        WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))";
                        
             var parameters = new DynamicParameters();
@@ -672,7 +672,7 @@ public class PebController : Controller
                             WHEN STATUS = 1 THEN 'PENDING'
                             ELSE 'DRAFT'
                        END AS Status 
-                       FROM PEB_DOIT_FINAL_HEADER 
+                       FROM PEB_DOIT_FINAL_HEADER WITH (NOLOCK) 
                        WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))";
                        
             var parameters = new DynamicParameters();
@@ -1595,48 +1595,136 @@ public class CeisaController : Controller
         _logger = logger;
     }
 
-    public async Task<IActionResult> SendPib()
+    public async Task<IActionResult> SendPib(string tab = "queue")
     {
-        ViewData["Title"] = "Kirim PIB ke CEISA 4.0";
+        ViewData["Title"] = "Transmisi PIB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PIB";
         
         var entity = User.FindFirst("Entity")?.Value ?? "SIM";
-        var sql = @"SELECT CAR, ID_IMP AS IdImp, NM_IMO AS NmImo, NM_PEMASOK AS NmPemasok, TGL_TIBA AS TglTiba, JML_BRG AS JmlBrg, 
-                           ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
-                           ISNULL(ENTITY, 'SIM') AS Entity,
-                           KD_VAL AS KdVal, CIF AS Cif,
+        var sql = @"SELECT h.CAR, h.ID_IMP AS IdImp, h.NM_IMO AS NmImo, h.NM_PEMASOK AS NmPemasok, 
+                           h.TGL_TIBA AS TglTiba, h.JML_BRG AS JmlBrg, 
+                           ISNULL(h.APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           ISNULL(h.ENTITY, 'SIM') AS Entity,
+                           h.KD_VAL AS KdVal, h.CIF AS Cif,
+                           h.NO_PEN_PIB AS PibNo, h.NO_SPPB AS SppbNo,
+                           CONVERT(varchar, h.TGL_PEND_PIB, 23) AS PibTg,
+                           CONVERT(varchar, h.TGL_SPPB, 23) AS SppbTg,
                            CASE 
-                               WHEN NO_SPPB IS NOT NULL AND NO_SPPB <> '' THEN 'SPPB'
-                               WHEN NO_PEN_PIB IS NOT NULL AND NO_PEN_PIB <> '' THEN 'NOPEN'
+                               WHEN h.NO_SPPB IS NOT NULL AND h.NO_SPPB <> '' THEN 'SPPB'
+                               WHEN h.NO_PEN_PIB IS NOT NULL AND h.NO_PEN_PIB <> '' THEN 'NOPEN'
+                               WHEN h.APPROVAL_STATUS = 'FAILED' THEN 'FAILED'
+                               WHEN h.APPROVAL_STATUS = 'TRANSMITTED' THEN 'TRANSMITTED'
                                ELSE 'DRAFT'
-                           END AS Status 
-                    FROM PIB_DOIT_FINAL_HEADER 
-                    WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NM_IMO LIKE '%MOTOR%' OR ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NM_IMO LIKE '%SALES%' OR ID_IMP LIKE '%011297389%')))
-                    ORDER BY CREATION_DATE DESC";
-        var drafts = await _db.QueryAsync<PibHeaderModel>(sql, new { Entity = entity });
-        return View(drafts.ToList());
+                           END AS Status,
+                           (SELECT TOP 1 l.NOTES FROM DOIT_APPROVAL_LOG l 
+                            WHERE l.CAR = h.CAR AND (l.ACTION = 'TRANSMIT_FAILED' OR l.NEW_STATUS = 'REJECTED' OR l.NEW_STATUS = 'FAILED') 
+                            ORDER BY l.ACTION_DATE DESC) AS ReviewNotes
+                    FROM PIB_DOIT_FINAL_HEADER h WITH (NOLOCK)
+                    WHERE (h.ENTITY = @Entity OR (@Entity = 'SIM' AND (h.ENTITY IS NULL OR h.NM_IMO LIKE '%MOTOR%' OR h.ID_IMP LIKE '%011297371%')) OR (@Entity = 'SIS' AND (h.ENTITY = 'SIS' OR h.NM_IMO LIKE '%SALES%' OR h.ID_IMP LIKE '%011297389%')))
+                    ORDER BY h.CREATION_DATE DESC";
+        var allDocs = (await _db.QueryAsync<PibHeaderModel>(sql, new { Entity = entity })).ToList();
+
+        // Calculate counts
+        var historyList = allDocs.Where(d => d.ApprovalStatus == "TRANSMITTED" || d.Status == "SPPB" || d.Status == "NOPEN" || !string.IsNullOrWhiteSpace(d.SppbNo) || !string.IsNullOrWhiteSpace(d.PibNo)).ToList();
+        var queueList = allDocs.Where(d => !historyList.Contains(d)).ToList();
+        var readyList = queueList.Where(d => d.ApprovalStatus == "APPROVED").ToList();
+        var failedList = queueList.Where(d => d.ApprovalStatus == "FAILED" || d.ApprovalStatus == "REJECTED").ToList();
+        var pendingList = queueList.Where(d => d.ApprovalStatus == "PENDING_APPROVAL" || d.ApprovalStatus == "PENDING" || d.ApprovalStatus == "DRAFT").ToList();
+
+        var normalizedTab = tab?.ToLower() switch
+        {
+            "ready" => "ready",
+            "failed" => "failed",
+            "pending" => "pending",
+            "history" => "history",
+            _ => "queue"
+        };
+
+        var displayItems = normalizedTab switch
+        {
+            "ready" => readyList,
+            "failed" => failedList,
+            "pending" => pendingList,
+            "history" => historyList,
+            _ => queueList
+        };
+
+        var vm = new CeisaSendPibViewModel
+        {
+            Items = displayItems,
+            ActiveTab = normalizedTab,
+            QueueCount = queueList.Count,
+            ReadyCount = readyList.Count,
+            FailedCount = failedList.Count,
+            PendingCount = pendingList.Count,
+            HistoryCount = historyList.Count
+        };
+
+        return View(vm);
     }
 
-    public async Task<IActionResult> SendPeb()
+    public async Task<IActionResult> SendPeb(string tab = "queue")
     {
-        ViewData["Title"] = "Kirim PEB ke CEISA 4.0";
+        ViewData["Title"] = "Transmisi PEB ke CEISA 4.0";
         ViewData["Breadcrumb"] = "<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> CEISA <span class='breadcrumb-sep'>/</span> Kirim PEB";
         
         var entity = User.FindFirst("Entity")?.Value ?? "SIM";
-        var sql = @"SELECT CAR, NAMAEKS AS NamaBeli, TGEKS AS TgEks, NETTO, BRUTO, FOB,
-                           ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
-                           ISNULL(ENTITY, 'SIM') AS Entity,
-                           NOPEN AS Nopen,
+        var sql = @"SELECT h.CAR, h.NAMAEKS AS NamaBeli, h.TGEKS AS TgEks, h.NETTO, h.BRUTO, h.FOB,
+                           ISNULL(h.APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus,
+                           ISNULL(h.ENTITY, 'SIM') AS Entity,
+                           h.NOPEN AS Nopen, h.NONPE AS Snrf, h.TGL_NOPEN AS TglNopen, h.TGL_NPE AS TgInv,
+                           h.NEGBELI AS NegBeli,
                            CASE 
-                               WHEN STATUS >= 3 THEN 'APPROVED'
-                               WHEN STATUS = 2 THEN 'SENT'
+                               WHEN h.STATUS >= 3 OR (h.NONPE IS NOT NULL AND h.NONPE <> '') THEN 'APPROVED'
+                               WHEN h.APPROVAL_STATUS = 'FAILED' THEN 'FAILED'
+                               WHEN h.STATUS = 2 OR h.APPROVAL_STATUS = 'TRANSMITTED' THEN 'SENT'
                                ELSE 'DRAFT'
-                           END AS Status 
-                     FROM PEB_DOIT_FINAL_HEADER 
-                     WHERE (ENTITY = @Entity OR (@Entity = 'SIM' AND (ENTITY IS NULL OR NAMAEKS LIKE '%MOTOR%' OR NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (ENTITY = 'SIS' OR NAMAEKS LIKE '%SALES%' OR NPWPEKS LIKE '%011297389%')))
-                     ORDER BY CREATED_DATE DESC";
-        var drafts = await _db.QueryAsync<PebHeaderModel>(sql, new { Entity = entity });
-        return View(drafts.ToList());
+                           END AS Status,
+                           (SELECT TOP 1 l.NOTES FROM DOIT_APPROVAL_LOG l 
+                            WHERE l.CAR = h.CAR AND (l.ACTION = 'TRANSMIT_FAILED' OR l.NEW_STATUS = 'REJECTED' OR l.NEW_STATUS = 'FAILED') 
+                            ORDER BY l.ACTION_DATE DESC) AS ReviewNotes
+                     FROM PEB_DOIT_FINAL_HEADER h WITH (NOLOCK)
+                     WHERE (h.ENTITY = @Entity OR (@Entity = 'SIM' AND (h.ENTITY IS NULL OR h.NAMAEKS LIKE '%MOTOR%' OR h.NPWPEKS LIKE '%011297371%')) OR (@Entity = 'SIS' AND (h.ENTITY = 'SIS' OR h.NAMAEKS LIKE '%SALES%' OR h.NPWPEKS LIKE '%011297389%')))
+                     ORDER BY h.CREATED_DATE DESC";
+        var allDocs = (await _db.QueryAsync<PebHeaderModel>(sql, new { Entity = entity })).ToList();
+
+        // Calculate counts
+        var historyList = allDocs.Where(d => d.ApprovalStatus == "TRANSMITTED" || d.Status == "APPROVED" || (d.Status == "SENT" && !string.IsNullOrWhiteSpace(d.Nopen)) || !string.IsNullOrWhiteSpace(d.Nopen) || !string.IsNullOrWhiteSpace(d.Snrf)).ToList();
+        var queueList = allDocs.Where(d => !historyList.Contains(d)).ToList();
+        var readyList = queueList.Where(d => d.ApprovalStatus == "APPROVED").ToList();
+        var failedList = queueList.Where(d => d.ApprovalStatus == "FAILED" || d.ApprovalStatus == "REJECTED").ToList();
+        var pendingList = queueList.Where(d => d.ApprovalStatus == "PENDING_APPROVAL" || d.ApprovalStatus == "PENDING" || d.ApprovalStatus == "DRAFT").ToList();
+
+        var normalizedTab = tab?.ToLower() switch
+        {
+            "ready" => "ready",
+            "failed" => "failed",
+            "pending" => "pending",
+            "history" => "history",
+            _ => "queue"
+        };
+
+        var displayItems = normalizedTab switch
+        {
+            "ready" => readyList,
+            "failed" => failedList,
+            "pending" => pendingList,
+            "history" => historyList,
+            _ => queueList
+        };
+
+        var vm = new CeisaSendPebViewModel
+        {
+            Items = displayItems,
+            ActiveTab = normalizedTab,
+            QueueCount = queueList.Count,
+            ReadyCount = readyList.Count,
+            FailedCount = failedList.Count,
+            PendingCount = pendingList.Count,
+            HistoryCount = historyList.Count
+        };
+
+        return View(vm);
     }
 
     [HttpPost]

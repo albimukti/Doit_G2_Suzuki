@@ -2052,7 +2052,6 @@ input:checked + .slider:before {
 
 @keyframes op {
     0% {
-        color: #ffffff;
         opacity: 1;
     }
     50% {
@@ -2060,14 +2059,12 @@ input:checked + .slider:before {
         opacity: 1;
     }
     100% {
-        color: #ffffff;
         opacity: 1;
     }
 }
 
 @keyframes op1 {
     0% {
-        color: #ffffff;
         opacity: 1;
     }
     50% {
@@ -2075,21 +2072,8 @@ input:checked + .slider:before {
         opacity: 0;
     }
     100% {
-        color: #ffffff;
         opacity: 1;
     }
-}
-
-[data-theme="light"] @keyframes op {
-    0% { color: #0f172a; opacity: 1; }
-    50% { color: #16a34a; opacity: 1; }
-    100% { color: #0f172a; opacity: 1; }
-}
-
-[data-theme="light"] @keyframes op1 {
-    0% { color: #0f172a; opacity: 1; }
-    50% { color: #16a34a; opacity: 0; }
-    100% { color: #0f172a; opacity: 1; }
 }
 
 .suzuki-loading-status {

@@ -1,0 +1,669 @@
+@model DoItG2.Models.Common.ApprovalDashboardViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Pusat Persetujuan Dokumen (Approval Center)";
+    var activeTab = Model.ActiveTab;
+}
+
+<style>
+    .approval-flow-stepper {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    .flow-step-box {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        position: relative;
+    }
+    .flow-step-box.active {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    .flow-step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+    .flow-step-box.active .flow-step-num {
+        background: #2563eb;
+        color: #ffffff;
+    }
+    .flow-step-title {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1e293b;
+        line-height: 1.2;
+    }
+    .flow-step-desc {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .approval-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .approval-stat-card {
+        background: var(--bg-card, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 14px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .approval-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+    .approval-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+    .approval-stat-val {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.1;
+<style>
+    .approval-flow-stepper {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+    .flow-step-box {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .flow-step-box.active {
+        background: #f0fdf4;
+        border-color: #16a34a;
+    }
+    .flow-step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    .flow-step-box.active .flow-step-num {
+        background: #16a34a;
+        color: #ffffff;
+    }
+    .flow-step-title {
+        font-weight: 700;
+        font-size: 12.5px;
+        color: #0f172a;
+    }
+    .flow-step-desc {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 1px;
+    }
+
+    .approval-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    .approval-stat-card {
+        background: var(--bg-card, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 10px;
+        padding: 14px 16px;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.15s ease;
+    }
+    .approval-stat-card:hover {
+        border-color: #cbd5e1;
+    }
+    .approval-stat-val {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-primary, #0f172a);
+        line-height: 1.1;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .approval-stat-lbl {
+        font-size: 11.5px;
+        color: var(--text-muted, #64748b);
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+    .ceisa-tabs-bar {
+        display: flex;
+        gap: 6px;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        margin-bottom: 16px;
+        overflow-x: auto;
+    }
+    .ceisa-tab-item {
+        padding: 9px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted, #64748b);
+        text-decoration: none;
+        border-radius: 6px 6px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.15s ease;
+    }
+    .ceisa-tab-item:hover {
+        color: var(--text-primary, #0f172a);
+    }
+    .ceisa-tab-item.active {
+        color: #1e40af;
+        border-bottom-color: #1e40af;
+        font-weight: 700;
+        background: #f8fafc;
+    }
+    .ceisa-tab-badge {
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-size: 10.5px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+    }
+</style>
+
+<div class="card" style="max-width: 1300px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div>
+            <h2 class="card-title" style="margin: 0; font-size: 18px; font-weight: 700;">Pusat Persetujuan Dokumen (Approval Center)</h2>
+            <div class="card-subtitle" style="font-size: 12px; margin-top: 2px;">
+                Verifikasi Internal Dokumen PIB &amp; PEB sebelum Transmisi ke CEISA 4.0
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="/Pib" class="btn btn-secondary">
+                Daftar PIB
+            </a>
+            <a href="/Peb" class="btn btn-secondary">
+                Daftar PEB
+            </a>
+            <a href="/Ceisa/SendPib" class="btn btn-primary">
+                Transmisi CEISA
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success" style="margin: 16px 24px 0;">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="margin: 16px 24px 0;">@TempData["Error"]</div>
+    }
+
+    <div style="padding: 20px 24px;">
+        <!-- Visual Workflow Explanation Stepper -->
+        <div class="approval-flow-stepper">
+            <div class="flow-step-box">
+                <div class="flow-step-num">1</div>
+                <div>
+                    <div class="flow-step-title">Perekaman Draft</div>
+                    <div class="flow-step-desc">Staf Exim input data &amp; kelengkapan</div>
+                </div>
+            </div>
+            <div class="flow-step-box active">
+                <div class="flow-step-num">2</div>
+                <div>
+                    <div class="flow-step-title">Review &amp; Persetujuan</div>
+                    <div class="flow-step-desc">Supervisor verifikasi &amp; approve</div>
+                </div>
+            </div>
+            <div class="flow-step-box">
+                <div class="flow-step-num">3</div>
+                <div>
+                    <div class="flow-step-title">Transmisi CEISA 4.0</div>
+                    <div class="flow-step-desc">Kirim REST API ke Bea Cukai</div>
+                </div>
+            </div>
+            <div class="flow-step-box">
+                <div class="flow-step-num">4</div>
+                <div>
+                    <div class="flow-step-title">Respon Pabean</div>
+                    <div class="flow-step-desc">SPPB / NPE resmi terbit</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="approval-stats-grid">
+            <a href="?tab=pending" class="approval-stat-card" style="@(activeTab == "pending" ? "border-color: #d97706; background: #f8fafc;" : "")">
+                <div>
+                    <div class="approval-stat-val" style="color: #d97706;">@Model.TotalPendingCount</div>
+                    <div class="approval-stat-lbl">Menunggu Persetujuan</div>
+                </div>
+            </a>
+            <a href="?tab=approved" class="approval-stat-card" style="@(activeTab == "approved" ? "border-color: #16a34a; background: #f8fafc;" : "")">
+                <div>
+                    <div class="approval-stat-val" style="color: #16a34a;">@Model.TotalApprovedCount</div>
+                    <div class="approval-stat-lbl">Disetujui (Siap Kirim)</div>
+                </div>
+            </a>
+            <a href="?tab=rejected" class="approval-stat-card" style="@(activeTab == "rejected" ? "border-color: #dc2626; background: #f8fafc;" : "")">
+                <div>
+                    <div class="approval-stat-val" style="color: #dc2626;">@Model.TotalRejectedCount</div>
+                    <div class="approval-stat-lbl">Dikembalikan / Revisi</div>
+                </div>
+            </a>
+            <a href="?tab=logs" class="approval-stat-card" style="@(activeTab == "logs" ? "border-color: #4f46e5; background: #f8fafc;" : "")">
+                <div>
+                    <div class="approval-stat-val" style="color: #4f46e5;">@Model.RecentLogs.Count</div>
+                    <div class="approval-stat-lbl">Riwayat Audit Trail</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="ceisa-tabs-bar">
+            <a href="?tab=pending" class="ceisa-tab-item @(activeTab == "pending" ? "active" : "")">
+                <span>Menunggu Persetujuan</span>
+                <span class="ceisa-tab-badge" style="background: #fef3c7; color: #92400e;">@Model.TotalPendingCount</span>
+            </a>
+            <a href="?tab=approved" class="ceisa-tab-item @(activeTab == "approved" ? "active" : "")">
+                <span>Dokumen Disetujui</span>
+                <span class="ceisa-tab-badge" style="background: #dcfce7; color: #166534;">@Model.TotalApprovedCount</span>
+            </a>
+            <a href="?tab=rejected" class="ceisa-tab-item @(activeTab == "rejected" ? "active" : "")">
+                <span>Dikembalikan / Revisi</span>
+                <span class="ceisa-tab-badge" style="background: #fee2e2; color: #991b1b;">@Model.TotalRejectedCount</span>
+            </a>
+            <a href="?tab=logs" class="ceisa-tab-item @(activeTab == "logs" ? "active" : "")">
+                <span>Riwayat &amp; Audit Trail</span>
+                <span class="ceisa-tab-badge" style="background: #e0e7ff; color: #3730a3;">@Model.RecentLogs.Count</span>
+            </a>
+        </div>
+
+        @if (activeTab == "logs")
+        {
+            <!-- Tab Logs -->
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 170px;">Waktu &amp; Tanggal</th>
+                            <th style="width: 170px;">Nomor Dokumen (CAR)</th>
+                            <th style="width: 80px;">Jenis</th>
+                            <th style="width: 140px; text-align: center;">Tindakan</th>
+                            <th>Catatan / Keterangan</th>
+                            <th style="width: 140px;">Pengguna</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentLogs.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    Belum ada log riwayat persetujuan dokumen.
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var log in Model.RecentLogs)
+                        {
+                            <tr>
+                                <td style="font-size: 12px; color: var(--text-muted);">
+                                    @log.ActionDate.ToString("dd/MM/yyyy HH:mm:ss")
+                                </td>
+                                <td>
+                                    <a href="/@(log.DokumenType == "PEB" ? "Peb" : "Pib")/Detail?id=@log.Car" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e40af; text-decoration: none;">
+                                        @log.Car
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge @(log.DokumenType == "PEB" ? "badge-info" : "badge-primary")" style="font-size: 10.5px; font-weight: 700;">
+                                        @log.DokumenType
+                                    </span>
+                                </td>
+                                <td style="text-align: center;">
+                                    @if (log.Action == "APPROVE")
+                                    {
+                                        <span class="badge badge-success" style="font-weight: 700;">DISETUJUI</span>
+                                    }
+                                    else if (log.Action == "REJECT" || log.Action == "TRANSMIT_FAILED")
+                                    {
+                                        <span class="badge badge-danger" style="font-weight: 700;">DITOLAK</span>
+                                    }
+                                    else if (log.Action == "SUBMIT")
+                                    {
+                                        <span class="badge badge-warning" style="font-weight: 700;">DIAJUKAN</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">@log.Action</span>
+                                    }
+                                </td>
+                                <td style="font-size: 12px; color: var(--text-primary);">
+                                    @(string.IsNullOrWhiteSpace(log.Notes) ? "-" : log.Notes)
+                                </td>
+                                <td style="font-size: 12px; font-weight: 600;">
+                                    @log.ActionBy
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            var pibList = activeTab == "approved" ? Model.ApprovedPibList : (activeTab == "rejected" ? Model.RejectedPibList : Model.PendingPibList);
+            var pebList = activeTab == "approved" ? Model.ApprovedPebList : (activeTab == "rejected" ? Model.RejectedPebList : Model.PendingPebList);
+
+            <!-- Section 1: Dokumen Impor (PIB) -->
+            <div style="margin-bottom: 28px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b;">
+                            Dokumen Impor PIB (BC 2.0)
+                        </h3>
+                        <span class="badge badge-secondary" style="font-size: 11px;">@pibList.Count Dokumen</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 170px;">Nomor CAR (AJU)</th>
+                                <th>Pemasok &amp; Valuta</th>
+                                <th style="width: 140px;">Nilai CIF</th>
+                                <th style="width: 180px;">Pengaju / Tanggal</th>
+                                <th style="text-align: center; width: 150px;">Status Review</th>
+                                <th style="text-align: center; width: 220px; white-space: nowrap;">Aksi Verifikasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (pibList.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 32px 20px; color: var(--text-muted);">
+                                        Tidak ada dokumen PIB pada kategori ini.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var item in pibList)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/Pib/Detail?id=@item.Car" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e40af; text-decoration: none; font-size: 12.5px;">
+                                            @item.Car
+                                        </a>
+                                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                                            Barang: @item.JmlBrg Item
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">@item.NmPemasok</div>
+                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                            Tiba: @(string.IsNullOrEmpty(item.TglTiba) ? "-" : item.TglTiba)
+                                        </div>
+                                    </td>
+                                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">
+                                        @item.KdVal @item.Cif
+                                    </td>
+                                    <td style="font-size: 11.5px; color: var(--text-secondary);">
+                                        <div>@(string.IsNullOrEmpty(item.SubmittedBy) ? "Operator" : item.SubmittedBy)</div>
+                                        <div style="color: var(--text-muted); font-size: 10.5px; margin-top: 2px;">
+                                            @(item.SubmittedDate.HasValue ? item.SubmittedDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        @if (item.ApprovalStatus == "APPROVED")
+                                        {
+                                            <span class="badge badge-success" style="font-weight: 700;">DISETUJUI</span>
+                                        }
+                                        else if (item.ApprovalStatus == "REJECTED" || item.ApprovalStatus == "FAILED")
+                                        {
+                                            <span class="badge badge-danger" style="font-weight: 700;">REVISI</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-warning" style="font-weight: 700;">MENUNGGU</span>
+                                        }
+                                    </td>
+                                    <td style="text-align: center; white-space: nowrap;">
+                                        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: nowrap;">
+                                            <a href="/Pib/Detail?id=@item.Car" class="btn btn-sm btn-secondary" style="padding: 4px 9px; font-size: 11px; font-weight: 600;">
+                                                Detail
+                                            </a>
+                                            @if (item.ApprovalStatus == "PENDING_APPROVAL" || item.ApprovalStatus == "PENDING")
+                                            {
+                                                <button type="button" class="btn btn-sm btn-success" onclick="openApprovalActionModal('@item.Car', 'PIB', 'APPROVE')" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Setujui
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="openApprovalActionModal('@item.Car', 'PIB', 'REJECT')" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Tolak
+                                                </button>
+                                            }
+                                            else if (item.ApprovalStatus == "APPROVED")
+                                            {
+                                                <a href="/Ceisa/SendPib" class="btn btn-sm btn-primary" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Kirim CEISA
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 2: Dokumen Ekspor (PEB) -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b;">
+                            Dokumen Ekspor PEB (BC 3.0)
+                        </h3>
+                        <span class="badge badge-secondary" style="font-size: 11px;">@pebList.Count Dokumen</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 170px;">Nomor CAR (AJU)</th>
+                                <th>Pembeli &amp; Negara</th>
+                                <th style="width: 140px;">Nilai FOB</th>
+                                <th style="width: 180px;">Pengaju / Tanggal</th>
+                                <th style="text-align: center; width: 150px;">Status Review</th>
+                                <th style="text-align: center; width: 220px; white-space: nowrap;">Aksi Verifikasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (pebList.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 32px 20px; color: var(--text-muted);">
+                                        Tidak ada dokumen PEB pada kategori ini.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var item in pebList)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/Peb/Detail?id=@item.Car" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e40af; text-decoration: none; font-size: 12.5px;">
+                                            @item.Car
+                                        </a>
+                                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                                            Netto: @item.Netto.ToString("N0") Kg
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">@item.NamaBeli</div>
+                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                            Negara: <strong>@(string.IsNullOrEmpty(item.NegBeli) ? "-" : item.NegBeli)</strong>
+                                        </div>
+                                    </td>
+                                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">
+                                        $@item.Fob.ToString("N2")
+                                    </td>
+                                    <td style="font-size: 11.5px; color: var(--text-secondary);">
+                                        <div>@(string.IsNullOrEmpty(item.SubmittedBy) ? "Operator" : item.SubmittedBy)</div>
+                                        <div style="color: var(--text-muted); font-size: 10.5px; margin-top: 2px;">
+                                            @(item.SubmittedDate.HasValue ? item.SubmittedDate.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        @if (item.ApprovalStatus == "APPROVED")
+                                        {
+                                            <span class="badge badge-success" style="font-weight: 700;">DISETUJUI</span>
+                                        }
+                                        else if (item.ApprovalStatus == "REJECTED" || item.ApprovalStatus == "FAILED")
+                                        {
+                                            <span class="badge badge-danger" style="font-weight: 700;">REVISI</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-warning" style="font-weight: 700;">MENUNGGU</span>
+                                        }
+                                    </td>
+                                    <td style="text-align: center; white-space: nowrap;">
+                                        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: nowrap;">
+                                            <a href="/Peb/Detail?id=@item.Car" class="btn btn-sm btn-secondary" style="padding: 4px 9px; font-size: 11px; font-weight: 600;">
+                                                Detail
+                                            </a>
+                                            @if (item.ApprovalStatus == "PENDING_APPROVAL" || item.ApprovalStatus == "PENDING")
+                                            {
+                                                <button type="button" class="btn btn-sm btn-success" onclick="openApprovalActionModal('@item.Car', 'PEB', 'APPROVE')" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Setujui
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="openApprovalActionModal('@item.Car', 'PEB', 'REJECT')" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Tolak
+                                                </button>
+                                            }
+                                            else if (item.ApprovalStatus == "APPROVED")
+                                            {
+                                                <a href="/Ceisa/SendPeb" class="btn btn-sm btn-primary" style="padding: 4px 9px; font-size: 11px; font-weight: 700;">
+                                                    Kirim CEISA
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal Quick Action Approval / Reject -->
+<div class="modal-overlay" id="approvalQuickModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="approvalQuickModalTitle">Verifikasi Dokumen</h3>
+            <button type="button" class="modal-close" onclick="DoIt.closeModal('approvalQuickModal')">&times;</button>
+        </div>
+        <form id="approvalQuickForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="car" id="quickModalCar" value="" />
+            <input type="hidden" name="docType" id="quickModalDocType" value="PIB" />
+            <div class="modal-body">
+                <div id="quickModalDesc" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;"></div>
+                <div class="form-group">
+                    <label class="form-label" id="quickModalNotesLabel">Catatan Review / Instruksi (Opsional):</label>
+                    <textarea name="notes" id="quickModalNotes" class="form-control" rows="3" placeholder="Masukkan catatan instruksi jika diperlukan..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="DoIt.closeModal('approvalQuickModal')">Batal</button>
+                <button type="submit" class="btn btn-primary" id="quickModalSubmitBtn">Simpan Keputusan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openApprovalActionModal(car, docType, action) {
+        document.getElementById('quickModalCar').value = car;
+        document.getElementById('quickModalDocType').value = docType;
+        document.getElementById('quickModalNotes').value = '';
+
+        if (action === 'APPROVE') {
+            document.getElementById('approvalQuickModalTitle').innerText = `Setujui Dokumen ${docType} (${car})`;
+            document.getElementById('quickModalDesc').innerHTML = `
+                <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:10px 14px; border-radius:8px; color:#065f46; font-size:12.5px;">
+                    <strong>Persetujuan Dokumen Pabean:</strong> Dokumen akan diberi status <strong>APPROVED</strong> dan langsung siap ditransmisikan ke portal CEISA 4.0 Bea Cukai.
+                </div>
+            `;
+            document.getElementById('approvalQuickForm').action = '/Approval/Approve';
+            document.getElementById('quickModalSubmitBtn').className = 'btn btn-success';
+            document.getElementById('quickModalSubmitBtn').innerText = '✓ Konfirmasi Setujui';
+            document.getElementById('quickModalNotesLabel').innerText = 'Catatan Persetujuan (Opsional):';
+        } else {
+            document.getElementById('approvalQuickModalTitle').innerText = `Kembalikan Dokumen ${docType} (${car}) untuk Revisi`;
+            document.getElementById('quickModalDesc').innerHTML = `
+                <div style="background:#fef2f2; border:1px solid #fecaca; padding:10px 14px; border-radius:8px; color:#991b1b; font-size:12.5px;">
+                    <strong>Pengembalian / Penolakan Dokumen:</strong> Dokumen akan dikembalikan ke status <strong>REJECTED</strong>. Harap berikan catatan perbaikan agar staf operator mengetahui bagian data mana yang wajib diperbaiki.
+                </div>
+            `;
+            document.getElementById('approvalQuickForm').action = '/Approval/Reject';
+            document.getElementById('quickModalSubmitBtn').className = 'btn btn-danger';
+            document.getElementById('quickModalSubmitBtn').innerText = '✕ Kembalikan untuk Revisi';
+            document.getElementById('quickModalNotesLabel').innerHTML = '<span style="color:#dc2626;">*</span> Catatan Perbaikan / Alasan Penolakan (Wajib):';
+        }
+
+        DoIt.openModal('approvalQuickModal');
+    }
+</script>

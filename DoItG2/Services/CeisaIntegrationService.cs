@@ -109,8 +109,24 @@ public class CeisaIntegrationService : ICeisaIntegrationService
             var validation = await _validation.ValidatePibAsync(car);
             if (!validation.IsValid)
             {
+                var errMsg = $"Validasi kepabeanan gagal: {string.Join("; ", validation.Errors.Where(e => e.Severity == ValidationSeverity.Error).Select(e => e.Message))}";
                 result.Success = false;
-                result.Message = $"Validasi gagal: {string.Join("; ", validation.Errors.Where(e => e.Severity == ValidationSeverity.Error).Select(e => e.Message))}";
+                result.Message = errMsg;
+
+                await _db.ExecuteAsync(
+                    @"UPDATE PIB_DOIT_FINAL_HEADER 
+                      SET APPROVAL_STATUS = 'FAILED'
+                      WHERE CAR = @Car",
+                    new { Car = car });
+
+                await _db.ExecuteAsync(
+                    @"INSERT INTO DOIT_APPROVAL_LOG (CAR, DOKUMEN_TYPE, PREV_STATUS, NEW_STATUS, ACTION, NOTES, ACTION_BY, ACTION_DATE)
+                      VALUES (@Car, 'PIB', 'APPROVED', 'FAILED', 'TRANSMIT_FAILED', @Notes, @User, GETDATE())",
+                    new { Car = car, Notes = errMsg, User = username });
+
+                await _audit.LogAsync(username, "TRANSMIT_CEISA_PIB_FAILED", "CEISA", car, errMsg, isError: true);
+                await _notification.NotifyDocumentStatusChangeAsync("PIB", car, "GAGAL TRANSMISI CEISA", errMsg);
+
                 return result;
             }
 
@@ -177,8 +193,21 @@ public class CeisaIntegrationService : ICeisaIntegrationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transmitting PIB {Car} to CEISA", car);
+            var errMsg = $"Gagal transmisi: {ex.Message}";
             result.Success = false;
-            result.Message = $"Gagal transmisi: {ex.Message}";
+            result.Message = errMsg;
+
+            await _db.ExecuteAsync(
+                @"UPDATE PIB_DOIT_FINAL_HEADER 
+                  SET APPROVAL_STATUS = 'FAILED'
+                  WHERE CAR = @Car",
+                new { Car = car });
+
+            await _db.ExecuteAsync(
+                @"INSERT INTO DOIT_APPROVAL_LOG (CAR, DOKUMEN_TYPE, PREV_STATUS, NEW_STATUS, ACTION, NOTES, ACTION_BY, ACTION_DATE)
+                  VALUES (@Car, 'PIB', 'APPROVED', 'FAILED', 'TRANSMIT_FAILED', @Notes, @User, GETDATE())",
+                new { Car = car, Notes = errMsg, User = username });
+
             return result;
         }
     }
@@ -193,8 +222,24 @@ public class CeisaIntegrationService : ICeisaIntegrationService
             var validation = await _validation.ValidatePebAsync(car);
             if (!validation.IsValid)
             {
+                var errMsg = $"Validasi kepabeanan gagal: {string.Join("; ", validation.Errors.Where(e => e.Severity == ValidationSeverity.Error).Select(e => e.Message))}";
                 result.Success = false;
-                result.Message = $"Validasi gagal: {string.Join("; ", validation.Errors.Where(e => e.Severity == ValidationSeverity.Error).Select(e => e.Message))}";
+                result.Message = errMsg;
+
+                await _db.ExecuteAsync(
+                    @"UPDATE PEB_DOIT_FINAL_HEADER 
+                      SET APPROVAL_STATUS = 'FAILED'
+                      WHERE CAR = @Car",
+                    new { Car = car });
+
+                await _db.ExecuteAsync(
+                    @"INSERT INTO DOIT_APPROVAL_LOG (CAR, DOKUMEN_TYPE, PREV_STATUS, NEW_STATUS, ACTION, NOTES, ACTION_BY, ACTION_DATE)
+                      VALUES (@Car, 'PEB', 'APPROVED', 'FAILED', 'TRANSMIT_FAILED', @Notes, @User, GETDATE())",
+                    new { Car = car, Notes = errMsg, User = username });
+
+                await _audit.LogAsync(username, "TRANSMIT_CEISA_PEB_FAILED", "CEISA", car, errMsg, isError: true);
+                await _notification.NotifyDocumentStatusChangeAsync("PEB", car, "GAGAL TRANSMISI CEISA", errMsg);
+
                 return result;
             }
 
@@ -215,9 +260,9 @@ public class CeisaIntegrationService : ICeisaIntegrationService
             // Update Database
             await _db.ExecuteAsync(
                 @"UPDATE PEB_DOIT_FINAL_HEADER 
-                  SET STATUS = 3, APPROVAL_STATUS = 'TRANSMITTED', NOPEN = @Nopen, TGL_NOPEN = GETDATE()
+                  SET STATUS = 3, APPROVAL_STATUS = 'TRANSMITTED', NOPEN = @Nopen, TGL_NOPEN = GETDATE(), NONPE = @Npe, TGL_NPE = GETDATE()
                   WHERE CAR = @Car",
-                new { Nopen = nopen, Car = car });
+                new { Nopen = nopen, Npe = npe, Car = car });
 
             // Record response
             await _db.ExecuteAsync(
@@ -239,8 +284,21 @@ public class CeisaIntegrationService : ICeisaIntegrationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transmitting PEB {Car} to CEISA", car);
+            var errMsg = $"Gagal transmisi: {ex.Message}";
             result.Success = false;
-            result.Message = $"Gagal transmisi: {ex.Message}";
+            result.Message = errMsg;
+
+            await _db.ExecuteAsync(
+                @"UPDATE PEB_DOIT_FINAL_HEADER 
+                  SET APPROVAL_STATUS = 'FAILED'
+                  WHERE CAR = @Car",
+                new { Car = car });
+
+            await _db.ExecuteAsync(
+                @"INSERT INTO DOIT_APPROVAL_LOG (CAR, DOKUMEN_TYPE, PREV_STATUS, NEW_STATUS, ACTION, NOTES, ACTION_BY, ACTION_DATE)
+                  VALUES (@Car, 'PEB', 'APPROVED', 'FAILED', 'TRANSMIT_FAILED', @Notes, @User, GETDATE())",
+                new { Car = car, Notes = errMsg, User = username });
+
             return result;
         }
     }

@@ -240,3 +240,19 @@ public class RecentActivity
     public DateTime Date { get; set; }
     public string Description { get; set; } = string.Empty;
 }
+
+public class ApprovalDashboardViewModel
+{
+    public List<DoItG2.Models.PIB.PibHeaderModel> PendingPibList { get; set; } = [];
+    public List<DoItG2.Models.PEB.PebHeaderModel> PendingPebList { get; set; } = [];
+    public List<DoItG2.Models.PIB.PibHeaderModel> ApprovedPibList { get; set; } = [];
+    public List<DoItG2.Models.PEB.PebHeaderModel> ApprovedPebList { get; set; } = [];
+    public List<DoItG2.Models.PIB.PibHeaderModel> RejectedPibList { get; set; } = [];
+    public List<DoItG2.Models.PEB.PebHeaderModel> RejectedPebList { get; set; } = [];
+    public List<ApprovalLogModel> RecentLogs { get; set; } = [];
+    public string ActiveTab { get; set; } = "pending"; // pending, approved, rejected, logs
+    public int TotalPendingCount => PendingPibList.Count + PendingPebList.Count;
+    public int TotalApprovedCount => ApprovedPibList.Count + ApprovedPebList.Count;
+    public int TotalRejectedCount => RejectedPibList.Count + RejectedPebList.Count;
+}
+
