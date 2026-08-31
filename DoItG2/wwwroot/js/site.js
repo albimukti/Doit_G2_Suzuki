@@ -1,4 +1,157 @@
 const DoIt = {
+    // ==========================================
+    // AUDIO SOUND EFFECTS ENGINE (Web Audio API)
+    // ==========================================
+    _audioCtx: null,
+    getAudioContext() {
+        if (!this._audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                this._audioCtx = new AudioCtx();
+            }
+        }
+        if (this._audioCtx && this._audioCtx.state === 'suspended') {
+            this._audioCtx.resume();
+        }
+        return this._audioCtx;
+    },
+
+    isSoundEnabled() {
+        const val = localStorage.getItem('doit_sound_enabled');
+        return val === null || val === 'true';
+    },
+
+    toggleSound() {
+        const current = this.isSoundEnabled();
+        const next = !current;
+        localStorage.setItem('doit_sound_enabled', next.toString());
+        this.updateSoundBtn();
+        this.toast(next ? 'Efek Suara Diaktifkan 🔊' : 'Efek Suara Dinonaktifkan 🔇', 'info', 2000);
+        if (next) this.playAudio('login');
+        return next;
+    },
+
+    updateSoundBtn() {
+        const onIcon = document.getElementById('soundIconOn');
+        const offIcon = document.getElementById('soundIconOff');
+        const isEnabled = this.isSoundEnabled();
+        if (onIcon) onIcon.style.display = isEnabled ? 'inline-block' : 'none';
+        if (offIcon) offIcon.style.display = isEnabled ? 'none' : 'inline-block';
+    },
+
+    playAudio(type = 'loading') {
+        if (!this.isSoundEnabled()) return;
+        try {
+            const ctx = this.getAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+
+            if (type === 'login') {
+                // Harmonic ascending greeting chime: C5 -> E5 -> G5 -> C6
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+
+                    gain.gain.setValueAtTime(0.0001, now + idx * 0.11);
+                    gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.11 + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.11 + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now + idx * 0.11);
+                    osc.stop(now + idx * 0.11 + 0.5);
+                });
+            } else if (type === 'send' || type === 'transmit') {
+                // High-tech transmission whoosh & telemetry ping
+                const oscSweep = ctx.createOscillator();
+                const gainSweep = ctx.createGain();
+                oscSweep.type = 'triangle';
+                oscSweep.frequency.setValueAtTime(320, now);
+                oscSweep.frequency.exponentialRampToValueAtTime(1400, now + 0.22);
+
+                gainSweep.gain.setValueAtTime(0.01, now);
+                gainSweep.gain.linearRampToValueAtTime(0.16, now + 0.08);
+                gainSweep.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+                oscSweep.connect(gainSweep);
+                gainSweep.connect(ctx.destination);
+                oscSweep.start(now);
+                oscSweep.stop(now + 0.28);
+
+                // Ping tone
+                const oscPing = ctx.createOscillator();
+                const gainPing = ctx.createGain();
+                oscPing.type = 'sine';
+                oscPing.frequency.setValueAtTime(1318.51, now + 0.18); // E6
+                gainPing.gain.setValueAtTime(0.001, now + 0.18);
+                gainPing.gain.exponentialRampToValueAtTime(0.18, now + 0.21);
+                gainPing.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+
+                oscPing.connect(gainPing);
+                gainPing.connect(ctx.destination);
+                oscPing.start(now + 0.18);
+                oscPing.stop(now + 0.68);
+            } else if (type === 'loading') {
+                // Gentle pulse click / sonar tap
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.exponentialRampToValueAtTime(1318.51, now + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'success') {
+                // Success harmonic double chime (G5 -> C6)
+                [783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.12 + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.5);
+                });
+            } else if (type === 'error') {
+                // Gentle warning tone (D4 -> B3)
+                [293.66, 246.94].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+                    gain.gain.exponentialRampToValueAtTime(0.15, now + idx * 0.14 + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.14 + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.14);
+                    osc.stop(now + idx * 0.14 + 0.4);
+                });
+            }
+        } catch (e) {
+            console.warn('Audio playback not permitted or supported:', e);
+        }
+    },
+
     toast(message, type = 'info', duration = 4000) {
         const container = document.querySelector('.toast-container') || (() => {
             const el = document.createElement('div');
@@ -9,6 +162,12 @@ const DoIt = {
 
         const icons = { success: '✓', danger: '✕', warning: '⚠', info: 'ℹ' };
         const colors = { success: 'var(--accent-success)', danger: 'var(--accent-danger)', warning: 'var(--accent-warning)', info: 'var(--accent-primary)' };
+
+        if (type === 'success') {
+            this.playAudio('success');
+        } else if (type === 'danger' || type === 'error') {
+            this.playAudio('error');
+        }
 
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -157,6 +316,16 @@ const DoIt = {
             const txt = document.getElementById('suzukiLoadingStatus');
             if (bar) bar.style.width = '70%';
             if (txt) txt.textContent = msg;
+        }
+
+        // Trigger contextual audio sound effect
+        const lower = (msg || '').toLowerCase();
+        if (lower.includes('kirim') || lower.includes('transmisi') || lower.includes('ceisa') || lower.includes('silo')) {
+            this.playAudio('send');
+        } else if (lower.includes('autentikasi') || lower.includes('login') || lower.includes('akses')) {
+            this.playAudio('login');
+        } else {
+            this.playAudio('loading');
         }
     },
     hideLoading() {
@@ -372,6 +541,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedScale = localStorage.getItem('app-display-scale') || '100';
         scaleSelect.value = savedScale;
     }
+
+    // Setup Sound Effects toggle state
+    DoIt.updateSoundBtn();
+
+    // Auto-unlock Web Audio API context on first user gesture
+    const unlockAudio = () => {
+        DoIt.getAudioContext();
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
 
     const successMsg = document.getElementById('tempSuccess')?.value;
     const errorMsg = document.getElementById('tempError')?.value;

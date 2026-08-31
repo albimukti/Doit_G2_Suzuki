@@ -298,6 +298,106 @@ public class PibController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Edit(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return RedirectToAction(nameof(Index));
+
+        id = id.Trim();
+        ViewData["Title"] = $"Edit Dokumen PIB — {id}";
+        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib/Detail?id={id}'>Detail</a> <span class='breadcrumb-sep'>/</span> Edit";
+
+        try
+        {
+            var header = await _db.QueryFirstOrDefaultAsync<PibHeaderModel>(
+                @"SELECT CAR, ASAL_DATA AS AsalData, ID_IMP AS IdImp, NM_IMO AS NmImo, AL_IMP AS AlImp, 
+                   STATUS_IMP AS StatusImp, KD_API AS KdApi, NO_API AS NoApi, KD_KANTOR AS KdKantor,
+                   JNS_PIB AS JnsPib, JNS_IMP AS JnsImp, JNS_BAYAR AS JnsBayar, NEG_PEMASOK AS NegPemasok,
+                   NM_PEMASOK AS NmPemasok, AL_PEMASOK AS AlPemasok, NM_ANGKUT AS NmAngkut, CARA_ANGKUT AS CaraAngkut,
+                   PEL_MUAT AS PelMuat, PEL_BONGKAR AS PelBongkar, PEL_TRANSIT AS PelTransit, BENDERA_VOY AS BenderaVoy,
+                   NO_VOY_FLIGHT AS NoVoyFlight, TGL_TIBA AS TglTiba, GUDANG AS Gudang, NO_BC11 AS NoBc11,
+                   NO_POS_BC11 AS NoPosBc11, NO_SUB_POS AS NoSubPos, TGL_BC11 AS TglBc11, KD_VAL AS KdVal,
+                   NDPBM AS Ndpbm, FOB AS Fob, ASURANSI AS Asuransi, FREIGHT AS Freight, CIF AS Cif,
+                   NETTO AS Netto, BRUTO AS Bruto, JML_CONT AS JmlCont, LOK_BAYAR AS LokBayar,
+                   JML_BRG AS JmlBrg, KD_JAMINAN AS KdJaminan, NO_PEN_PIB AS PibNo, TGL_PEND_PIB AS PibTg,
+                   NO_SPPB AS SppbNo, TGL_SPPB AS SppbTg, ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus
+                   FROM PIB_DOIT_FINAL_HEADER WHERE RTRIM(LTRIM(CAR)) = @Car",
+                new { Car = id });
+
+            if (header == null)
+            {
+                TempData["Error"] = $"Dokumen PIB dengan nomor CAR '{id}' tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(header);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening PIB Edit for {Car}", id);
+            TempData["Error"] = $"Gagal memuat form edit PIB: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id = id });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(PibHeaderModel model, IFormCollection form)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(model.Car))
+            {
+                TempData["Error"] = "Nomor CAR (AJU) tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var sql = @"UPDATE PIB_DOIT_FINAL_HEADER SET 
+                        NM_PEMASOK = @NmPemasok,
+                        NEG_PEMASOK = @NegPemasok,
+                        AL_PEMASOK = @AlPemasok,
+                        TGL_TIBA = @TglTiba,
+                        NM_ANGKUT = @NmAngkut,
+                        NO_VOY_FLIGHT = @NoVoyFlight,
+                        PEL_MUAT = @PelMuat,
+                        PEL_BONGKAR = @PelBongkar,
+                        NO_BC11 = @NoBc11,
+                        TGL_BC11 = @TglBc11,
+                        NO_POS_BC11 = @NoPosBc11,
+                        JML_BRG = @JmlBrg,
+                        LAST_UPDATE_DATE = GETDATE()
+                        WHERE RTRIM(LTRIM(CAR)) = @Car";
+
+            await _db.ExecuteAsync(sql, new {
+                Car = model.Car.Trim(),
+                NmPemasok = model.NmPemasok ?? "",
+                NegPemasok = model.NegPemasok ?? "JP",
+                AlPemasok = model.AlPemasok ?? "",
+                TglTiba = model.TglTiba ?? "",
+                NmAngkut = model.NmAngkut ?? "",
+                NoVoyFlight = model.NoVoyFlight ?? "",
+                PelMuat = model.PelMuat ?? "",
+                PelBongkar = model.PelBongkar ?? "",
+                NoBc11 = model.NoBc11 ?? "",
+                TglBc11 = model.TglBc11 ?? "",
+                NoPosBc11 = model.NoPosBc11 ?? "",
+                JmlBrg = model.JmlBrg
+            });
+
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "EDIT_PIB", "PIB", model.Car, $"Memperbarui data dokumen PIB {model.Car} (Pemasok: {model.NmPemasok})");
+
+            TempData["Success"] = $"Perubahan dokumen PIB (CAR: {model.Car}) berhasil disimpan!";
+            return RedirectToAction(nameof(Detail), new { id = model.Car });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving PIB Edit for {Car}", model.Car);
+            TempData["Error"] = $"Gagal menyimpan perubahan dokumen PIB: {ex.Message}";
+            ModelState.AddModelError("", $"Gagal menyimpan perubahan: {ex.Message}");
+            return View(model);
+        }
+    }
+
     public async Task<IActionResult> Detail(string id)
     {
         ViewData["Title"] = $"Detail PIB — {id}";
@@ -840,6 +940,94 @@ public class PebController : Controller
         {
             _logger.LogError(ex, "Error creating PEB: {Car}", model.Car);
             TempData["Error"] = $"Gagal membuat dokumen PEB: {ex.Message}";
+            return View(model);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return RedirectToAction(nameof(Index));
+
+        id = id.Trim();
+        ViewData["Title"] = $"Edit Dokumen PEB — {id}";
+        ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb'>PEB</a> <span class='breadcrumb-sep'>/</span> <a href='/Peb/Detail?id={id}'>Detail</a> <span class='breadcrumb-sep'>/</span> Edit";
+
+        try
+        {
+            var header = await _db.QueryFirstOrDefaultAsync<PebHeaderModel>(
+                @"SELECT CAR, ASAL_DATA AS AsalData, IDEKS AS IdEks, NAMAEKS AS NamaEks, ALMTEKS AS AlmtEks,
+                   NAMABELI AS NamaBeli, ALMTBELI AS AlmtBeli, NEGBELI AS NegBeli,
+                   TGEKS AS TgEks, NETTO AS Netto, BRUTO AS Bruto, FOB AS Fob,
+                   NOPEN AS Nopen, TGL_NOPEN AS TglNopen, KDKTR AS KdKtr,
+                   CARRIER AS Carrier, VOY AS Voy, PELMUAT AS PelMuat, PELBONGKAR AS PelBongkar,
+                   NOINV AS NoInv, KDVAL AS KdVal, ISNULL(APPROVAL_STATUS, 'DRAFT') AS ApprovalStatus
+                   FROM PEB_DOIT_FINAL_HEADER WHERE RTRIM(LTRIM(CAR)) = @Car",
+                new { Car = id });
+
+            if (header == null)
+            {
+                TempData["Error"] = $"Dokumen PEB dengan nomor CAR '{id}' tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(header);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening PEB Edit for {Car}", id);
+            TempData["Error"] = $"Gagal memuat form edit PEB: {ex.Message}";
+            return RedirectToAction(nameof(Detail), new { id = id });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(PebHeaderModel model, IFormCollection form)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(model.Car))
+            {
+                TempData["Error"] = "Nomor CAR (AJU) tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var sql = @"UPDATE PEB_DOIT_FINAL_HEADER SET 
+                        NAMABELI = @NamaBeli,
+                        ALMTBELI = @AlmtBeli,
+                        NEGBELI = @NegBeli,
+                        TGEKS = @TgEks,
+                        PELMUAT = @PelMuat,
+                        PELBONGKAR = @PelBongkar,
+                        NETTO = @Netto,
+                        BRUTO = @Bruto,
+                        FOB = @Fob
+                        WHERE RTRIM(LTRIM(CAR)) = @Car";
+
+            await _db.ExecuteAsync(sql, new {
+                Car = model.Car.Trim(),
+                NamaBeli = model.NamaBeli ?? "",
+                AlmtBeli = model.AlmtBeli ?? "",
+                NegBeli = model.NegBeli ?? "JP",
+                TgEks = model.TgEks,
+                PelMuat = model.PelMuat ?? "",
+                PelBongkar = model.PelBongkar ?? "",
+                Netto = model.Netto,
+                Bruto = model.Bruto,
+                Fob = model.Fob
+            });
+
+            await _audit.LogAsync(User.Identity?.Name ?? "system", "EDIT_PEB", "PEB", model.Car, $"Memperbarui data dokumen PEB {model.Car} (Pembeli: {model.NamaBeli})");
+
+            TempData["Success"] = $"Perubahan dokumen PEB (CAR: {model.Car}) berhasil disimpan!";
+            return RedirectToAction(nameof(Detail), new { id = model.Car });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving PEB Edit for {Car}", model.Car);
+            TempData["Error"] = $"Gagal menyimpan perubahan dokumen PEB: {ex.Message}";
+            ModelState.AddModelError("", $"Gagal menyimpan perubahan: {ex.Message}");
             return View(model);
         }
     }

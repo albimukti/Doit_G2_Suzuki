@@ -1,65 +1,143 @@
 @model DoItG2.Models.PIB.PibHeaderModel
 @{
     Layout = "_Layout";
+    ViewData["Title"] = $"Edit Dokumen PIB — {Model.Car}";
+    ViewData["Breadcrumb"] = $"<a href='/'>Dashboard</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib'>PIB</a> <span class='breadcrumb-sep'>/</span> <a href='/Pib/Detail?id={Model.Car}'>Detail</a> <span class='breadcrumb-sep'>/</span> Edit";
 }
 
-<div class="card" style="max-width: 800px; margin: 0 auto;">
-    <div class="card-header">
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <h2 class="card-title">Edit Dokumen PIB — @Model.Car</h2>
-            <div class="card-subtitle">Perubahan data Pemberitahuan Impor Barang kepabeanan (Diaudit secara otomatis)</div>
+            <h2 class="card-title" style="margin: 0; font-size: 18px;">Edit Dokumen PIB — @Model.Car</h2>
+            <div class="card-subtitle" style="margin-top: 3px;">Perubahan data Pemberitahuan Impor Barang kepabeanan (Audit terintegrasi)</div>
         </div>
-        <a class="btn btn-secondary" href="/Pib">Kembali</a>
+        <div style="display: flex; gap: 8px;">
+            <a class="btn btn-secondary" href="/Pib/Detail?id=@Model.Car">Lihat Detail</a>
+            <a class="btn btn-secondary" href="/Pib">Kembali ke Daftar</a>
+        </div>
     </div>
 
     @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null)
     {
-        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan.";
+        var errMsg = ViewData.ModelState[""]!.Errors.Count > 0 ? ViewData.ModelState[""]!.Errors[0].ErrorMessage : "Terjadi kesalahan saat menyimpan data.";
         <div class="alert alert-danger" style="margin-bottom: 20px;">
             @errMsg
         </div>
     }
 
-    <form method="post">
+    <form method="post" asp-controller="Pib" asp-action="Edit" onsubmit="DoIt.showLoading('Menyimpan perubahan dokumen PIB...')">
+        @Html.AntiForgeryToken()
         <input type="hidden" name="Car" value="@Model.Car" />
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-                <label class="form-label">Nomor CAR (AJU)</label>
-                <input type="text" class="form-control" value="@Model.Car" disabled style="font-family: monospace;" />
+        <!-- Identitas Dokumen & Importir -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; text-transform: uppercase;">1. Identitas Dokumen &amp; Importir</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nomor CAR (AJU)</label>
+                    <input type="text" class="form-control" value="@Model.Car" disabled style="font-family: 'JetBrains Mono', monospace; font-weight: 700; background: #e2e8f0; color: #1e293b;" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kantor Pabean</label>
+                    <input type="text" class="form-control" value="@Model.KdKantor" disabled style="background: #e2e8f0; color: #1e293b;" />
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">NPWP Importir</label>
-                <input type="text" class="form-control" value="@Model.IdImp" disabled />
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                <div class="form-group">
+                    <label class="form-label">NPWP Importir</label>
+                    <input type="text" class="form-control" value="@Model.IdImp" disabled style="background: #e2e8f0; color: #1e293b;" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nama Importir</label>
+                    <input type="text" class="form-control" value="@Model.NmImo" disabled style="background: #e2e8f0; color: #1e293b;" />
+                </div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label class="form-label">Nama Pemasok (Supplier)<span class="required">*</span></label>
-            <input type="text" name="NmPemasok" class="form-control" value="@Model.NmPemasok" required />
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Alamat Pemasok<span class="required">*</span></label>
-            <textarea name="AlPemasok" class="form-control" rows="2" required>@Model.AlPemasok</textarea>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-                <label class="form-label">Tanggal Perkiraan Tiba (ETA)<span class="required">*</span></label>
-                <input type="text" name="TglTiba" class="form-control" value="@Model.TglTiba" required />
+        <!-- Data Pemasok & Pengangkutan -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; text-transform: uppercase;">2. Data Pemasok (Supplier) &amp; Pengangkutan</div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nama Pemasok (Supplier)<span class="required">*</span></label>
+                    <input type="text" name="NmPemasok" class="form-control" value="@Model.NmPemasok" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Negara Pemasok<span class="required">*</span></label>
+                    <input type="text" name="NegPemasok" class="form-control" value="@Model.NegPemasok" required maxlength="2" />
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Jumlah Jenis Barang<span class="required">*</span></label>
-                <input type="number" name="JmlBrg" class="form-control" value="@Model.JmlBrg" required min="1" />
+            <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label">Alamat Pemasok<span class="required">*</span></label>
+                <textarea name="AlPemasok" class="form-control" rows="2" required>@Model.AlPemasok</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 10px;">
+                <div class="form-group">
+                    <label class="form-label">Tanggal Perkiraan Tiba (ETA)<span class="required">*</span></label>
+                    <input type="text" name="TglTiba" class="form-control" value="@Model.TglTiba" placeholder="YYYY-MM-DD" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sarana Pengangkut</label>
+                    <input type="text" name="NmAngkut" class="form-control" value="@Model.NmAngkut" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">No. Voy / Flight</label>
+                    <input type="text" name="NoVoyFlight" class="form-control" value="@Model.NoVoyFlight" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                <div class="form-group">
+                    <label class="form-label">Pelabuhan Muat</label>
+                    <input type="text" name="PelMuat" class="form-control" value="@Model.PelMuat" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pelabuhan Bongkar</label>
+                    <input type="text" name="PelBongkar" class="form-control" value="@Model.PelBongkar" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Manifes & Barang -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; text-transform: uppercase;">3. Manifes BC 1.1 &amp; Jumlah Barang</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Nomor BC 1.1</label>
+                    <input type="text" name="NoBc11" class="form-control" value="@Model.NoBc11" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tanggal BC 1.1</label>
+                    <input type="text" name="TglBc11" class="form-control" value="@Model.TglBc11" placeholder="YYYY-MM-DD" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">No. Pos BC 1.1</label>
+                    <input type="text" name="NoPosBc11" class="form-control" value="@Model.NoPosBc11" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                <div class="form-group">
+                    <label class="form-label">Jumlah Jenis Barang<span class="required">*</span></label>
+                    <input type="number" name="JmlBrg" class="form-control" value="@Model.JmlBrg" required min="1" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valuta Transaksi</label>
+                    <input type="text" class="form-control" value="@Model.KdVal" disabled style="background: #e2e8f0; color: #1e293b;" />
+                </div>
             </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-            <a href="/Pib" class="btn btn-secondary">Batal</a>
-            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            <a href="/Pib/Detail?id=@Model.Car" class="btn btn-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                💾 Simpan Perubahan
+            </button>
         </div>
     </form>
 </div>

@@ -355,6 +355,13 @@
                 </div>
 
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 4px 10px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;" id="topbarClock">--:-- WIB</div>
+                
+                <!-- Sound Effects Toggle Button -->
+                <button class="topbar-btn" id="soundToggleBtn" onclick="DoIt.toggleSound()" title="Efek Suara Sistem (Aktif/Nonaktif)">
+                    <svg id="soundIconOn" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/></svg>
+                    <svg id="soundIconOff" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+                </button>
+
                 <button class="topbar-btn" id="themeToggleBtn" title="Ubah Tema">
                     <svg id="themeIconSun" class="theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>

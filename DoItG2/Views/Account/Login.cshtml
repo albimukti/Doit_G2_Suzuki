@@ -871,6 +871,10 @@ function openLoginErrorModal(title, message, category = '🛡️ Verifikasi Logi
     if (modal) {
         modal.classList.add('active');
     }
+
+    if (window.DoIt && typeof DoIt.playAudio === 'function') {
+        DoIt.playAudio('error');
+    }
 }
 
 function closeLoginErrorModal() {
@@ -959,7 +963,10 @@ document.getElementById('loginForm')?.addEventListener('submit', function(e) {
         return false;
     }
 
-    // Input is valid -> show smooth loading state
+    // Input is valid -> play futuristic login chime & show smooth loading state
+    if (window.DoIt && typeof DoIt.playAudio === 'function') {
+        DoIt.playAudio('login');
+    }
     if (overlay) {
         overlay.classList.remove('fade-out');
         if (txt) txt.textContent = `Autentikasi Pengguna & Membuka Akses ${entity}...`;
