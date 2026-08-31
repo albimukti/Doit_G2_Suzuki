@@ -1,4 +1,5 @@
-// Models/Auth/UserModel.cs
+using System.ComponentModel.DataAnnotations;
+
 namespace DoItG2.Models.Auth;
 
 public class UserModel
@@ -12,6 +13,17 @@ public class UserModel
     public bool IsActive { get; set; } = true;
     public DateTime CreatedDate { get; set; }
     public DateTime? LastLogin { get; set; }
+    
+    // Entity Access: "SIM", "SIS", or "ALL"
+    public string EntityAccess { get; set; } = "ALL";
+    public bool CanAccessSim => string.Equals(EntityAccess, "SIM", StringComparison.OrdinalIgnoreCase) 
+                             || string.Equals(EntityAccess, "ALL", StringComparison.OrdinalIgnoreCase) 
+                             || string.Equals(EntityAccess, "BOTH", StringComparison.OrdinalIgnoreCase)
+                             || (string.IsNullOrEmpty(EntityAccess) && (PibSim || PebSim || IsAdmin));
+    public bool CanAccessSis => string.Equals(EntityAccess, "SIS", StringComparison.OrdinalIgnoreCase) 
+                             || string.Equals(EntityAccess, "ALL", StringComparison.OrdinalIgnoreCase) 
+                             || string.Equals(EntityAccess, "BOTH", StringComparison.OrdinalIgnoreCase)
+                             || (string.IsNullOrEmpty(EntityAccess) && (PibSis || PebSis || IsAdmin));
     
     // Privileges
     public bool IsAdmin { get; set; }
@@ -40,8 +52,12 @@ public class UserModel
 
 public class LoginViewModel
 {
+    [Required(ErrorMessage = "Silakan masukkan username Anda.")]
     public string UserName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Silakan masukkan password Anda.")]
     public string Password { get; set; } = string.Empty;
+
     public string Entity { get; set; } = "SIM"; // SIM (PT. Suzuki Indomobil Motor) or SIS (PT. Suzuki Indomobil Sales)
     public bool RememberMe { get; set; }
     public string? ReturnUrl { get; set; }

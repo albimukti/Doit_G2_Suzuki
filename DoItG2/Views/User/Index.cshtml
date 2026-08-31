@@ -54,6 +54,7 @@
                         <th>Pengguna</th>
                         <th>Nama Lengkap</th>
                         <th>Email</th>
+                        <th>Akses Entitas</th>
                         <th>Role Resmi</th>
                         <th>Status</th>
                         <th style="text-align: center;">Aksi</th>
@@ -63,7 +64,7 @@
                     @if (Model.Count == 0)
                     {
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
                                 <div style="font-size: 28px; margin-bottom: 8px; opacity: 0.4;">👤</div>
                                 <div style="font-size: 13px; font-weight: 500;">Belum ada pengguna terdaftar</div>
                             </td>
@@ -78,6 +79,14 @@
                                 "MANAJER_OPS" or "SUPERVISOR" or "MANAGER" => ("Manajer Operasional", "rgba(59,130,246,0.12)", "#2563eb", "Monitoring & keputusan strategis"),
                                 _ => ("Staf Ekspor-Impor", "rgba(16,185,129,0.12)", "#059669", "Operator input/pengiriman")
                             };
+                            
+                            var entAccess = (user.EntityAccess ?? "ALL").ToUpper();
+                            var entBadge = entAccess switch {
+                                "SIM" => ("SIM Only", "background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;", "PT. Suzuki Indomobil Motor"),
+                                "SIS" => ("SIS Only", "background: #d1fae5; color: #059669; border: 1px solid #6ee7b7;", "PT. Suzuki Indomobil Sales"),
+                                _ => ("SIM & SIS", "background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;", "Akses Keduanya (Dual Entity)")
+                            };
+                            
                             <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -89,6 +98,17 @@
                                 </td>
                                 <td style="font-weight: 600; color: var(--text-primary); font-size: 13px;">@user.FullName</td>
                                 <td style="font-size: 12px; color: var(--text-secondary);">@(string.IsNullOrEmpty(user.Email) ? "—" : user.Email)</td>
+                                <td>
+                                    <div>
+                                        <span style="font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; @entBadge.Item2">
+                                            @if (entAccess == "SIM") { <span style="font-size: 8px;">🔴</span> }
+                                            else if (entAccess == "SIS") { <span style="font-size: 8px;">🟢</span> }
+                                            else { <span style="font-size: 8px;">🔵</span> }
+                                            @entBadge.Item1
+                                        </span>
+                                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">@entBadge.Item3</div>
+                                    </div>
+                                </td>
                                 <td>
                                     <div>
                                         <span style="font-size: 11px; font-weight: 700; background: @roleDisplay.Item2; color: @roleDisplay.Item3; padding: 3px 9px; border-radius: 6px; display: inline-flex; align-items: center;">
@@ -154,6 +174,15 @@
             <div class="form-group">
                 <label class="form-label">Email Perusahaan <span class="required">*</span></label>
                 <input type="email" name="email" class="form-control" placeholder="Contoh: budi@suzuki.co.id" required />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hak Akses Entitas <span class="required">*</span></label>
+                <select name="entityAccess" class="form-control" required style="font-size: 13px; font-weight: 600;">
+                    <option value="SIM">🔴 Hanya SIM (PT. Suzuki Indomobil Motor)</option>
+                    <option value="SIS">🟢 Hanya SIS (PT. Suzuki Indomobil Sales)</option>
+                    <option value="ALL" selected>🔵 Keduanya (SIM &amp; SIS - Dual Access)</option>
+                </select>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">User SIM tidak bisa masuk ke SIS, user SIS tidak bisa masuk ke SIM. Pilihan Keduanya memungkinkan akses ke dua entitas.</div>
             </div>
             <div class="form-group">
                 <label class="form-label">Role Pengguna <span class="required">*</span></label>

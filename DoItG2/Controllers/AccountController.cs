@@ -44,6 +44,25 @@ public class AccountController : Controller
         }
 
         var entity = string.Equals(model.Entity, "SIS", StringComparison.OrdinalIgnoreCase) ? "SIS" : "SIM";
+
+        // Entity Access Validation:
+        // SIM user cannot access SIS, SIS user cannot access SIM. Dual access (ALL) can access both.
+        if (entity == "SIS" && !user.CanAccessSis)
+        {
+            ModelState.AddModelError("", $"Akses Ditolak: Akun '{user.UserName}' hanya memiliki izin akses untuk entitas SIM (PT. Suzuki Indomobil Motor) dan tidak dapat masuk ke entitas SIS.");
+            await _audit.LogAsync(model.UserName, "LOGIN_DENIED", "AUTH",
+                description: $"Akses ditolak: User terdaftar pada entitas SIM mencoba masuk ke SIS", ipAddress: GetClientIp(), isError: true);
+            return View(model);
+        }
+
+        if (entity == "SIM" && !user.CanAccessSim)
+        {
+            ModelState.AddModelError("", $"Akses Ditolak: Akun '{user.UserName}' hanya memiliki izin akses untuk entitas SIS (PT. Suzuki Indomobil Sales) dan tidak dapat masuk ke entitas SIM.");
+            await _audit.LogAsync(model.UserName, "LOGIN_DENIED", "AUTH",
+                description: $"Akses ditolak: User terdaftar pada entitas SIS mencoba masuk ke SIM", ipAddress: GetClientIp(), isError: true);
+            return View(model);
+        }
+
         var entityName = entity == "SIS" ? "PT. Suzuki Indomobil Sales" : "PT. Suzuki Indomobil Motor";
         var entityKey = entity == "SIS" ? "84" : "81";
         var entityNpwp = entity == "SIS" ? "01.129.738.9-411.000" : "01.129.737.1-411.000";
@@ -58,6 +77,9 @@ public class AccountController : Controller
             new("EntityName", entityName),
             new("EntityKey", entityKey),
             new("EntityNpwp", entityNpwp),
+            new("EntityAccess", user.EntityAccess ?? "ALL"),
+            new("CanAccessSim", user.CanAccessSim.ToString()),
+            new("CanAccessSis", user.CanAccessSis.ToString()),
             new("IsAdmin", user.IsAdmin.ToString()),
             new("PibSim", user.PibSim.ToString()),
             new("PibSis", user.PibSis.ToString()),
@@ -82,6 +104,74 @@ public class AccountController : Controller
 
         if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
             return Redirect(model.ReturnUrl);
+
+        return RedirectToAction("Index", "Dashboard");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SwitchEntity(string targetEntity, string? returnUrl = null)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToAction("Login");
+
+        var username = User.Identity.Name ?? "";
+        var user = await _auth.GetUserByUsernameAsync(username);
+        if (user == null || !user.IsActive)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login");
+        }
+
+        var requestedEntity = string.Equals(targetEntity, "SIS", StringComparison.OrdinalIgnoreCase) ? "SIS" : "SIM";
+
+        if (requestedEntity == "SIS" && !user.CanAccessSis)
+        {
+            TempData["Error"] = "Akses ditolak: Akun Anda tidak memiliki izin untuk mengakses entitas SIS (PT. Suzuki Indomobil Sales).";
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        if (requestedEntity == "SIM" && !user.CanAccessSim)
+        {
+            TempData["Error"] = "Akses ditolak: Akun Anda tidak memiliki izin untuk mengakses entitas SIM (PT. Suzuki Indomobil Motor).";
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        var entityName = requestedEntity == "SIS" ? "PT. Suzuki Indomobil Sales" : "PT. Suzuki Indomobil Motor";
+        var entityKey = requestedEntity == "SIS" ? "84" : "81";
+        var entityNpwp = requestedEntity == "SIS" ? "01.129.738.9-411.000" : "01.129.737.1-411.000";
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, user.UserName),
+            new(ClaimTypes.GivenName, user.FullName),
+            new(ClaimTypes.Email, user.Email ?? ""),
+            new(ClaimTypes.Role, user.UserType),
+            new("Entity", requestedEntity),
+            new("EntityName", entityName),
+            new("EntityKey", entityKey),
+            new("EntityNpwp", entityNpwp),
+            new("EntityAccess", user.EntityAccess ?? "ALL"),
+            new("CanAccessSim", user.CanAccessSim.ToString()),
+            new("CanAccessSis", user.CanAccessSis.ToString()),
+            new("IsAdmin", user.IsAdmin.ToString()),
+            new("PibSim", user.PibSim.ToString()),
+            new("PibSis", user.PibSis.ToString()),
+            new("PebSim", user.PebSim.ToString()),
+            new("PebSis", user.PebSis.ToString()),
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity));
+
+        await _audit.LogAsync(user.UserName, "SWITCH_ENTITY", "AUTH",
+            description: $"Beralih entitas aktif ke {requestedEntity} ({entityName})", ipAddress: GetClientIp());
+
+        TempData["Success"] = $"Berhasil beralih ke entitas {requestedEntity} ({entityName}).";
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
 
         return RedirectToAction("Index", "Dashboard");
     }

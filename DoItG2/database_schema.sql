@@ -16,6 +16,7 @@ CREATE TABLE doit_user (
     password_hash   VARCHAR(255) NOT NULL,
     user_type       VARCHAR(20)  NOT NULL DEFAULT 'STAFF',  -- ADMIN, STAFF, SUPERVISOR, VIEWER, KITE
     is_active       BIT          NOT NULL DEFAULT 1,
+    entity_access   VARCHAR(20)  NOT NULL DEFAULT 'ALL',    -- SIM (Hanya SIM), SIS (Hanya SIS), ALL (Dual Access)
     created_date    DATETIME     NOT NULL DEFAULT GETDATE(),
     last_login      DATETIME,
 
@@ -569,36 +570,58 @@ CREATE TABLE NPCS_LAPITINV_E (
 -- ============================================================
 
 -- Insert default admin user (password: Admin@123)
-INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, is_admin,
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access, is_admin,
     pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84,
     peb_authorize_81, peb_authorize_84, pib_check_81, pib_check_84, peb_check_81, peb_check_84)
 VALUES ('admin', 'Administrator', 'admin@suzuki.co.id',
     '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',  -- BCrypt of 'Admin@123'
-    'ADMIN', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    'ADMIN_DOKUMEN', 1, 'ALL', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
--- Insert requested staff user: DINDA (password: Admin@123)
-INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active,
+-- Insert user SIM only (Hanya bisa masuk SIM): user_sim (password: Admin@123)
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
+    pib_sim, pib_sis, peb_sim, peb_sis, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
+VALUES ('user_sim', 'Operator SIM (Indomobil Motor)', 'user_sim@suzuki.co.id',
+    '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
+    'STAFF_EXIM', 1, 'SIM', 1, 0, 1, 0, 1, 1, 0, 1, 1);
+
+-- Insert user SIS only (Hanya bisa masuk SIS): user_sis (password: Admin@123)
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
+    pib_sim, pib_sis, peb_sim, peb_sis, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
+VALUES ('user_sis', 'Operator SIS (Indomobil Sales)', 'user_sis@suzuki.co.id',
+    '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
+    'STAFF_EXIM', 1, 'SIS', 0, 1, 0, 1, 1, 1, 0, 1, 1);
+
+-- Insert user Dual Access (Bisa masuk SIM dan SIS): user_dual (password: Admin@123)
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access, is_admin,
+    pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84,
+    peb_authorize_81, peb_authorize_84, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
+VALUES ('user_dual', 'Koordinator Dual Access (SIM & SIS)', 'user_dual@suzuki.co.id',
+    '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
+    'ADMIN_DOKUMEN', 1, 'ALL', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+
+-- Insert requested staff user: DINDA (password: Admin@123) -> SIM Only
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
     pib_sim, pib_sis, peb_sim, peb_sis, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
 VALUES ('dinda', 'DINDA staff', 'dinda@suzuki.co.id',
     '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
-    'STAFF', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    'STAFF_EXIM', 1, 'SIM', 1, 0, 1, 0, 1, 1, 1, 1, 1);
 
--- Insert requested supervisor user: HERU (password: Admin@123)
-INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active,
+-- Insert requested supervisor user: HERU (password: Admin@123) -> SIS Only
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
     pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84,
     peb_authorize_81, peb_authorize_84, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
 VALUES ('heru', 'HERU Supervasior', 'heru@suzuki.co.id',
     '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
-    'SUPERVISOR', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    'MANAJER_OPS', 1, 'SIS', 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1);
 
--- Insert requested admin user: Rizki (password: Admin@123)
-INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, is_admin,
+-- Insert requested admin user: Rizki (password: Admin@123) -> Dual Access
+INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access, is_admin,
     pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84,
     peb_authorize_81, peb_authorize_84, pib_check_81, pib_check_84, peb_check_81, peb_check_84,
     is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb)
 VALUES ('rizki', 'Rizki Admin', 'rizki@suzuki.co.id',
     '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6',
-    'ADMIN', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+    'ADMIN_DOKUMEN', 1, 'ALL', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 -- Settings
 INSERT INTO doit_setting (setting_key, value, description) VALUES

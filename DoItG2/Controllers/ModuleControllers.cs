@@ -3107,7 +3107,7 @@ public class UserController : Controller
         try
         {
             var users = await _db.QueryAsync<UserModel>(
-                "SELECT id AS Id, user_name AS UserName, full_name AS FullName, email AS Email, user_type AS UserType, is_active AS IsActive FROM doit_user ORDER BY id DESC");
+                "SELECT id AS Id, user_name AS UserName, full_name AS FullName, email AS Email, user_type AS UserType, is_active AS IsActive, ISNULL(entity_access, 'ALL') AS EntityAccess FROM doit_user ORDER BY id DESC");
             return View(users.ToList());
         }
         catch (Exception ex)
@@ -3118,7 +3118,7 @@ public class UserController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(string username, string fullname, string email, string role)
+    public async Task<IActionResult> Create(string username, string fullname, string email, string role, string entityAccess = "ALL")
     {
         var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
         if (!currentRole.Contains("ADMIN", StringComparison.OrdinalIgnoreCase))
@@ -3134,14 +3134,43 @@ public class UserController : Controller
             var isAdmin = (role == "ADMIN_DOKUMEN" || role == "ADMIN") ? 1 : 0;
             var isAuthorize = (role == "MANAJER_OPS" || role == "SUPERVISOR") ? 1 : 0;
 
-            await _db.ExecuteAsync(
-                @"INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, is_admin,
-                    pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, peb_authorize_81, is_partmaster, is_fasilitas, is_pkb, is_pi)
-                  VALUES (@Username, @Fullname, @Email, @Hash, @Role, 1, @IsAdmin,
-                    1, 1, 1, 1, @IsAuthorize, @IsAuthorize, @IsAdmin, @IsAdmin, @IsAdmin, @IsAdmin)",
-                new { Username = username.Trim(), Fullname = fullname.Trim(), Email = email.Trim(), Hash = hash, Role = role, IsAdmin = isAdmin, IsAuthorize = isAuthorize });
+            var normEntityAccess = string.IsNullOrWhiteSpace(entityAccess) ? "ALL" : entityAccess.ToUpper();
+            var pibSim = (normEntityAccess == "SIM" || normEntityAccess == "ALL") ? 1 : 0;
+            var pibSis = (normEntityAccess == "SIS" || normEntityAccess == "ALL") ? 1 : 0;
+            var pebSim = pibSim;
+            var pebSis = pibSis;
 
-            TempData["Success"] = $"User {username} ({role}) berhasil dibuat dengan password default Admin@123.";
+            var auth81 = (isAuthorize == 1 && (normEntityAccess == "SIM" || normEntityAccess == "ALL")) ? 1 : 0;
+            var auth84 = (isAuthorize == 1 && (normEntityAccess == "SIS" || normEntityAccess == "ALL")) ? 1 : 0;
+
+            await _db.ExecuteAsync(
+                @"INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access, is_admin,
+                    pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84, peb_authorize_81, peb_authorize_84, is_partmaster, is_fasilitas, is_pkb, is_pi)
+                  VALUES (@Username, @Fullname, @Email, @Hash, @Role, 1, @EntityAccess, @IsAdmin,
+                    @PibSim, @PibSis, @PebSim, @PebSis, @Auth81, @Auth84, @Auth81, @Auth84, @IsAdmin, @IsAdmin, @IsAdmin, @IsAdmin)",
+                new { 
+                    Username = username.Trim(), 
+                    Fullname = fullname.Trim(), 
+                    Email = email.Trim(), 
+                    Hash = hash, 
+                    Role = role, 
+                    EntityAccess = normEntityAccess,
+                    IsAdmin = isAdmin, 
+                    PibSim = pibSim, 
+                    PibSis = pibSis, 
+                    PebSim = pebSim, 
+                    PebSis = pebSis, 
+                    Auth81 = auth81, 
+                    Auth84 = auth84 
+                });
+
+            var entityDesc = normEntityAccess switch {
+                "SIM" => "Hanya SIM (PT. Suzuki Indomobil Motor)",
+                "SIS" => "Hanya SIS (PT. Suzuki Indomobil Sales)",
+                _ => "Keduanya (SIM & SIS)"
+            };
+
+            TempData["Success"] = $"User {username} ({role}) dengan hak akses {entityDesc} berhasil dibuat dengan password default Admin@123.";
         }
         catch (Exception ex)
         {

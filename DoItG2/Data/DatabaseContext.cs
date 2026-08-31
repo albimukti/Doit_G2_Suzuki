@@ -420,11 +420,75 @@ public class DatabaseContext
                     await masterCmd.ExecuteNonQueryAsync();
                 }
 
-                // Update legacy user roles to standard 3 roles
+                // Step 1: Ensure entity_access column exists in a dedicated command batch
+                var ensureColumnSql = @"
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('doit_user') AND name = 'entity_access')
+                    BEGIN
+                        ALTER TABLE doit_user ADD entity_access VARCHAR(20) NOT NULL CONSTRAINT DF_doit_user_entity_access DEFAULT 'ALL';
+                    END";
+                using (var colCmd = new SqlCommand(ensureColumnSql, dbConn))
+                {
+                    await colCmd.ExecuteNonQueryAsync();
+                }
+
+                // Step 2: Update legacy user roles to standard 3 roles and seed default users
                 var updateRolesSql = @"
                     UPDATE doit_user SET user_type = 'STAFF_EXIM' WHERE user_type IN ('STAFF', 'VIEWER', 'KITE');
                     UPDATE doit_user SET user_type = 'ADMIN_DOKUMEN' WHERE user_type = 'ADMIN';
                     UPDATE doit_user SET user_type = 'MANAJER_OPS' WHERE user_type IN ('SUPERVISOR', 'MANAGER');
+
+                    -- Update existing default users if present
+                    UPDATE doit_user SET entity_access = 'ALL', pib_sim = 1, pib_sis = 1, peb_sim = 1, peb_sis = 1 WHERE user_name IN ('admin', 'rizki');
+                    UPDATE doit_user SET entity_access = 'SIM', pib_sim = 1, pib_sis = 0, peb_sim = 1, peb_sis = 0 WHERE user_name = 'dinda';
+                    UPDATE doit_user SET entity_access = 'SIS', pib_sim = 0, pib_sis = 1, peb_sim = 0, peb_sis = 1 WHERE user_name = 'heru';
+
+                    -- 1. user_sim (Hanya bisa masuk SIM)
+                    IF NOT EXISTS (SELECT 1 FROM doit_user WHERE user_name = 'user_sim')
+                    BEGIN
+                        INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
+                            is_admin, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb,
+                            pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84, peb_authorize_81, peb_authorize_84, created_date)
+                        VALUES ('user_sim', 'Operator SIM (Indomobil Motor)', 'user_sim@suzuki.co.id',
+                            '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6', 'STAFF_EXIM', 1, 'SIM',
+                            0, 1, 1, 0, 1, 1,
+                            1, 0, 1, 0, 0, 0, 0, 0, GETDATE());
+                    END
+                    ELSE
+                    BEGIN
+                        UPDATE doit_user SET entity_access = 'SIM', pib_sim = 1, pib_sis = 0, peb_sim = 1, peb_sis = 0 WHERE user_name = 'user_sim';
+                    END
+
+                    -- 2. user_sis (Hanya bisa masuk SIS)
+                    IF NOT EXISTS (SELECT 1 FROM doit_user WHERE user_name = 'user_sis')
+                    BEGIN
+                        INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
+                            is_admin, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb,
+                            pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84, peb_authorize_81, peb_authorize_84, created_date)
+                        VALUES ('user_sis', 'Operator SIS (Indomobil Sales)', 'user_sis@suzuki.co.id',
+                            '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6', 'STAFF_EXIM', 1, 'SIS',
+                            0, 1, 1, 0, 1, 1,
+                            0, 1, 0, 1, 0, 0, 0, 0, GETDATE());
+                    END
+                    ELSE
+                    BEGIN
+                        UPDATE doit_user SET entity_access = 'SIS', pib_sim = 0, pib_sis = 1, peb_sim = 0, peb_sis = 1 WHERE user_name = 'user_sis';
+                    END
+
+                    -- 3. user_dual (Bisa masuk keduanya: SIM & SIS)
+                    IF NOT EXISTS (SELECT 1 FROM doit_user WHERE user_name = 'user_dual')
+                    BEGIN
+                        INSERT INTO doit_user (user_name, full_name, email, password_hash, user_type, is_active, entity_access,
+                            is_admin, is_partmaster, is_pi, is_matrix, is_fasilitas, is_pkb,
+                            pib_sim, pib_sis, peb_sim, peb_sis, pib_authorize_81, pib_authorize_84, peb_authorize_81, peb_authorize_84, created_date)
+                        VALUES ('user_dual', 'Koordinator Dual Access (SIM & SIS)', 'user_dual@suzuki.co.id',
+                            '$2a$11$/zNH2SxjnRdqxt1BUK7fyus1LWXqp3RDBjtUWRiRn/17PAqApOhn6', 'ADMIN_DOKUMEN', 1, 'ALL',
+                            1, 1, 1, 1, 1, 1,
+                            1, 1, 1, 1, 1, 1, 1, 1, GETDATE());
+                    END
+                    ELSE
+                    BEGIN
+                        UPDATE doit_user SET entity_access = 'ALL', pib_sim = 1, pib_sis = 1, peb_sim = 1, peb_sis = 1 WHERE user_name = 'user_dual';
+                    END
                 ";
                 using (var roleCmd = new SqlCommand(updateRolesSql, dbConn))
                 {
